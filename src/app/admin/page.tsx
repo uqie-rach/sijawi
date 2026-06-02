@@ -25,7 +25,8 @@ import {
   Info,
   Sliders,
   Sparkles,
-  GraduationCap
+  GraduationCap,
+  Table as TableIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,6 +38,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Combobox } from '@/components/ui/combobox';
+import { CalendarView } from '@/components/calendar-view';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 
 export default function AdminDashboard() {
@@ -57,13 +60,14 @@ export default function AdminDashboard() {
   // Redirect if not admin (for safety, but allow bypass)
   React.useEffect(() => {
     if (userRole !== 'admin') {
-      // Auto-set for convenience if they refresh on this page
       setUserRole('admin');
     }
   }, [userRole, setUserRole]);
 
   // Active Tab in Sidebar
   const [activeTab, setActiveTab] = useState<'overview' | 'master' | 'scheduling' | 'reports'>('overview');
+  // View Mode for Scheduling (Table vs Calendar)
+  const [schedulingViewMode, setSchedulingViewMode] = useState<'table' | 'calendar'>('table');
 
   // Custom API Hooks
   const { widyaswaras: wiData } = useWidyaswaras();
@@ -78,7 +82,14 @@ export default function AdminDashboard() {
 
   // Form States
   // 1. Widyaswara Form
-  const [wiForm, setWiForm] = useState({ name: '', gelar: '', email: '', level: '3' });
+  const [wiForm, setWiForm] = useState({ 
+    name: '', 
+    gelar: '', 
+    email: '', 
+    nip: '', 
+    jabatan: 'WI Ahli Madya' as any,
+    level: '3' 
+  });
   // 2. Kategori Form
   const [katForm, setKatForm] = useState({ name: '', minWeight: '3' });
   // 3. Mapel Form
@@ -111,21 +122,26 @@ export default function AdminDashboard() {
   // Handle Form Submissions
   const handleAddWi = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!wiForm.name || !wiForm.email) return;
+    if (!wiForm.name || !wiForm.email || !wiForm.nip) return;
     
     const levelNum = parseInt(wiForm.level);
     const labels = ['PPPK', 'Latsar', 'PKP', 'PKA', 'PKM'];
     const levelLabel = labels[levelNum - 1] || 'PPPK';
 
-    addWidyaswara({
+    const success = addWidyaswara({
       name: wiForm.name,
       gelar: wiForm.gelar,
       email: wiForm.email,
+      nip: wiForm.nip,
+      jabatan: wiForm.jabatan,
       level: levelNum,
       levelLabel
     });
-    setWiForm({ name: '', gelar: '', email: '', level: '3' });
-    setIsWiDialogOpen(false);
+
+    if (success) {
+      setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' });
+      setIsWiDialogOpen(false);
+    }
   };
 
   const handleAddKat = (e: React.FormEvent) => {
@@ -204,6 +220,44 @@ export default function AdminDashboard() {
     setUserRole(null);
     router.push('/');
   };
+
+  // Prepare Combobox Options
+  const mapelOptions = mapelList
+    .filter(m => activeBatch ? m.kategoriId === activeBatch.kategoriId : true)
+    .map(m => ({
+      value: m.id,
+      label: `${m.name} (${m.jpTotal} JP)`
+    }));
+
+  const wiOptions = wiData.map(wi => {
+    const batchCategory = activeBatch ? kategoriList.find(k => k.id === activeBatch.kategoriId) : null;
+    const isAllowed = batchCategory ? wi.level >= batchCategory.minWeight : true;
+    return {
+      value: wi.id,
+      label: `${wi.name}, ${wi.gelar} (Lvl ${wi.level} - ${wi.jabatan})`,
+      disabled: !isAllowed
+    };
+  });
+
+  const lokasiOptions = lokasiList.map(l => ({
+    value: l.id,
+    label: l.name
+  }));
+
+  // Prepare Calendar Events
+  const calendarEvents = allSessions.map(s => ({
+    id: s.id,
+    title: s.mapelName,
+    batchName: s.batchName,
+    wiName: s.wiName,
+    date: s.date,
+    startTime: s.startTime,
+    endTime: s.endTime,
+    format: s.format,
+    lokasiName: s.lokasiName,
+    jpCount: s.jpCount,
+    jpKe: s.jpKe
+  }));
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50">
@@ -402,6 +456,7 @@ export default function AdminDashboard() {
                     <TableHeader>
                       <TableRow className="bg-slate-50/70">
                         <TableHead className="font-semibold text-slate-700 pl-6">Nama Widyaswara</TableHead>
+                        <TableHead className="font-semibold text-slate-700">NIP & Jabatan</TableHead>
                         <TableHead className="font-semibold text-slate-700">Competency Level</TableHead>
                         <TableHead className="font-semibold text-slate-700 text-center">JP Bulan Lalu (Static)</TableHead>
                         <TableHead className="font-semibold text-slate-700 text-center bg-blue-50/30">JP Bulan Berjalan (Dinamis)</TableHead>
@@ -418,6 +473,12 @@ export default function AdminDashboard() {
                               <div>
                                 <p className="font-semibold">{wi.name}, {wi.gelar}</p>
                                 <p className="text-xs text-slate-500">{wi.email}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <p className="text-xs font-mono text-slate-600">NIP: {wi.nip || 'N/A'}</p>
+                                <p className="text-xs font-semibold text-slate-500">{wi.jabatan || 'N/A'}</p>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -506,35 +567,59 @@ export default function AdminDashboard() {
                           <DialogDescription>Create a new instructor profile with competency level weight.</DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleAddWi} className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="wi-name">Full Name (Without Gelar)</Label>
-                            <Input id="wi-name" placeholder="e.g. John Doe" value={wiForm.name} onChange={e => setWiForm({...wiForm, name: e.target.value})} required />
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="wi-name">Full Name (Without Gelar)</Label>
+                              <Input id="wi-name" placeholder="e.g. John Doe" value={wiForm.name} onChange={e => setWiForm({...wiForm, name: e.target.value})} required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="wi-gelar">Gelar / Degree</Label>
+                              <Input id="wi-gelar" placeholder="e.g. M.Pd., S.T." value={wiForm.gelar} onChange={e => setWiForm({...wiForm, gelar: e.target.value})} />
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="wi-gelar">Gelar / Degree</Label>
-                            <Input id="wi-gelar" placeholder="e.g. M.Pd., S.T." value={wiForm.gelar} onChange={e => setWiForm({...wiForm, gelar: e.target.value})} />
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="wi-nip">NIP (Unique ID)</Label>
+                              <Input id="wi-nip" placeholder="e.g. 198803152010121001" value={wiForm.nip} onChange={e => setWiForm({...wiForm, nip: e.target.value})} required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="wi-email">Email Address</Label>
+                              <Input id="wi-email" type="email" placeholder="e.g. john.doe@gmail.com" value={wiForm.email} onChange={e => setWiForm({...wiForm, email: e.target.value})} required />
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="wi-email">Email Address</Label>
-                            <Input id="wi-email" type="email" placeholder="e.g. john.doe@gmail.com" value={wiForm.email} onChange={e => setWiForm({...wiForm, email: e.target.value})} required />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="wi-level">Competency Level Weight</Label>
-                            <Select value={wiForm.level} onValueChange={val => setWiForm({...wiForm, level: val})}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select level" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white">
-                                <SelectItem value="5">Level 5 - PKM (Pelatihan Kepemimpinan Nasional)</SelectItem>
-                                <SelectItem value="4">Level 4 - PKA (Pelatihan Kepemimpinan Administrator)</SelectItem>
-                                <SelectItem value="3">Level 3 - PKP (Pelatihan Kepemimpinan Pengawas)</SelectItem>
-                                <SelectItem value="2">Level 2 - Latsar (Pelatihan Dasar CPNS)</SelectItem>
-                                <SelectItem value="1">Level 1 - PPPK (Pelatihan PPPK)</SelectItem>
-                              </SelectContent>
-                            </Select>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="wi-jabatan">Jabatan</Label>
+                              <Select value={wiForm.jabatan} onValueChange={val => setWiForm({...wiForm, jabatan: val as any})}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select jabatan" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white">
+                                  <SelectItem value="WI Ahli Pertama">WI Ahli Pertama</SelectItem>
+                                  <SelectItem value="WI Ahli Muda">WI Ahli Muda</SelectItem>
+                                  <SelectItem value="WI Ahli Madya">WI Ahli Madya</SelectItem>
+                                  <SelectItem value="WI Ahli Utama">WI Ahli Utama</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="wi-level">Competency Level Weight</Label>
+                              <Select value={wiForm.level} onValueChange={val => setWiForm({...wiForm, level: val})}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select level" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white">
+                                  <SelectItem value="5">Level 5 - PKM (Pelatihan Kepemimpinan Nasional)</SelectItem>
+                                  <SelectItem value="4">Level 4 - PKA (Pelatihan Kepemimpinan Administrator)</SelectItem>
+                                  <SelectItem value="3">Level 3 - PKP (Pelatihan Kepemimpinan Pengawas)</SelectItem>
+                                  <SelectItem value="2">Level 2 - Latsar (Pelatihan Dasar CPNS)</SelectItem>
+                                  <SelectItem value="1">Level 1 - PPPK (Pelatihan PPPK)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                           <DialogFooter className="pt-4">
-                            <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white">Save Widyaswara</Button>
+                            <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white w-full">Save Widyaswara</Button>
                           </DialogFooter>
                         </form>
                       </DialogContent>
@@ -609,7 +694,8 @@ export default function AdminDashboard() {
                         <TableHeader>
                           <TableRow>
                             <TableHead className="pl-6">Name</TableHead>
-                            <TableHead>Email</TableHead>
+                            <TableHead>NIP</TableHead>
+                            <TableHead>Jabatan</TableHead>
                             <TableHead>Competency Level</TableHead>
                             <TableHead className="pr-6">Allowed Training Categories</TableHead>
                           </TableRow>
@@ -618,7 +704,8 @@ export default function AdminDashboard() {
                           {wiData.map(wi => (
                             <TableRow key={wi.id}>
                               <TableCell className="font-semibold text-slate-900 pl-6">{wi.name}, {wi.gelar}</TableCell>
-                              <TableCell className="text-slate-600">{wi.email}</TableCell>
+                              <TableCell className="text-slate-600 font-mono text-xs">{wi.nip || 'N/A'}</TableCell>
+                              <TableCell className="text-slate-600 font-medium text-xs">{wi.jabatan || 'N/A'}</TableCell>
                               <TableCell>
                                 <Badge className="bg-blue-100 text-blue-800 border-blue-200 font-semibold">
                                   Level {wi.level} - {wi.levelLabel}
@@ -892,8 +979,8 @@ export default function AdminDashboard() {
           {/* 3. SCHEDULING ENGINE TAB */}
           {activeTab === 'scheduling' && (
             <div className="space-y-8">
-              {/* Batch Selector */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              {/* Batch Selector & View Mode Toggle */}
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div className="space-y-1">
                   <Label htmlFor="batch-select" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Training Batch to Schedule</Label>
                   <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
@@ -910,22 +997,46 @@ export default function AdminDashboard() {
                   </Select>
                 </div>
 
-                {activeBatch && (
-                  <div className="flex flex-wrap gap-4 text-sm">
-                    <div className="bg-slate-50 px-4 py-2 rounded-lg border border-slate-100">
-                      <p className="text-xs text-slate-500">Category</p>
-                      <p className="font-semibold text-slate-800">{activeBatch.categoryName}</p>
+                <div className="flex flex-wrap items-center gap-4">
+                  {activeBatch && (
+                    <div className="flex flex-wrap gap-4 text-sm">
+                      <div className="bg-slate-50 px-4 py-2 rounded-lg border border-slate-100">
+                        <p className="text-xs text-slate-500">Category</p>
+                        <p className="font-semibold text-slate-800">{activeBatch.categoryName}</p>
+                      </div>
+                      <div className="bg-slate-50 px-4 py-2 rounded-lg border border-slate-100">
+                        <p className="text-xs text-slate-500">Funding Pattern</p>
+                        <p className="font-semibold text-slate-800">{activeBatch.pola}</p>
+                      </div>
                     </div>
-                    <div className="bg-slate-50 px-4 py-2 rounded-lg border border-slate-100">
-                      <p className="text-xs text-slate-500">Funding Pattern</p>
-                      <p className="font-semibold text-slate-800">{activeBatch.pola}</p>
-                    </div>
-                    <div className="bg-slate-50 px-4 py-2 rounded-lg border border-slate-100">
-                      <p className="text-xs text-slate-500">Dates</p>
-                      <p className="font-semibold text-slate-800">{activeBatch.startDate} to {activeBatch.endDate}</p>
-                    </div>
+                  )}
+
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+                    <button
+                      onClick={() => setSchedulingViewMode('table')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                        schedulingViewMode === 'table'
+                          ? 'bg-white text-slate-900 shadow-sm'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <TableIcon className="h-3.5 w-3.5" />
+                      Table View
+                    </button>
+                    <button
+                      onClick={() => setSchedulingViewMode('calendar')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                        schedulingViewMode === 'calendar'
+                          ? 'bg-white text-slate-900 shadow-sm'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Calendar className="h-3.5 w-3.5" />
+                      Calendar View
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
 
               {activeBatch ? (
@@ -990,7 +1101,9 @@ export default function AdminDashboard() {
                   {/* Right Column: Scheduled Sessions Timeline & Assign Form */}
                   <div className="lg:col-span-2 space-y-6">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-bold text-slate-900">Scheduled Sessions ({batchSessions.length})</h3>
+                      <h3 className="text-lg font-bold text-slate-900">
+                        {schedulingViewMode === 'table' ? `Scheduled Sessions (${batchSessions.length})` : 'Global Master Schedule Calendar'}
+                      </h3>
                       
                       <Dialog open={isSessionDialogOpen} onOpenChange={setIsSessionDialogOpen}>
                         <DialogTrigger asChild>
@@ -1006,37 +1119,23 @@ export default function AdminDashboard() {
                           <form onSubmit={handleAddSession} className="space-y-4 py-4">
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                <Label htmlFor="sess-mapel">Subject (Mapel)</Label>
-                                <Select value={sessionForm.mapelId} onValueChange={val => setSessionForm({...sessionForm, mapelId: val})}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select subject" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white">
-                                    {mapelList.filter(m => m.kategoriId === activeBatch.kategoriId).map(m => (
-                                      <SelectItem key={m.id} value={m.id}>{m.name} ({m.jpTotal} JP)</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <Label htmlFor="sess-mapel">Subject (Mapel) - Searchable</Label>
+                                <Combobox
+                                  options={mapelOptions}
+                                  value={sessionForm.mapelId}
+                                  onValueChange={val => setSessionForm({...sessionForm, mapelId: val})}
+                                  placeholder="Search subject..."
+                                />
                               </div>
 
                               <div className="space-y-2">
-                                <Label htmlFor="sess-wi">Widyaswara (WI)</Label>
-                                <Select value={sessionForm.wiId} onValueChange={val => setSessionForm({...sessionForm, wiId: val})}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select instructor" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white">
-                                    {wiData.map(wi => {
-                                      const batchCategory = kategoriList.find(k => k.id === activeBatch.kategoriId);
-                                      const isAllowed = batchCategory ? wi.level >= batchCategory.minWeight : true;
-                                      return (
-                                        <SelectItem key={wi.id} value={wi.id} disabled={!isAllowed}>
-                                          {wi.name}, {wi.gelar} (Lvl {wi.level}) {!isAllowed ? '❌ Insufficient Lvl' : '✅'}
-                                        </SelectItem>
-                                      );
-                                    })}
-                                  </SelectContent>
-                                </Select>
+                                <Label htmlFor="sess-wi">Widyaswara (WI) - Searchable</Label>
+                                <Combobox
+                                  options={wiOptions}
+                                  value={sessionForm.wiId}
+                                  onValueChange={val => setSessionForm({...sessionForm, wiId: val})}
+                                  placeholder="Search instructor..."
+                                />
                               </div>
                             </div>
 
@@ -1097,17 +1196,13 @@ export default function AdminDashboard() {
 
                             {sessionForm.format === 'Klasikal' && (
                               <div className="space-y-2">
-                                <Label htmlFor="sess-lokasi">Location / Room</Label>
-                                <Select value={sessionForm.lokasiId} onValueChange={val => setSessionForm({...sessionForm, lokasiId: val})}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select location" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white">
-                                    {lokasiList.map(l => (
-                                      <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <Label htmlFor="sess-lokasi">Location / Room - Searchable</Label>
+                                <Combobox
+                                  options={lokasiOptions}
+                                  value={sessionForm.lokasiId}
+                                  onValueChange={val => setSessionForm({...sessionForm, lokasiId: val})}
+                                  placeholder="Search location..."
+                                />
                               </div>
                             )}
 
@@ -1119,7 +1214,9 @@ export default function AdminDashboard() {
                       </Dialog>
                     </div>
 
-                    {batchSessions.length === 0 ? (
+                    {schedulingViewMode === 'calendar' ? (
+                      <CalendarView events={calendarEvents} title={`Master Schedule - ${activeBatch.name}`} />
+                    ) : batchSessions.length === 0 ? (
                       <Card className="border-dashed border-slate-300 shadow-none py-12 text-center">
                         <CardContent className="space-y-3">
                           <Calendar className="h-10 w-10 text-slate-400 mx-auto" />
@@ -1156,7 +1253,7 @@ export default function AdminDashboard() {
                                 <div className="flex items-center gap-4 text-xs text-slate-600">
                                   <span className="flex items-center gap-1 font-medium">
                                     <UserCheck className="h-3.5 w-3.5 text-slate-400" />
-                                    {session.wiName}
+                                    {session.wiName} <strong className="text-blue-600">({session.jpCount} JP)</strong>
                                   </span>
                                   <span className="flex items-center gap-1 font-medium">
                                     <MapPin className="h-3.5 w-3.5 text-slate-400" />

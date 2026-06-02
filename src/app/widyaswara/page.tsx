@@ -17,12 +17,14 @@ import {
   ChevronLeft, 
   ChevronRight,
   Info,
-  CheckCircle2
+  CheckCircle2,
+  Table as TableIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { CalendarView } from '@/components/calendar-view';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 
 export default function WidyaswaraDashboard() {
@@ -44,6 +46,9 @@ export default function WidyaswaraDashboard() {
       setSelectedWiId(widyaswaras[0].id);
     }
   }, [userRole, setUserRole, selectedWiId, widyaswaras, setSelectedWiId]);
+
+  // View Mode for Schedule (Table vs Calendar)
+  const [viewMode, setViewMode] = useState<'table' | 'calendar'>('calendar');
 
   // Get current active Widyaswara profile
   const activeWi = widyaswaras.find(w => w.id === selectedWiId) || widyaswaras[0];
@@ -85,6 +90,21 @@ export default function WidyaswaraDashboard() {
 
   // Calculate total JP scheduled for this WI
   const totalJp = wiSessions.reduce((sum, s) => sum + s.jpCount, 0);
+
+  // Prepare Calendar Events
+  const calendarEvents = wiSessions.map(s => ({
+    id: s.id,
+    title: s.mapelName,
+    batchName: s.batchName,
+    wiName: s.wiName,
+    date: s.date,
+    startTime: s.startTime,
+    endTime: s.endTime,
+    format: s.format,
+    lokasiName: s.lokasiName,
+    jpCount: s.jpCount,
+    jpKe: s.jpKe
+  }));
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -153,6 +173,11 @@ export default function WidyaswaraDashboard() {
                     Competency Level {activeWi.level} ({activeWi.levelLabel})
                   </span>
                 </div>
+                <div className="text-xs text-slate-500 font-medium">
+                  <span className="font-mono">NIP: {activeWi.nip || 'N/A'}</span>
+                  <span className="mx-2">•</span>
+                  <span>Jabatan: {activeWi.jabatan || 'N/A'}</span>
+                </div>
               </div>
             </div>
 
@@ -178,14 +203,43 @@ export default function WidyaswaraDashboard() {
 
         {/* Schedule Section */}
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Calendar className="h-5 w-5 text-indigo-600" />
               Your Teaching Schedule (Read-Only)
             </h3>
-            <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold">
-              {wiSessions.length} Sessions Scheduled
-            </Badge>
+            
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold">
+                {wiSessions.length} Sessions Scheduled
+              </Badge>
+
+              {/* View Mode Toggle */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                    viewMode === 'table'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <TableIcon className="h-3.5 w-3.5" />
+                  Table View
+                </button>
+                <button
+                  onClick={() => setViewMode('calendar')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                    viewMode === 'calendar'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  Calendar View
+                </button>
+              </div>
+            </div>
           </div>
 
           {wiSessions.length === 0 ? (
@@ -198,6 +252,8 @@ export default function WidyaswaraDashboard() {
                 </p>
               </CardContent>
             </Card>
+          ) : viewMode === 'calendar' ? (
+            <CalendarView events={calendarEvents} title={`Personal Schedule - ${activeWi.name}`} />
           ) : (
             <div className="space-y-8">
               {Object.entries(sessionsByDate).map(([date, sessions]) => (

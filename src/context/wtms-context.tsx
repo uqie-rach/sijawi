@@ -8,6 +8,8 @@ export interface Widyaswara {
   name: string;
   gelar: string;
   email: string;
+  nip: string; // Unique identifier
+  jabatan: 'WI Ahli Pertama' | 'WI Ahli Muda' | 'WI Ahli Madya' | 'WI Ahli Utama';
   level: number; // 1 to 5
   levelLabel: string; // PPPK, Latsar, PKP, PKA, PKM
   jpLastMonth: number; // Static historical data
@@ -67,7 +69,7 @@ interface WTMSContextType {
   // Actions
   setUserRole: (role: 'admin' | 'wi' | null) => void;
   setSelectedWiId: (id: string | null) => void;
-  addWidyaswara: (wi: Omit<Widyaswara, 'id' | 'jpLastMonth'>) => void;
+  addWidyaswara: (wi: Omit<Widyaswara, 'id' | 'jpLastMonth'>) => boolean;
   addKategori: (kat: Omit<Kategori, 'id'>) => void;
   addMapel: (mapel: Omit<Mapel, 'id'>) => void;
   addLokasi: (lok: Omit<Lokasi, 'id'>) => void;
@@ -80,11 +82,11 @@ const WTMSContext = createContext<WTMSContextType | undefined>(undefined);
 
 // Pre-seeded data
 const initialWidyaswaras: Widyaswara[] = [
-  { id: 'wi-1', name: 'Uqie Rachmadie', gelar: 'M.Pd.', email: 'wtms+wi.uqie@gmail.com', level: 5, levelLabel: 'PKM', jpLastMonth: 32 },
-  { id: 'wi-2', name: 'Americo Block', gelar: 'S.T.', email: 'wtms+wi.americo@gmail.com', level: 2, levelLabel: 'Latsar', jpLastMonth: 24 },
-  { id: 'wi-3', name: 'Dr. H. Ahmad Yani', gelar: 'M.Si.', email: 'wtms+wi.yani@gmail.com', level: 4, levelLabel: 'PKA', jpLastMonth: 28 },
-  { id: 'wi-4', name: 'Rina Wijaya', gelar: 'M.Si.', email: 'wtms+wi.rina@gmail.com', level: 3, levelLabel: 'PKP', jpLastMonth: 18 },
-  { id: 'wi-5', name: 'Budi Santoso', gelar: 'S.Kom.', email: 'wtms+wi.budi@gmail.com', level: 1, levelLabel: 'PPPK', jpLastMonth: 12 },
+  { id: 'wi-1', name: 'Uqie Rachmadie', gelar: 'M.Pd.', email: 'wtms+wi.uqie@gmail.com', nip: '197508122001121002', jabatan: 'WI Ahli Utama', level: 5, levelLabel: 'PKM', jpLastMonth: 32 },
+  { id: 'wi-2', name: 'Americo Block', gelar: 'S.T.', email: 'wtms+wi.americo@gmail.com', nip: '198803152010121001', jabatan: 'WI Ahli Muda', level: 2, levelLabel: 'Latsar', jpLastMonth: 24 },
+  { id: 'wi-3', name: 'Dr. H. Ahmad Yani', gelar: 'M.Si.', email: 'wtms+wi.yani@gmail.com', nip: '197001011995031001', jabatan: 'WI Ahli Madya', level: 4, levelLabel: 'PKA', jpLastMonth: 28 },
+  { id: 'wi-4', name: 'Rina Wijaya', gelar: 'M.Si.', email: 'wtms+wi.rina@gmail.com', nip: '198211202006042003', jabatan: 'WI Ahli Madya', level: 3, levelLabel: 'PKP', jpLastMonth: 18 },
+  { id: 'wi-5', name: 'Budi Santoso', gelar: 'S.Kom.', email: 'wtms+wi.budi@gmail.com', nip: '199205102018011002', jabatan: 'WI Ahli Pertama', level: 1, levelLabel: 'PPPK', jpLastMonth: 12 },
 ];
 
 const initialKategori: Kategori[] = [
@@ -192,7 +194,14 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(key, JSON.stringify(data));
   };
 
-  const addWidyaswara = (wi: Omit<Widyaswara, 'id' | 'jpLastMonth'>) => {
+  const addWidyaswara = (wi: Omit<Widyaswara, 'id' | 'jpLastMonth'>): boolean => {
+    // Validate unique NIP
+    const nipExists = widyaswaras.some(w => w.nip === wi.nip);
+    if (nipExists) {
+      toast.error(`Validation Error: Widyaswara with NIP ${wi.nip} already exists!`);
+      return false;
+    }
+
     const newWi: Widyaswara = {
       ...wi,
       id: `wi-${Date.now()}`,
@@ -202,6 +211,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setWidyaswaras(updated);
     saveToStorage('wtms_widyaswaras', updated);
     toast.success(`Widyaswara ${wi.name} successfully added!`);
+    return true;
   };
 
   const addKategori = (kat: Omit<Kategori, 'id'>) => {
