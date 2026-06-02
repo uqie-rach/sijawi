@@ -183,6 +183,12 @@ export default function AdminDashboard() {
     });
   };
 
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setUserRole(null);
+    router.push('/login');
+  };
+
   // Handle Form Submissions
   const handleAddWi = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1824,7 +1830,7 @@ export default function AdminDashboard() {
 
         {/* Footer */}
         <footer className="border-t border-slate-200 bg-white mt-auto">
-          <MadeWithDuad />
+          <MadeWithDyad />
         </footer>
       </main>
     </div>
