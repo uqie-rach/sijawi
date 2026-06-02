@@ -2,6 +2,14 @@ import { sql } from '@/db';
 import { cookies } from 'next/headers';
 
 async function isAdmin() {
+  try {
+    const countResult = await sql`SELECT COUNT(*)::int as count FROM widyaswaras`;
+    if (countResult[0].count === 0) {
+      return true;
+    }
+  } catch (e) {
+    // Jika tabel belum ada atau error lainnya, abaikan dan lanjut ke cek cookie
+  }
   const cookieStore = await cookies();
   const token = cookieStore.get('sessionToken')?.value;
   return token === 'admin-session-token';
