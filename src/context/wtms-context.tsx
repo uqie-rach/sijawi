@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { validateSession } from '@/logic/scheduling-engine';
 
 export interface Widyaswara {
   id: string;
@@ -306,27 +307,6 @@ const initialSessions: Session[] = [
   }
 ];
 
-// Helper to parse JP range (e.g., "1-2" -> [1, 2], "3" -> [3, 3])
-function parseJpRange(jpKe: string): number[] {
-  const clean = jpKe.replace(/\s+/g, '');
-  const parts = clean.split('-');
-  if (parts.length === 1) {
-    const val = parseInt(parts[0]);
-    return isNaN(val) ? [] : [val, val];
-  } else if (parts.length === 2) {
-    const start = parseInt(parts[0]);
-    const end = parseInt(parts[1]);
-    return isNaN(start) || isNaN(end) ? [] : [start, end];
-  }
-  return [];
-}
-
-// Helper to check if two JP ranges overlap
-function isJpOverlapping(range1: number[], range2: number[]): boolean {
-  if (range1.length !== 2 || range2.length !== 2) return false;
-  return Math.max(range1[0], range2[0]) <= Math.min(range1[1], range2[1]);
-}
-
 export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [widyaswaras, setWidyaswaras] = useState<Widyaswara[]>(initialWidyaswaras);
   const [kategoriList, setKategoriList] = useState<Kategori[]>(initialKategori);
@@ -529,109 +509,20 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Session CRUD
   const addSession = (sessionData: Omit<Session, 'id'>) => {
-    // 1. Validate Hierarchy Restriction
-    const wi = widyaswaras.find(w => w.id === sessionData.wiId);
-    const batch = batches.find(b => b.id === sessionData.batchId);
-    const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
-
-    if (!wi || !batch || !category) {
-      return { success: false, error: "Invalid Widyaswara, Batch, or Category selection." };
-    }
-
-    if (wi.level < category.minWeight) {
-      const errorMsg = `Hierarchy Restriction: ${wi.name} (Level ${wi.level}) does not have sufficient competency level for ${category.name} (Requires Level ${category.minWeight}).`;
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-
-    // 2. Validate Operational Hours for Klasikal
-    if (sessionData.format === 'Klasikal') {
-      const startHour = parseInt(sessionData.startTime.split(':')[0]);
-      const endHour = parseInt(sessionData.endTime.split(':')[0]);
-      const endMin = parseInt(sessionData.endTime.split(':')[1]);
-      
-      if (startHour < 8 || endHour > 17 || (endHour === 17 && endMin > 0)) {
-        const errorMsg = "Operational Hours Restriction: Klasikal sessions must be scheduled between 08:00 and 17:00.";
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-
-      if (!sessionData.lokasiId) {
-        const errorMsg = "Location is required for Klasikal format.";
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
-    // 3. Validate Mapel JP accumulation (Max 6 JP per Mapel in a batch)
-    const existingMapelSessions = sessions.filter(s => s.batchId === sessionData.batchId && s.mapelId === sessionData.mapelId);
-    const currentJpSum = existingMapelSessions.reduce((sum, s) => sum + s.jpCount, 0);
-    const mapel = mapelList.find(m => m.id === sessionData.mapelId);
-    const maxJp = mapel ? mapel.jpTotal : 6;
-
-    if (currentJpSum + sessionData.jpCount > maxJp) {
-      const errorMsg = `Mapel Constraint: Total JP for ${mapel?.name || 'this subject'} cannot exceed ${maxJp} JP. Currently scheduled: ${currentJpSum} JP. Attempted to add: ${sessionData.jpCount} JP.`;
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-
-    // 4. Validate JP Conflict Engine Validation (jp_ke Overlap Prevention)
-    const newJpRange = parseJpRange(sessionData.jpKe);
-    if (newJpRange.length === 2) {
-      const jpCollision = sessions.find(s => 
-        s.batchId === sessionData.batchId &&
-        s.date === sessionData.date &&
-        isJpOverlapping(newJpRange, parseJpRange(s.jpKe))
-      );
-
-      if (jpCollision) {
-        const errorMsg = `❌ Slot JP tersebut sudah terisi pada tanggal ini! (Collision with existing JP ${jpCollision.jpKe})`;
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
-    // 5. Validate WI Collision (Widyaswara cannot teach in two places at the same time)
-    const wiCollision = sessions.find(s => 
-      s.wiId === sessionData.wiId && 
-      s.date === sessionData.date && 
-      (
-        (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
-        (sessionData.endTime > s.startTime && sessionData.endTime <= s.endTime) ||
-        (sessionData.startTime <= s.startTime && sessionData.endTime >= s.endTime)
-      )
+    const validation = validateSession(
+      sessionData,
+      sessions,
+      widyaswaras,
+      batches,
+      kategoriList,
+      mapelList,
+      lokasiList
     );
 
-    if (wiCollision) {
-      const collidingBatch = batches.find(b => b.id === wiCollision.batchId);
-      const errorMsg = `Widyaswara Collision: ${wi.name} is already scheduled to teach in batch "${collidingBatch?.name || 'Another Batch'}" from ${wiCollision.startTime} to ${wiCollision.endTime} on this day.`;
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
+    if (!validation.success) {
+      return { success: false, error: validation.error };
     }
 
-    // 6. Validate Location Clash (For Klasikal format)
-    if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
-      const locationClash = sessions.find(s => 
-        s.format === 'Klasikal' &&
-        s.lokasiId === sessionData.lokasiId &&
-        s.date === sessionData.date &&
-        (
-          (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
-          (sessionData.endTime > s.startTime && sessionData.endTime <= s.endTime) ||
-          (sessionData.startTime <= s.startTime && sessionData.endTime >= s.endTime)
-        )
-      );
-
-      if (locationClash) {
-        const collidingBatch = batches.find(b => b.id === locationClash.batchId);
-        const locName = lokasiList.find(l => l.id === sessionData.lokasiId)?.name || 'this location';
-        const errorMsg = `Location Clash: ${locName} is already booked for batch "${collidingBatch?.name || 'Another Batch'}" from ${locationClash.startTime} to ${locationClash.endTime} on this day.`;
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
-    // All validations passed!
     const newSession: Session = {
       ...sessionData,
       id: `sess-${Date.now()}`
@@ -644,112 +535,21 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateSession = (id: string, sessionData: Omit<Session, 'id'>) => {
-    // 1. Validate Hierarchy Restriction
-    const wi = widyaswaras.find(w => w.id === sessionData.wiId);
-    const batch = batches.find(b => b.id === sessionData.batchId);
-    const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
-
-    if (!wi || !batch || !category) {
-      return { success: false, error: "Invalid Widyaswara, Batch, or Category selection." };
-    }
-
-    if (wi.level < category.minWeight) {
-      const errorMsg = `Hierarchy Restriction: ${wi.name} (Level ${wi.level}) does not have sufficient competency level for ${category.name} (Requires Level ${category.minWeight}).`;
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-
-    // 2. Validate Operational Hours for Klasikal
-    if (sessionData.format === 'Klasikal') {
-      const startHour = parseInt(sessionData.startTime.split(':')[0]);
-      const endHour = parseInt(sessionData.endTime.split(':')[0]);
-      const endMin = parseInt(sessionData.endTime.split(':')[1]);
-      
-      if (startHour < 8 || endHour > 17 || (endHour === 17 && endMin > 0)) {
-        const errorMsg = "Operational Hours Restriction: Klasikal sessions must be scheduled between 08:00 and 17:00.";
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-
-      if (!sessionData.lokasiId) {
-        const errorMsg = "Location is required for Klasikal format.";
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
-    // 3. Validate Mapel JP accumulation (Max 6 JP per Mapel in a batch)
-    const existingMapelSessions = sessions.filter(s => s.id !== id && s.batchId === sessionData.batchId && s.mapelId === sessionData.mapelId);
-    const currentJpSum = existingMapelSessions.reduce((sum, s) => sum + s.jpCount, 0);
-    const mapel = mapelList.find(m => m.id === sessionData.mapelId);
-    const maxJp = mapel ? mapel.jpTotal : 6;
-
-    if (currentJpSum + sessionData.jpCount > maxJp) {
-      const errorMsg = `Mapel Constraint: Total JP for ${mapel?.name || 'this subject'} cannot exceed ${maxJp} JP. Currently scheduled: ${currentJpSum} JP. Attempted to add: ${sessionData.jpCount} JP.`;
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-
-    // 4. Validate JP Conflict Engine Validation (jp_ke Overlap Prevention)
-    const newJpRange = parseJpRange(sessionData.jpKe);
-    if (newJpRange.length === 2) {
-      const jpCollision = sessions.find(s => 
-        s.id !== id &&
-        s.batchId === sessionData.batchId &&
-        s.date === sessionData.date &&
-        isJpOverlapping(newJpRange, parseJpRange(s.jpKe))
-      );
-
-      if (jpCollision) {
-        const errorMsg = `❌ Slot JP tersebut sudah terisi pada tanggal ini! (Collision with existing JP ${jpCollision.jpKe})`;
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
-    // 5. Validate WI Collision (Widyaswara cannot teach in two places at the same time)
-    const wiCollision = sessions.find(s => 
-      s.id !== id &&
-      s.wiId === sessionData.wiId && 
-      s.date === sessionData.date && 
-      (
-        (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
-        (sessionData.endTime > s.startTime && sessionData.endTime <= s.endTime) ||
-        (sessionData.startTime <= s.startTime && sessionData.endTime >= s.endTime)
-      )
+    const validation = validateSession(
+      sessionData,
+      sessions,
+      widyaswaras,
+      batches,
+      kategoriList,
+      mapelList,
+      lokasiList,
+      id
     );
 
-    if (wiCollision) {
-      const collidingBatch = batches.find(b => b.id === wiCollision.batchId);
-      const errorMsg = `Widyaswara Collision: ${wi.name} is already scheduled to teach in batch "${collidingBatch?.name || 'Another Batch'}" from ${wiCollision.startTime} to ${wiCollision.endTime} on this day.`;
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
+    if (!validation.success) {
+      return { success: false, error: validation.error };
     }
 
-    // 6. Validate Location Clash (For Klasikal format)
-    if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
-      const locationClash = sessions.find(s => 
-        s.id !== id &&
-        s.format === 'Klasikal' &&
-        s.lokasiId === sessionData.lokasiId &&
-        s.date === sessionData.date &&
-        (
-          (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
-          (sessionData.endTime > s.startTime && sessionData.endTime <= s.endTime) ||
-          (sessionData.startTime <= s.startTime && sessionData.endTime >= s.endTime)
-        )
-      );
-
-      if (locationClash) {
-        const collidingBatch = batches.find(b => b.id === locationClash.batchId);
-        const locName = lokasiList.find(l => l.id === sessionData.lokasiId)?.name || 'this location';
-        const errorMsg = `Location Clash: ${locName} is already booked for batch "${collidingBatch?.name || 'Another Batch'}" from ${locationClash.startTime} to ${locationClash.endTime} on this day.`;
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
-    // All validations passed!
     const updated = sessions.map(s => s.id === id ? { ...s, ...sessionData } : s);
     setSessions(updated);
     saveToStorage('wtms_sessions', updated);

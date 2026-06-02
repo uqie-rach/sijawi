@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useWTMS, Widyaswara, Batch, Session, Mapel, Lokasi, Kategori } from '@/context/wtms-context';
-import { useWidyaswaras, usePelatihan, useScheduling, useReports } from '@/hooks/use-wtms-api';
+import React from 'react';
+import { useAdminDashboard } from '@/features/admin/hooks/use-admin-dashboard';
 import { 
   LayoutDashboard, 
   Database, 
@@ -13,19 +11,12 @@ import {
   Plus, 
   Trash2, 
   Edit,
-  AlertTriangle, 
   Clock, 
   MapPin, 
   BookOpen, 
   UserCheck, 
-  Layers, 
   Calendar, 
-  TrendingUp, 
-  CheckCircle2, 
-  XCircle,
   Info,
-  Sliders,
-  Sparkles,
   GraduationCap,
   Table as TableIcon,
   Download,
@@ -46,131 +37,111 @@ import { Progress } from '@/components/ui/progress';
 import { Combobox } from '@/components/ui/combobox';
 import { CalendarView } from '@/components/calendar-view';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { toast } from 'sonner';
+import { transformLoadBalancingData, transformFundingDistributionData } from '@/utils/report-helpers';
 
 // Recharts imports
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 export default function AdminDashboard() {
-  const router = useRouter();
-  const { 
-    userRole, 
-    setUserRole, 
-    kategoriList, 
-    mapelList, 
-    lokasiList, 
-    batches,
-    sessions,
-    isAuthenticated,
+  const {
+    // State
+    activeTab,
+    setActiveTab,
+    schedulingViewMode,
+    setSchedulingViewMode,
+    selectedBatchId,
+    setSelectedBatchId,
+    activeBatch,
+    batchSessions,
+    mapelStatus,
+    wiData,
+    batchData,
+    allSessions,
+    reportData,
+    kategoriList,
+    mapelList,
+    lokasiList,
     setIsAuthenticated,
-    addWidyaswara, 
+    setUserRole,
+
+    // Form States
+    wiForm,
+    setWiForm,
+    editingWiId,
+    setEditingWiId,
+    katForm,
+    setKatForm,
+    editingKatId,
+    setEditingKatId,
+    mapelForm,
+    setMapelForm,
+    editingMapelId,
+    setEditingMapelId,
+    lokForm,
+    setLokForm,
+    editingLokId,
+    setEditingLokId,
+    batchForm,
+    setBatchForm,
+    editingBatchId,
+    setEditingBatchId,
+    sessionForm,
+    setSessionForm,
+    editingSessionId,
+    setEditingSessionId,
+
+    // Dialog States
+    isWiDialogOpen,
+    setIsWiDialogOpen,
+    isKatDialogOpen,
+    setIsKatDialogOpen,
+    isMapelDialogOpen,
+    setIsMapelDialogOpen,
+    isLokDialogOpen,
+    setIsLokDialogOpen,
+    isBatchDialogOpen,
+    setIsBatchDialogOpen,
+    isSessionDialogOpen,
+    setIsSessionDialogOpen,
+
+    // Filtering & Pagination
+    searchQuery,
+    setSearchQuery,
+    filterPola,
+    setFilterPola,
+    startDateFilter,
+    setStartDateFilter,
+    endDateFilter,
+    setEndDateFilter,
+    currentPage,
+    setCurrentPage,
+    rowsPerPage,
+    totalRows,
+    totalPages,
+    paginatedRecapData,
+
+    // Actions
+    addWidyaswara,
     updateWidyaswara,
     deleteWidyaswara,
-    addKategori, 
+    addKategori,
     updateKategori,
     deleteKategori,
-    addMapel, 
+    addMapel,
     updateMapel,
     deleteMapel,
-    addLokasi, 
+    addLokasi,
     updateLokasi,
     deleteLokasi,
     addBatch,
     updateBatch,
     deleteBatch,
-    updateSession
-  } = useWTMS();
-
-  // Secure Route Guard
-  React.useEffect(() => {
-    if (!isAuthenticated || userRole !== 'admin') {
-      router.push('/login');
-    }
-  }, [isAuthenticated, userRole, router]);
-
-  // Active Tab in Sidebar
-  const [activeTab, setActiveTab] = useState<'overview' | 'master' | 'scheduling' | 'reports'>('overview');
-  // View Mode for Scheduling (Table vs Calendar)
-  const [schedulingViewMode, setSchedulingViewMode] = useState<'table' | 'calendar'>('table');
-
-  // Custom API Hooks
-  const { widyaswaras: wiData } = useWidyaswaras();
-  const { batches: batchData } = usePelatihan();
-  const { sessions: allSessions, deleteSession, addSession } = useScheduling();
-  const reportData = useReports();
-
-  // Selected Batch for Scheduling Engine
-  const [selectedBatchId, setSelectedBatchId] = useState<string>(batchData[0]?.id || '');
-  const { sessions: batchSessions, mapelStatus } = useScheduling(selectedBatchId);
-  const activeBatch = batchData.find(b => b.id === selectedBatchId);
-
-  // Form States
-  // 1. Widyaswara Form
-  const [wiForm, setWiForm] = useState({ 
-    name: '', 
-    gelar: '', 
-    email: '', 
-    nip: '', 
-    jabatan: 'WI Ahli Madya' as any,
-    level: '3' 
-  });
-  const [editingWiId, setEditingWiId] = useState<string | null>(null);
-
-  // 2. Kategori Form
-  const [katForm, setKatForm] = useState({ name: '', minWeight: '3' });
-  const [editingKatId, setEditingKatId] = useState<string | null>(null);
-
-  // 3. Mapel Form
-  const [mapelForm, setMapelForm] = useState({ name: '', kategoriId: '', jpTotal: '4' });
-  const [editingMapelId, setEditingMapelId] = useState<string | null>(null);
-
-  // 4. Lokasi Form
-  const [lokForm, setLokForm] = useState({ name: '' });
-  const [editingLokId, setEditingLokId] = useState<string | null>(null);
-
-  // 5. Batch Form
-  const [batchForm, setBatchForm] = useState({ name: '', kategoriId: '', pola: 'APBD' as 'APBD' | 'Kontribusi' | 'Kemitraan', startDate: '2026-03-01', endDate: '2026-03-15' });
-  const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
-
-  // 6. Session Form
-  const [sessionForm, setSessionForm] = useState({
-    mapelId: '',
-    wiId: '',
-    date: '2026-03-02',
-    startTime: '08:00',
-    endTime: '09:30',
-    format: 'Klasikal' as 'Klasikal' | 'Virtual' | 'Asinkron',
-    lokasiId: '',
-    jpKe: '1-2',
-    jpCount: '2'
-  });
-  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
-
-  // Update default date in session form when active batch changes
-  React.useEffect(() => {
-    if (activeBatch) {
-      setSessionForm(prev => ({
-        ...prev,
-        date: activeBatch.startDate
-      }));
-    }
-  }, [activeBatch?.id, activeBatch?.startDate]);
-
-  // Dialog Open States
-  const [isWiDialogOpen, setIsWiDialogOpen] = useState(false);
-  const [isKatDialogOpen, setIsKatDialogOpen] = useState(false);
-  const [isMapelDialogOpen, setIsMapelDialogOpen] = useState(false);
-  const [isLokDialogOpen, setIsLokDialogOpen] = useState(false);
-  const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false);
-  const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
-
-  // Advanced Reports Filtering & Pagination States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterPola, setFilterPola] = useState<string>('ALL');
-  const [startDateFilter, setStartDateFilter] = useState('');
-  const [endDateFilter, setEndDateFilter] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+    addSession,
+    updateSession,
+    deleteSession,
+    handleExportGlobalRecap,
+    handleExportIndividualReport
+  } = useAdminDashboard();
 
   // Helper to format date to Indonesian style
   const formatIndoDate = (dateStr: string) => {
@@ -186,177 +157,6 @@ export default function AdminDashboard() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setUserRole(null);
-    router.push('/login');
-  };
-
-  // Handle Form Submissions
-  const handleAddWi = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!wiForm.name || !wiForm.email || !wiForm.nip) return;
-    
-    const levelNum = parseInt(wiForm.level);
-    const labels = ['PPPK', 'Latsar', 'PKP', 'PKA', 'PKM'];
-    const levelLabel = labels[levelNum - 1] || 'PPPK';
-
-    if (editingWiId) {
-      const success = updateWidyaswara(editingWiId, {
-        name: wiForm.name,
-        gelar: wiForm.gelar,
-        email: wiForm.email,
-        nip: wiForm.nip,
-        jabatan: wiForm.jabatan,
-        level: levelNum,
-        levelLabel
-      });
-      if (success) {
-        setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' });
-        setEditingWiId(null);
-        setIsWiDialogOpen(false);
-      }
-    } else {
-      const success = addWidyaswara({
-        name: wiForm.name,
-        gelar: wiForm.gelar,
-        email: wiForm.email,
-        nip: wiForm.nip,
-        jabatan: wiForm.jabatan,
-        level: levelNum,
-        levelLabel
-      });
-      if (success) {
-        setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' });
-        setIsWiDialogOpen(false);
-      }
-    }
-  };
-
-  const handleAddKat = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!katForm.name) return;
-    if (editingKatId) {
-      updateKategori(editingKatId, {
-        name: katForm.name,
-        minWeight: parseInt(katForm.minWeight)
-      });
-      setEditingKatId(null);
-    } else {
-      addKategori({
-        name: katForm.name,
-        minWeight: parseInt(katForm.minWeight)
-      });
-    }
-    setKatForm({ name: '', minWeight: '3' });
-    setIsKatDialogOpen(false);
-  };
-
-  const handleAddMapel = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!mapelForm.name || !mapelForm.kategoriId) return;
-    if (editingMapelId) {
-      updateMapel(editingMapelId, {
-        name: mapelForm.name,
-        kategoriId: mapelForm.kategoriId,
-        jpTotal: parseInt(mapelForm.jpTotal)
-      });
-      setEditingMapelId(null);
-    } else {
-      addMapel({
-        name: mapelForm.name,
-        kategoriId: mapelForm.kategoriId,
-        jpTotal: parseInt(mapelForm.jpTotal)
-      });
-    }
-    setMapelForm({ name: '', kategoriId: '', jpTotal: '4' });
-    setIsMapelDialogOpen(false);
-  };
-
-  const handleAddLok = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!lokForm.name) return;
-    if (editingLokId) {
-      updateLokasi(editingLokId, { name: lokForm.name });
-      setEditingLokId(null);
-    } else {
-      addLokasi({ name: lokForm.name });
-    }
-    setLokForm({ name: '' });
-    setIsLokDialogOpen(false);
-  };
-
-  const handleAddBatch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!batchForm.name || !batchForm.kategoriId) return;
-    if (editingBatchId) {
-      updateBatch(editingBatchId, batchForm);
-      setEditingBatchId(null);
-    } else {
-      addBatch(batchForm);
-    }
-    setBatchForm({ name: '', kategoriId: '', pola: 'APBD', startDate: '2026-03-01', endDate: '2026-03-15' });
-    setIsBatchDialogOpen(false);
-  };
-
-  const handleAddSession = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!sessionForm.mapelId || !sessionForm.wiId) return;
-
-    if (editingSessionId) {
-      const res = updateSession(editingSessionId, {
-        batchId: selectedBatchId,
-        mapelId: sessionForm.mapelId,
-        wiId: sessionForm.wiId,
-        date: sessionForm.date,
-        startTime: sessionForm.startTime,
-        endTime: sessionForm.endTime,
-        format: sessionForm.format,
-        lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
-        jpKe: sessionForm.jpKe,
-        jpCount: parseInt(sessionForm.jpCount)
-      });
-      if (res.success) {
-        setIsSessionDialogOpen(false);
-        setEditingSessionId(null);
-        setSessionForm({
-          mapelId: '',
-          wiId: '',
-          date: activeBatch ? activeBatch.startDate : '2026-03-02',
-          startTime: '08:00',
-          endTime: '09:30',
-          format: 'Klasikal',
-          lokasiId: '',
-          jpKe: '1-2',
-          jpCount: '2'
-        });
-      }
-    } else {
-      const res = addSession({
-        batchId: selectedBatchId,
-        mapelId: sessionForm.mapelId,
-        wiId: sessionForm.wiId,
-        date: sessionForm.date,
-        startTime: sessionForm.startTime,
-        endTime: sessionForm.endTime,
-        format: sessionForm.format,
-        lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
-        jpKe: sessionForm.jpKe,
-        jpCount: parseInt(sessionForm.jpCount)
-      });
-
-      if (res.success) {
-        setIsSessionDialogOpen(false);
-        setSessionForm({
-          mapelId: '',
-          wiId: '',
-          date: activeBatch ? activeBatch.startDate : '2026-03-02',
-          startTime: '08:00',
-          endTime: '09:30',
-          format: 'Klasikal',
-          lokasiId: '',
-          jpKe: '1-2',
-          jpCount: '2'
-        });
-      }
-    }
   };
 
   // Prepare Combobox Options
@@ -398,114 +198,8 @@ export default function AdminDashboard() {
   }));
 
   // Chart Data Preparation
-  const barChartData = wiData.map(wi => ({
-    name: wi.name.split(' ')[0], // Short name for X-axis
-    fullName: `${wi.name}, ${wi.gelar}`,
-    'Total JP': wi.jpCurrentMonth
-  }));
-
-  const pieChartData = [
-    { name: 'APBD', value: reportData.polaBreakdown.apbd, color: '#3b82f6' },
-    { name: 'Kontribusi', value: reportData.polaBreakdown.kontribusi, color: '#10b981' },
-    { name: 'Kemitraan', value: reportData.polaBreakdown.kemitraan, color: '#f59e0b' }
-  ].filter(item => item.value > 0);
-
-  // Advanced Filtering for Monthly Recap Table
-  const filteredRecapData = wiData.filter(wi => {
-    const matchesSearch = wi.name.toLowerCase().includes(searchQuery.toLowerCase()) || wi.nip.includes(searchQuery);
-    
-    // Calculate dynamic JP based on filters
-    const wiSessions = sessions.filter(s => {
-      if (s.wiId !== wi.id) return false;
-      
-      // Date Range Filter
-      if (startDateFilter && s.date < startDateFilter) return false;
-      if (endDateFilter && s.date > endDateFilter) return false;
-      
-      // Pola Filter
-      if (filterPola !== 'ALL') {
-        const batch = batches.find(b => b.id === s.batchId);
-        if (!batch || batch.pola !== filterPola) return false;
-      }
-      
-      return true;
-    });
-
-    return matchesSearch && (wiSessions.length > 0 || searchQuery === '');
-  }).map(wi => {
-    // Calculate filtered JP breakdown
-    const wiSessions = sessions.filter(s => {
-      if (s.wiId !== wi.id) return false;
-      if (startDateFilter && s.date < startDateFilter) return false;
-      if (endDateFilter && s.date > endDateFilter) return false;
-      if (filterPola !== 'ALL') {
-        const batch = batches.find(b => b.id === s.batchId);
-        if (!batch || batch.pola !== filterPola) return false;
-      }
-      return true;
-    });
-
-    let apbd = 0;
-    let kontribusi = 0;
-    let kemitraan = 0;
-
-    wiSessions.forEach(s => {
-      const batch = batches.find(b => b.id === s.batchId);
-      if (batch) {
-        if (batch.pola === 'APBD') apbd += s.jpCount;
-        else if (batch.pola === 'Kontribusi') kontribusi += s.jpCount;
-        else if (batch.pola === 'Kemitraan') kemitraan += s.jpCount;
-      }
-    });
-
-    return {
-      ...wi,
-      apbd,
-      kontribusi,
-      kemitraan,
-      grandTotal: apbd + kontribusi + kemitraan
-    };
-  });
-
-  // Pagination Logic
-  const totalRows = filteredRecapData.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
-  const paginatedRecapData = filteredRecapData.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
-  );
-
-  // Export Global Recap (Simulated .docx layout generation)
-  const handleExportGlobalRecap = () => {
-    const header = "LAPORAN REKAPITULASI GLOBAL BULANAN WIDYASWARA\n==================================================\n\n";
-    const tableHeader = "NIP | Nama Widyaswara | Jabatan | APBD | Kontribusi | Kemitraan | Grand Total JP\n";
-    const rows = filteredRecapData.map(wi => 
-      `${wi.nip} | ${wi.name}, ${wi.gelar} | ${wi.jabatan} | ${wi.apbd} JP | ${wi.kontribusi} JP | ${wi.kemitraan} JP | ${wi.grandTotal} JP`
-    ).join('\n');
-    
-    const blob = new Blob([header + tableHeader + rows], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Global_Recap_Report_${new Date().toISOString().split('T')[0]}.txt`;
-    link.click();
-    toast.success("Global Recap exported successfully!");
-  };
-
-  // Export Individual WI Report (Simulated .docx layout generation)
-  const handleExportIndividualReport = (wi: any) => {
-    const header = `LAPORAN KINERJA INDIVIDU WIDYASWARA\n====================================\n\n`;
-    const metadata = `NIP: ${wi.nip}\nNama: ${wi.name}, ${wi.gelar}\nJabatan: ${wi.jabatan}\nCompetency Level: Level ${wi.level} (${wi.levelLabel})\n\n`;
-    const summary = `REKAPITULASI JAM PELAJARAN (JP):\n--------------------------------\nAPBD: ${wi.apbd} JP\nKontribusi: ${wi.kontribusi} JP\nKemitraan: ${wi.kemitraan} JP\nGrand Total: ${wi.grandTotal} JP\n`;
-    
-    const blob = new Blob([header + metadata + summary], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `WI_Report_${wi.name.replace(/\s+/g, '_')}.txt`;
-    link.click();
-    toast.success(`Individual report for ${wi.name} exported successfully!`);
-  };
+  const barChartData = transformLoadBalancingData(wiData);
+  const pieChartData = transformFundingDistributionData(reportData.polaBreakdown);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50">
