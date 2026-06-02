@@ -1,145 +1,80 @@
-'use server';
-
-import { prisma } from '@/lib/prisma';
+import { sql } from '@/db';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 
-// Helper to check if user is admin
 async function isAdmin() {
-  const token = cookies().get('sessionToken')?.value;
-  if (!token) return false;
+  const cookieStore = await cookies();
+  const token = cookieStore.get('sessionToken')?.value;
   return token === 'admin-session-token';
 }
 
-export async function POST(request) {
-  if (!(await isAdmin)()) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  const sessionData = await request.json();
-  const {
-    batchId,
-    mapelId,
-    wiId,
-    date,
-    startTime,
-    endTime,
-    format,
-    lokasiId,
-    jpKe,
-    jpCount,
-  } = sessionData;
-
-  // Convert dates to UTC
-  const dateUTC = new Date(date).toISOString().split('T')[0]; // YYYY-MM-DD
-  const startTimeUTC = new Date(date + 'T' + startTime).toISOString();
-  const endTimeUTC = new Date(date + 'T' + endTime).toISOString();
-
-  // Validate required fields
-  if (!batchId || !mapelId || !wiId || !dateUTC || !startTimeUTC || !endTimeUTC || !format) {
-    return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
+export async function GET() {
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Hierarchy validation
-      const wi = await tx.widyaswara.findUnique({ where: { id: wiId } });
-      const batch = await tx.batches.findUnique({ where: { id: batchId } });
-      const mapel = await tx.mataPelatihan.findUnique({ where: { id: mapelId } });
-      const category = batch ? await tx.kategoriPelatihan.findUnique({ where: { id: batch.kategoriId } }) : null;
-
-      if (!wi || !batch || !mapel || !category) {
-        throw new Error('Invalid WI, batch, mapel, or category');
-      }
-
-      if (wi.level < category.minWeight) {
-        throw new Error(`Hierarchy validation failed: ${wi.name} (Level ${wi.level}) < ${category.name} (Min Level ${category.minWeight})`);
-      }
-
-      // 2. Time conflict check (UTC)
-      const existingSession = await tx.sessions.findFirst({
-        where: {
-          batchId,
-          date: dateUTC,
-          OR: [
-            { start_time: { lte: startTimeUTC }, end_time: { gte: startTimeUTC } },
-            { start_time: { lte: endTimeUTC }, end_time: { gte: endTimeUTC } },
-            { start_time: { lte: startTimeUTC }, end_time: { gte: endTimeUTC } },
-          ],
-        },
-      });
-
-      if (existingSession) {
-        throw new Error('Time conflict detected with existing session');
-      }
-
-      // 3. Location clash for Klasikal
-      if (format === 'Klasikal' && lokasiId) {
-        const locationConflict = await tx.sessions.findFirst({
-          where: {
-            batchId,
-            date: dateUTC,
-            lokasi_id: lokasiId,
-            OR: [
-              { start_time: { lte: startTimeUTC }, end_time: { gte: startTimeUTC } },
-              { start_time: { lte: endTimeUTC }, end_time: { gte: endTimeUTC } },
-              { start_time: { lte: startTimeUTC }, end_time: { gte: endTimeUTC } },
-            ],
-          },
-        });
-
-        if (locationConflict) {
-          throw new Error('Location is already booked during this time slot');
-        }
-      }
-
-      // 4. JP accumulation
-      const currentJpSum = await tx.sessions.aggregate({
-        _sum: { jp_count: true },
-        where: { batchId, mapelId },
-      });
-
-      const maxJp = mapel.jp_total;
-      if ((currentJpSum._sum.jp_count || 0) + parseInt(jpCount) > maxJp) {
-        throw new Error(`JP accumulation exceeded limit: ${maxJp} JP max for ${mapel.name}`);
-      }
-
-      // 5. Create session with UTC timestamps
-      const newSession = await tx.sessions.create({
-        data: {
-          batch_id: batchId,
-          mapel_id: mapelId,
-          wi_id: wiId,
-          date: dateUTC,
-          start_time: startTimeUTC,
-          end_time: endTimeUTC,
-          format,
-          lokasi_id: lokasiId,
-          jp_ke: jpKe,
-          jp_count: parseInt(jpCount),
-        },
-      });
-
-      return newSession;
-    });
-
-    return new Response(JSON.stringify(result), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    console.error('Error creating session:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const rows = await sql`SELECT * FROM sessions ORDER BY date ASC, start_time ASC`;
+    const sessions = rows.map(r => ({
+      id: r.id,
+      batchId: r.batch_id,
+      mapelId: r.mapel_id,
+      wiId: r.wi_id,
+      date: r.date,
+      startTime: r.start_time,
+      endTime: r.end_time,
+      format: r.format,
+      lokasiId: r.lokasi_id || undefined,
+      jpKe: r.jp_ke,
+      jpCount: r.jp_count
+    }));
+    return Response.json(sessions);
+  } catch (error: any) {
+    return Response.json({ error: error.message }, { status: 500 });
   }
 }
 
-// Other methods remain similar
+export async function POST(request: Request) {
+  if (!(await isAdmin())) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  try {
+    const body = await request.json();
+    const { id, batchId, mapelId, wiId, date, startTime, endTime, format, lokasiId, jpKe, jpCount } = body;
+    await sql`
+      INSERT INTO sessions (id, batch_id, mapel_id, wi_id, date, start_time, end_time, format, lokasi_id, jp_ke, jp_count)
+      VALUES (${id}, ${batchId}, ${mapelId}, ${wiId}, ${date}, ${startTime}, ${endTime}, ${format}, ${lokasiId || null}, ${jpKe}, ${jpCount})
+    `;
+    return Response.json({ success: true });
+  } catch (error: any) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  if (!(await isAdmin())) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  try {
+    const body = await request.json();
+    const { id, batchId, mapelId, wiId, date, startTime, endTime, format, lokasiId, jpKe, jpCount } = body;
+    await sql`
+      UPDATE sessions
+      SET batch_id = ${batchId}, mapel_id = ${mapelId}, wi_id = ${wiId}, date = ${date}, start_time = ${startTime}, end_time = ${endTime}, format = ${format}, lokasi_id = ${lokasiId || null}, jp_ke = ${jpKe}, jp_count = ${jpCount}
+      WHERE id = ${id}
+    `;
+    return Response.json({ success: true });
+  } catch (error: any) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  if (!(await isAdmin())) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) return Response.json({ error: 'ID is required' }, { status: 400 });
+    await sql`DELETE FROM sessions WHERE id = ${id}`;
+    return Response.json({ success: true });
+  } catch (error: any) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+}
