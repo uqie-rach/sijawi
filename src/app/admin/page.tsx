@@ -119,7 +119,7 @@ export default function AdminDashboard() {
         date: activeBatch.startDate
       }));
     }
-  }, [activeBatch]);
+  }, [activeBatch?.id, activeBatch?.startDate]);
 
   // Dialog Open States
   const [isWiDialogOpen, setIsWiDialogOpen] = useState(false);
