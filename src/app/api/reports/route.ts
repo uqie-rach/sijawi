@@ -28,57 +28,58 @@ export async function GET(request) {
     const search = url.searchParams.get('search') || '';
     const pola = url.searchParams.get('pola') || '';
 
+    // Convert dates to UTC
+    const startDateUTC = startDate ? new Date(startDate).toISOString().split('T')[0] : null;
+    const endDateUTC = endDate ? new Date(endDate).toISOString().split('T')[0] : null;
+
     const skip = (page - 1) * pageSize;
     const take = pageSize;
 
     // Build filter object
     const whereClause = {};
 
-    if (startDate) whereClause.date = { gte: startDate };
-    if (endDate) whereClause.date = { lte: endDate };
+    if (startDateUTC) whereClause.date = { gte: startDateUTC };
+    if (endDateUTC) whereClause.date = { lte: endDateUTC };
     if (search) {
       whereClause OR: [
-        { wiName: { contains: search, mode: 'insensitive' } },
-        { wiEmail: { contains: search, mode: 'insensitive' } },
+        { wi_name: { contains: search, mode: 'insensitive' } },
+        { wi_email: { contains: search, mode: 'insensitive' } },
       ];
     }
     if (pola) {
       whereClause.pola = pola;
     }
 
-    // Get total count for pagination
-    const totalCount = await prisma.sessionCount({
+    // Get total count
+    const totalCount = await prisma.session.count({
       where: whereClause,
     });
 
-    // Get paginated sessions with aggregation    const sessions = await prisma.session.findMany({
+    // Get paginated sessions
+    const sessions = await prisma.session.findMany({
       skip,
       take,
       where: whereClause,
       include: {
-        batch: {
-          include: {
-            kategori: true,
-          },
-        },
+        batch: { include: { kategori: true } },
         wi: true,
         mapel: true,
       },
       orderBy: { date: 'desc' },
     });
 
-    // Calculate aggregated statistics
+    // Aggregations
     const formatBreakdown = await prisma.session.groupBy({
       by: { format: true },
-      _sum: { jpCount: true },
+      _sum: { jp_count: true },
     });
 
     const polaBreakdown = await prisma.session.groupBy({
       by: { batch: { pola: true } },
-      _sum: { jpCount: true },
+      _sum: { jp_count: true },
     });
 
-    // Get distinct WI names for search filtering
+    // WI names for search
     const wiNames = await prisma.widyaswara.findMany({
       where: search ? { email: { contains: search, mode: 'insensitive' } } : {},
       select: { name: true },
