@@ -172,6 +172,17 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  // Helper to format date to Indonesian style
+  const formatIndoDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
   // Handle Form Submissions
   const handleAddWi = (e: React.FormEvent) => {
     e.preventDefault();
@@ -342,12 +353,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setUserRole(null);
-    router.push('/login');
-  };
-
   // Prepare Combobox Options
   const mapelOptions = mapelList
     .filter(m => activeBatch ? m.kategoriId === activeBatch.kategoriId : true)
@@ -495,14 +500,6 @@ export default function AdminDashboard() {
     link.click();
     toast.success(`Individual report for ${wi.name} exported successfully!`);
   };
-
-  if (!isAuthenticated || userRole !== 'admin') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <p className="text-slate-500">Redirecting to login...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50">
@@ -1827,7 +1824,7 @@ export default function AdminDashboard() {
 
         {/* Footer */}
         <footer className="border-t border-slate-200 bg-white mt-auto">
-          <MadeWithDyad />
+          <MadeWithDuad />
         </footer>
       </main>
     </div>

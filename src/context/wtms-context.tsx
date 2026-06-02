@@ -143,9 +143,12 @@ const initialBatches: Batch[] = [
   { id: 'batch-1', name: 'PKA Angkatan I', kategoriId: 'kat-pka', pola: 'APBD', startDate: '2026-03-01', endDate: '2026-03-15' },
   { id: 'batch-2', name: 'Latsar CPNS 2026', kategoriId: 'kat-latsar', pola: 'Kontribusi', startDate: '2026-03-10', endDate: '2026-03-25' },
   { id: 'batch-3', name: 'PKM Kepemimpinan Nasional', kategoriId: 'kat-pkm', pola: 'Kemitraan', startDate: '2026-03-05', endDate: '2026-03-20' },
+  { id: 'batch-4', name: 'PKA Angkatan II (April)', kategoriId: 'kat-pka', pola: 'APBD', startDate: '2026-04-01', endDate: '2026-04-15' },
+  { id: 'batch-5', name: 'PKP Angkatan I (April)', kategoriId: 'kat-pkp', pola: 'Kontribusi', startDate: '2026-04-05', endDate: '2026-04-20' },
 ];
 
 const initialSessions: Session[] = [
+  // --- MARCH 2026 ---
   {
     id: 'sess-1',
     batchId: 'batch-1',
@@ -184,6 +187,122 @@ const initialSessions: Session[] = [
     lokasiId: 'lok-2',
     jpKe: '1-2',
     jpCount: 2
+  },
+  {
+    id: 'sess-4',
+    batchId: 'batch-3',
+    mapelId: 'mapel-6',
+    wiId: 'wi-1', // Uqie Rachmadie (Level 5)
+    date: '2026-03-06',
+    startTime: '08:00',
+    endTime: '10:15',
+    format: 'Klasikal',
+    lokasiId: 'lok-1',
+    jpKe: '1-3',
+    jpCount: 3
+  },
+  {
+    id: 'sess-5',
+    batchId: 'batch-3',
+    mapelId: 'mapel-6',
+    wiId: 'wi-3', // Ahmad Yani (Level 4)
+    date: '2026-03-07',
+    startTime: '13:00',
+    endTime: '15:15',
+    format: 'Virtual',
+    jpKe: '4-6',
+    jpCount: 3
+  },
+  {
+    id: 'sess-6',
+    batchId: 'batch-2',
+    mapelId: 'mapel-5',
+    wiId: 'wi-4', // Rina Wijaya (Level 3)
+    date: '2026-03-12',
+    startTime: '08:00',
+    endTime: '10:15',
+    format: 'Klasikal',
+    lokasiId: 'lok-3',
+    jpKe: '1-3',
+    jpCount: 3
+  },
+  {
+    id: 'sess-7',
+    batchId: 'batch-2',
+    mapelId: 'mapel-5',
+    wiId: 'wi-2', // Americo Block (Level 2)
+    date: '2026-03-13',
+    startTime: '13:00',
+    endTime: '15:15',
+    format: 'Virtual',
+    jpKe: '4-6',
+    jpCount: 3
+  },
+
+  // --- APRIL 2026 ---
+  {
+    id: 'sess-8',
+    batchId: 'batch-4',
+    mapelId: 'mapel-1',
+    wiId: 'wi-3', // Ahmad Yani (Level 4)
+    date: '2026-04-02',
+    startTime: '08:00',
+    endTime: '09:30',
+    format: 'Klasikal',
+    lokasiId: 'lok-3',
+    jpKe: '1-2',
+    jpCount: 2
+  },
+  {
+    id: 'sess-9',
+    batchId: 'batch-4',
+    mapelId: 'mapel-2',
+    wiId: 'wi-1', // Uqie Rachmadie (Level 5)
+    date: '2026-04-03',
+    startTime: '10:00',
+    endTime: '12:15',
+    format: 'Klasikal',
+    lokasiId: 'lok-1',
+    jpKe: '3-5',
+    jpCount: 3
+  },
+  {
+    id: 'sess-10',
+    batchId: 'batch-5',
+    mapelId: 'mapel-7',
+    wiId: 'wi-4', // Rina Wijaya (Level 3)
+    date: '2026-04-06',
+    startTime: '08:00',
+    endTime: '10:15',
+    format: 'Klasikal',
+    lokasiId: 'lok-4',
+    jpKe: '1-3',
+    jpCount: 3
+  },
+  {
+    id: 'sess-11',
+    batchId: 'batch-5',
+    mapelId: 'mapel-7',
+    wiId: 'wi-3', // Ahmad Yani (Level 4)
+    date: '2026-04-07',
+    startTime: '13:00',
+    endTime: '13:45',
+    format: 'Virtual',
+    jpKe: '4',
+    jpCount: 1
+  },
+  {
+    id: 'sess-12',
+    batchId: 'batch-4',
+    mapelId: 'mapel-3',
+    wiId: 'wi-4', // Rina Wijaya (Level 3)
+    date: '2026-04-08',
+    startTime: '08:00',
+    endTime: '10:15',
+    format: 'Klasikal',
+    lokasiId: 'lok-3',
+    jpKe: '1-3',
+    jpCount: 3
   }
 ];
 
