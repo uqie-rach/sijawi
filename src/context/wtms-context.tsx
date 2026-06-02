@@ -143,16 +143,16 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         // Fetch all data from API
         const [resWi, resKat, resMapel, resLok, resBatches, resSessions] = await Promise.all([
-          fetch('/api/widyaswara').then(r => r.json()),
-          fetch('/api/kategori-pelatihan').then(r => r.json()),
-          fetch('/api/mata-pelatihan').then(r => r.json()),
-          fetch('/api/lokasi').then(r => r.json()),
-          fetch('/api/batches').then(r => r.json()),
-          fetch('/api/sessions').then(r => r.json())
+          fetch('/api/widyaswara').then(r => r.ok ? r.json() : []),
+          fetch('/api/kategori-pelatihan').then(r => r.ok ? r.json() : []),
+          fetch('/api/mata-pelatihan').then(r => r.ok ? r.json() : []),
+          fetch('/api/lokasi').then(r => r.ok ? r.json() : []),
+          fetch('/api/batches').then(r => r.ok ? r.json() : []),
+          fetch('/api/sessions').then(r => r.ok ? r.json() : [])
         ]);
 
         // Jika database kosong, panggil endpoint seed tunggal di server
-        if (resWi.length === 0 && resKat.length === 0) {
+        if (Array.isArray(resWi) && resWi.length === 0 && Array.isArray(resKat) && resKat.length === 0) {
           const seedRes = await fetch('/api/seed', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
@@ -165,12 +165,12 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
-        setWidyaswaras(resWi);
-        setKategoriList(resKat);
-        setMapelList(resMapel);
-        setLokasiList(resLok);
-        setBatches(resBatches);
-        setSessions(resSessions);
+        if (Array.isArray(resWi)) setWidyaswaras(resWi);
+        if (Array.isArray(resKat)) setKategoriList(resKat);
+        if (Array.isArray(resMapel)) setMapelList(resMapel);
+        if (Array.isArray(resLok)) setLokasiList(resLok);
+        if (Array.isArray(resBatches)) setBatches(resBatches);
+        if (Array.isArray(resSessions)) setSessions(resSessions);
       } catch (err) {
         console.error("Failed to load data from API:", err);
       }
