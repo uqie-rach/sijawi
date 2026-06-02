@@ -74,6 +74,9 @@ export default function WidyaswaraDashboard() {
   });
 
   const handleLogout = () => {
+    // Clear sessionToken cookie
+    document.cookie = "sessionToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
+
     setIsAuthenticated(false);
     setUserRole(null);
     setSelectedWiId(null);

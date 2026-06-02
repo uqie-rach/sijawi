@@ -24,6 +24,9 @@ export default function LoginPage() {
 
     // 1. Check for Super Admin
     if (email === 'admin@wtms.com' && password === 'admin123') {
+      // Set sessionToken cookie for API authorization
+      document.cookie = "sessionToken=admin-session-token; path=/; max-age=86400; SameSite=Lax";
+      
       setIsAuthenticated(true);
       setUserRole('admin');
       setSelectedWiId(null);
@@ -35,6 +38,9 @@ export default function LoginPage() {
     // 2. Check for Widyaswara
     const matchedWi = widyaswaras.find(w => w.email.toLowerCase() === email.toLowerCase());
     if (matchedWi && password === 'wi123') {
+      // Set sessionToken cookie for API authorization
+      document.cookie = "sessionToken=wi-session-token; path=/; max-age=86400; SameSite=Lax";
+
       setIsAuthenticated(true);
       setUserRole('wi');
       setSelectedWiId(matchedWi.id);
