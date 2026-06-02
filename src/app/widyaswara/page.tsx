@@ -61,7 +61,7 @@ export default function WidyaswaraDashboard() {
   // Sort sessions by date and start time
   const sortedSessions = [...wiSessions].sort((a, b) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return a.startTime.localeCompare(b.startTime);
+    return a.startTime.compare(b.startTime);
   });
 
   // Group sessions by date for a clean timeline view
@@ -74,6 +74,9 @@ export default function WidyaswaraDashboard() {
   });
 
   const handleLogout = () => {
+    // Clear session cookie
+    document.cookie = "sessionToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    
     setIsAuthenticated(false);
     setUserRole(null);
     setSelectedWiId(null);
@@ -129,7 +132,6 @@ export default function WidyaswaraDashboard() {
         </div>
 
         <div className="flex items-center gap-4 flex-wrap">
-          {/* Profile Switcher for testing convenience */}
           <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
             <span className="text-xs text-slate-400 font-medium">Viewing Profile:</span>
             <Select value={activeWi.id} onValueChange={setSelectedWiId}>
