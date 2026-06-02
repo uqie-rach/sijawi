@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, BookOpen, User } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, BookOpen, User, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -27,6 +27,7 @@ interface CalendarViewProps {
 
 export function CalendarView({ events, onEventClick, title = "Training Schedule Calendar" }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 1)); // March 2026 as pre-seeded data is in March 2026
+  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -66,6 +67,102 @@ export function CalendarView({ events, onEventClick, title = "Training Schedule 
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   };
+
+  // Day View Timeline Hours (08:00 to 17:00)
+  const timelineHours = [
+    "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"
+  ];
+
+  if (selectedDateStr) {
+    const dayEvents = events.filter(e => e.date === selectedDateStr);
+    const formattedDayTitle = new Date(selectedDateStr).toLocaleDateString('id-ID', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    return (
+      <Card className="shadow-sm border-slate-200 bg-white">
+        <CardHeader className="border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50">
+          <div>
+            <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5 text-blue-600" />
+              Agenda: {formattedDayTitle}
+            </CardTitle>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setSelectedDateStr(null)}
+            className="flex items-center gap-2 border-slate-200 hover:bg-slate-100"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Month View
+          </Button>
+        </CardHeader>
+        <CardContent className="p-6">
+          {dayEvents.length === 0 ? (
+            <div className="text-center py-12 text-slate-500">
+              <Clock className="h-12 w-12 mx-auto text-slate-300 mb-3" />
+              <p className="font-medium">No sessions scheduled for this day.</p>
+            </div>
+          ) : (
+            <div className="relative border-l-2 border-slate-200 pl-6 ml-4 space-y-8">
+              {dayEvents.map((event) => (
+                <div key={event.id} className="relative">
+                  {/* Timeline Dot */}
+                  <span className={`absolute -left-[31px] top-1.5 h-4 w-4 rounded-full border-2 border-white shadow-sm ${
+                    event.format === 'Klasikal' ? 'bg-blue-500' :
+                    event.format === 'Virtual' ? 'bg-purple-500' :
+                    'bg-amber-500'
+                  }`} />
+                  
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 hover:border-blue-200 transition-all duration-200">
+                    <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Badge className={`font-semibold ${
+                          event.format === 'Klasikal' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                          event.format === 'Virtual' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                          'bg-amber-100 text-amber-800 border-amber-200'
+                        }`}>
+                          {event.format}
+                        </Badge>
+                        <span className="text-xs font-bold text-slate-500 bg-slate-200/60 px-2 py-0.5 rounded">
+                          JP Ke: {event.jpKe} ({event.jpCount} JP)
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold text-slate-600 flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5 text-slate-400" />
+                        {event.startTime} - {event.endTime}
+                      </span>
+                    </div>
+
+                    <h4 className="text-base font-bold text-slate-900 mb-2">{event.title}</h4>
+                    
+                    <div className="grid sm:grid-cols-3 gap-3 text-xs text-slate-600 pt-2 border-t border-slate-200/60">
+                      <div className="flex items-center gap-1.5">
+                        <User className="h-4 w-4 text-slate-400" />
+                        <span>WI: <strong>{event.wiName}</strong></span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <BookOpen className="h-4 w-4 text-slate-400" />
+                        <span>Batch: <strong>{event.batchName}</strong></span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-4 w-4 text-slate-400" />
+                        <span>Venue: <strong>{event.lokasiName}</strong></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="shadow-sm border-slate-200 bg-white">
@@ -119,7 +216,8 @@ export function CalendarView({ events, onEventClick, title = "Training Schedule 
             return (
               <div
                 key={dateStr}
-                className="bg-white rounded-lg border border-slate-200 p-2 flex flex-col justify-between min-h-[100px] hover:border-blue-300 transition-all duration-200"
+                onClick={() => setSelectedDateStr(dateStr)}
+                className="bg-white rounded-lg border border-slate-200 p-2 flex flex-col justify-between min-h-[100px] hover:border-blue-300 hover:bg-slate-50/30 cursor-pointer transition-all duration-200"
               >
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm font-bold text-slate-700">{cell.getDate()}</span>
@@ -134,7 +232,10 @@ export function CalendarView({ events, onEventClick, title = "Training Schedule 
                   {dayEvents.map(event => (
                     <div
                       key={event.id}
-                      onClick={() => onEventClick?.(event)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering day click
+                        onEventClick?.(event);
+                      }}
                       className={`p-1 rounded text-[10px] font-medium cursor-pointer transition-all duration-150 border ${
                         event.format === 'Klasikal' ? 'bg-blue-50 text-blue-800 border-blue-100 hover:bg-blue-100' :
                         event.format === 'Virtual' ? 'bg-purple-50 text-purple-800 border-purple-100 hover:bg-purple-100' :

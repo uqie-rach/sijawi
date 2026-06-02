@@ -162,6 +162,27 @@ const initialSessions: Session[] = [
   }
 ];
 
+// Helper to parse JP range (e.g., "1-2" -> [1, 2], "3" -> [3, 3])
+function parseJpRange(jpKe: string): number[] {
+  const clean = jpKe.replace(/\s+/g, '');
+  const parts = clean.split('-');
+  if (parts.length === 1) {
+    const val = parseInt(parts[0]);
+    return isNaN(val) ? [] : [val, val];
+  } else if (parts.length === 2) {
+    const start = parseInt(parts[0]);
+    const end = parseInt(parts[1]);
+    return isNaN(start) || isNaN(end) ? [] : [start, end];
+  }
+  return [];
+}
+
+// Helper to check if two JP ranges overlap
+function isJpOverlapping(range1: number[], range2: number[]): boolean {
+  if (range1.length !== 2 || range2.length !== 2) return false;
+  return Math.max(range1[0], range2[0]) <= Math.min(range1[1], range2[1]);
+}
+
 export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [widyaswaras, setWidyaswaras] = useState<Widyaswara[]>(initialWidyaswaras);
   const [kategoriList, setKategoriList] = useState<Kategori[]>(initialKategori);
@@ -305,7 +326,23 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 4. Validate WI Collision (Widyaswara cannot teach in two places at the same time)
+    // 4. Validate JP Conflict Engine Validation (jp_ke Overlap Prevention)
+    const newJpRange = parseJpRange(sessionData.jpKe);
+    if (newJpRange.length === 2) {
+      const jpCollision = sessions.find(s => 
+        s.batchId === sessionData.batchId &&
+        s.date === sessionData.date &&
+        isJpOverlapping(newJpRange, parseJpRange(s.jpKe))
+      );
+
+      if (jpCollision) {
+        const errorMsg = `❌ Slot JP tersebut sudah terisi pada tanggal ini! (Collision with existing JP ${jpCollision.jpKe})`;
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+    }
+
+    // 5. Validate WI Collision (Widyaswara cannot teach in two places at the same time)
     const wiCollision = sessions.find(s => 
       s.wiId === sessionData.wiId && 
       s.date === sessionData.date && 
@@ -323,7 +360,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 5. Validate Location Clash (For Klasikal format)
+    // 6. Validate Location Clash (For Klasikal format)
     if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
       const locationClash = sessions.find(s => 
         s.format === 'Klasikal' &&

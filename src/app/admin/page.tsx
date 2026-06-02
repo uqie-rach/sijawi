@@ -111,6 +111,16 @@ export default function AdminDashboard() {
     jpCount: '2'
   });
 
+  // Update default date in session form when active batch changes
+  React.useEffect(() => {
+    if (activeBatch) {
+      setSessionForm(prev => ({
+        ...prev,
+        date: activeBatch.startDate
+      }));
+    }
+  }, [activeBatch]);
+
   // Dialog Open States
   const [isWiDialogOpen, setIsWiDialogOpen] = useState(false);
   const [isKatDialogOpen, setIsKatDialogOpen] = useState(false);
@@ -205,7 +215,7 @@ export default function AdminDashboard() {
       setSessionForm({
         mapelId: '',
         wiId: '',
-        date: '2026-03-02',
+        date: activeBatch ? activeBatch.startDate : '2026-03-02',
         startTime: '08:00',
         endTime: '09:30',
         format: 'Klasikal',
@@ -258,6 +268,17 @@ export default function AdminDashboard() {
     jpCount: s.jpCount,
     jpKe: s.jpKe
   }));
+
+  // Helper to format date to Indonesian style
+  const formatIndoDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50">
@@ -1039,6 +1060,16 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
+              {/* 1. Batch Duration Visibility (Admin Context) */}
+              {activeBatch && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3 text-blue-900 shadow-sm">
+                  <Calendar className="h-5 w-5 text-blue-600 shrink-0" />
+                  <div className="text-sm font-semibold">
+                    📅 Periode Pelaksanaan: <span className="text-blue-700">{formatIndoDate(activeBatch.startDate)}</span> s/d <span className="text-blue-700">{formatIndoDate(activeBatch.endDate)}</span>
+                  </div>
+                </div>
+              )}
+
               {activeBatch ? (
                 <div className="grid lg:grid-cols-3 gap-8">
                   {/* Left Column: Mapel Status & Compliance */}
@@ -1140,9 +1171,18 @@ export default function AdminDashboard() {
                             </div>
 
                             <div className="grid grid-cols-3 gap-4">
+                              {/* 2. Date-Picker Restraints (Strict Range In-Bounds) */}
                               <div className="space-y-2">
                                 <Label htmlFor="sess-date">Date</Label>
-                                <Input id="sess-date" type="date" value={sessionForm.date} onChange={e => setSessionForm({...sessionForm, date: e.target.value})} required />
+                                <Input 
+                                  id="sess-date" 
+                                  type="date" 
+                                  min={activeBatch.startDate}
+                                  max={activeBatch.endDate}
+                                  value={sessionForm.date} 
+                                  onChange={e => setSessionForm({...sessionForm, date: e.target.value})} 
+                                  required 
+                                />
                               </div>
 
                               <div className="space-y-2">
