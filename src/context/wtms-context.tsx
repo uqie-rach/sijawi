@@ -65,16 +65,41 @@ interface WTMSContextType {
   sessions: Session[];
   userRole: 'admin' | 'wi' | null;
   selectedWiId: string | null;
+  isAuthenticated: boolean;
   
   // Actions
   setUserRole: (role: 'admin' | 'wi' | null) => void;
   setSelectedWiId: (id: string | null) => void;
+  setIsAuthenticated: (auth: boolean) => void;
+  
+  // Widyaswara CRUD
   addWidyaswara: (wi: Omit<Widyaswara, 'id' | 'jpLastMonth'>) => boolean;
+  updateWidyaswara: (id: string, wi: Omit<Widyaswara, 'id' | 'jpLastMonth'>) => boolean;
+  deleteWidyaswara: (id: string) => void;
+  
+  // Kategori CRUD
   addKategori: (kat: Omit<Kategori, 'id'>) => void;
+  updateKategori: (id: string, kat: Omit<Kategori, 'id'>) => void;
+  deleteKategori: (id: string) => void;
+  
+  // Mapel CRUD
   addMapel: (mapel: Omit<Mapel, 'id'>) => void;
+  updateMapel: (id: string, mapel: Omit<Mapel, 'id'>) => void;
+  deleteMapel: (id: string) => void;
+  
+  // Lokasi CRUD
   addLokasi: (lok: Omit<Lokasi, 'id'>) => void;
+  updateLokasi: (id: string, lok: Omit<Lokasi, 'id'>) => void;
+  deleteLokasi: (id: string) => void;
+  
+  // Batch CRUD
   addBatch: (batch: Omit<Batch, 'id'>) => void;
+  updateBatch: (id: string, batch: Omit<Batch, 'id'>) => void;
+  deleteBatch: (id: string) => void;
+  
+  // Session CRUD
   addSession: (session: Omit<Session, 'id'>) => { success: boolean; error?: string };
+  updateSession: (id: string, session: Omit<Session, 'id'>) => { success: boolean; error?: string };
   deleteSession: (sessionId: string) => void;
 }
 
@@ -192,6 +217,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [sessions, setSessions] = useState<Session[]>(initialSessions);
   const [userRole, setUserRole] = useState<'admin' | 'wi' | null>(null);
   const [selectedWiId, setSelectedWiId] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   // Load from localStorage if available
   useEffect(() => {
@@ -201,6 +227,9 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedLokasi = localStorage.getItem('wtms_lokasi');
     const storedBatches = localStorage.getItem('wtms_batches');
     const storedSessions = localStorage.getItem('wtms_sessions');
+    const storedAuth = localStorage.getItem('wtms_auth');
+    const storedRole = localStorage.getItem('wtms_role');
+    const storedWiId = localStorage.getItem('wtms_wi_id');
 
     if (storedWidyaswaras) setWidyaswaras(JSON.parse(storedWidyaswaras));
     if (storedKategori) setKategoriList(JSON.parse(storedKategori));
@@ -208,6 +237,9 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (storedLokasi) setLokasiList(JSON.parse(storedLokasi));
     if (storedBatches) setBatches(JSON.parse(storedBatches));
     if (storedSessions) setSessions(JSON.parse(storedSessions));
+    if (storedAuth) setIsAuthenticated(JSON.parse(storedAuth));
+    if (storedRole) setUserRole(JSON.parse(storedRole) as any);
+    if (storedWiId) setSelectedWiId(JSON.parse(storedWiId));
   }, []);
 
   // Save to localStorage on changes
@@ -215,8 +247,23 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(key, JSON.stringify(data));
   };
 
+  const handleSetUserRole = (role: 'admin' | 'wi' | null) => {
+    setUserRole(role);
+    saveToStorage('wtms_role', role);
+  };
+
+  const handleSetSelectedWiId = (id: string | null) => {
+    setSelectedWiId(id);
+    saveToStorage('wtms_wi_id', id);
+  };
+
+  const handleSetIsAuthenticated = (auth: boolean) => {
+    setIsAuthenticated(auth);
+    saveToStorage('wtms_auth', auth);
+  };
+
+  // Widyaswara CRUD
   const addWidyaswara = (wi: Omit<Widyaswara, 'id' | 'jpLastMonth'>): boolean => {
-    // Validate unique NIP
     const nipExists = widyaswaras.some(w => w.nip === wi.nip);
     if (nipExists) {
       toast.error(`Validation Error: Widyaswara with NIP ${wi.nip} already exists!`);
@@ -235,6 +282,28 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
+  const updateWidyaswara = (id: string, wi: Omit<Widyaswara, 'id' | 'jpLastMonth'>): boolean => {
+    const nipExists = widyaswaras.some(w => w.nip === wi.nip && w.id !== id);
+    if (nipExists) {
+      toast.error(`Validation Error: Widyaswara with NIP ${wi.nip} already exists!`);
+      return false;
+    }
+
+    const updated = widyaswaras.map(w => w.id === id ? { ...w, ...wi } : w);
+    setWidyaswaras(updated);
+    saveToStorage('wtms_widyaswaras', updated);
+    toast.success(`Widyaswara ${wi.name} successfully updated!`);
+    return true;
+  };
+
+  const deleteWidyaswara = (id: string) => {
+    const updated = widyaswaras.filter(w => w.id !== id);
+    setWidyaswaras(updated);
+    saveToStorage('wtms_widyaswaras', updated);
+    toast.success("Widyaswara successfully deleted.");
+  };
+
+  // Kategori CRUD
   const addKategori = (kat: Omit<Kategori, 'id'>) => {
     const newKat: Kategori = {
       ...kat,
@@ -246,6 +315,21 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success(`Category ${kat.name} successfully added!`);
   };
 
+  const updateKategori = (id: string, kat: Omit<Kategori, 'id'>) => {
+    const updated = kategoriList.map(k => k.id === id ? { ...k, ...kat } : k);
+    setKategoriList(updated);
+    saveToStorage('wtms_kategori', updated);
+    toast.success(`Category ${kat.name} successfully updated!`);
+  };
+
+  const deleteKategori = (id: string) => {
+    const updated = kategoriList.filter(k => k.id !== id);
+    setKategoriList(updated);
+    saveToStorage('wtms_kategori', updated);
+    toast.success("Category successfully deleted.");
+  };
+
+  // Mapel CRUD
   const addMapel = (mapel: Omit<Mapel, 'id'>) => {
     const newMapel: Mapel = {
       ...mapel,
@@ -257,6 +341,22 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success(`Subject ${mapel.name} successfully added!`);
   };
 
+  const updateMapel = (id: string, mapel: Omit<Mapel, 'id'>) => {
+    const updated = mapelList.map(m => m.id === id ? { ...m, ...mapel } : m);
+    setKategoriList(updated as any);
+    setMapelList(updated);
+    saveToStorage('wtms_mapel', updated);
+    toast.success(`Subject ${mapel.name} successfully updated!`);
+  };
+
+  const deleteMapel = (id: string) => {
+    const updated = mapelList.filter(m => m.id !== id);
+    setMapelList(updated);
+    saveToStorage('wtms_mapel', updated);
+    toast.success("Subject successfully deleted.");
+  };
+
+  // Lokasi CRUD
   const addLokasi = (lok: Omit<Lokasi, 'id'>) => {
     const newLok: Lokasi = {
       ...lok,
@@ -268,6 +368,21 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success(`Location ${lok.name} successfully added!`);
   };
 
+  const updateLokasi = (id: string, lok: Omit<Lokasi, 'id'>) => {
+    const updated = lokasiList.map(l => l.id === id ? { ...l, ...lok } : l);
+    setLokasiList(updated);
+    saveToStorage('wtms_lokasi', updated);
+    toast.success(`Location ${lok.name} successfully updated!`);
+  };
+
+  const deleteLokasi = (id: string) => {
+    const updated = lokasiList.filter(l => l.id !== id);
+    setLokasiList(updated);
+    saveToStorage('wtms_lokasi', updated);
+    toast.success("Location successfully deleted.");
+  };
+
+  // Batch CRUD
   const addBatch = (batch: Omit<Batch, 'id'>) => {
     const newBatch: Batch = {
       ...batch,
@@ -279,6 +394,21 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success(`Batch ${batch.name} successfully created!`);
   };
 
+  const updateBatch = (id: string, batch: Omit<Batch, 'id'>) => {
+    const updated = batches.map(b => b.id === id ? { ...b, ...batch } : b);
+    setBatches(updated);
+    saveToStorage('wtms_batches', updated);
+    toast.success(`Batch ${batch.name} successfully updated!`);
+  };
+
+  const deleteBatch = (id: string) => {
+    const updated = batches.filter(b => b.id !== id);
+    setBatches(updated);
+    saveToStorage('wtms_batches', updated);
+    toast.success("Batch successfully deleted.");
+  };
+
+  // Session CRUD
   const addSession = (sessionData: Omit<Session, 'id'>) => {
     // 1. Validate Hierarchy Restriction
     const wi = widyaswaras.find(w => w.id === sessionData.wiId);
@@ -394,6 +524,120 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true };
   };
 
+  const updateSession = (id: string, sessionData: Omit<Session, 'id'>) => {
+    // 1. Validate Hierarchy Restriction
+    const wi = widyaswaras.find(w => w.id === sessionData.wiId);
+    const batch = batches.find(b => b.id === sessionData.batchId);
+    const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
+
+    if (!wi || !batch || !category) {
+      return { success: false, error: "Invalid Widyaswara, Batch, or Category selection." };
+    }
+
+    if (wi.level < category.minWeight) {
+      const errorMsg = `Hierarchy Restriction: ${wi.name} (Level ${wi.level}) does not have sufficient competency level for ${category.name} (Requires Level ${category.minWeight}).`;
+      toast.error(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
+    // 2. Validate Operational Hours for Klasikal
+    if (sessionData.format === 'Klasikal') {
+      const startHour = parseInt(sessionData.startTime.split(':')[0]);
+      const endHour = parseInt(sessionData.endTime.split(':')[0]);
+      const endMin = parseInt(sessionData.endTime.split(':')[1]);
+      
+      if (startHour < 8 || endHour > 17 || (endHour === 17 && endMin > 0)) {
+        const errorMsg = "Operational Hours Restriction: Klasikal sessions must be scheduled between 08:00 and 17:00.";
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+
+      if (!sessionData.lokasiId) {
+        const errorMsg = "Location is required for Klasikal format.";
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+    }
+
+    // 3. Validate Mapel JP accumulation (Max 6 JP per Mapel in a batch)
+    const existingMapelSessions = sessions.filter(s => s.id !== id && s.batchId === sessionData.batchId && s.mapelId === sessionData.mapelId);
+    const currentJpSum = existingMapelSessions.reduce((sum, s) => sum + s.jpCount, 0);
+    const mapel = mapelList.find(m => m.id === sessionData.mapelId);
+    const maxJp = mapel ? mapel.jpTotal : 6;
+
+    if (currentJpSum + sessionData.jpCount > maxJp) {
+      const errorMsg = `Mapel Constraint: Total JP for ${mapel?.name || 'this subject'} cannot exceed ${maxJp} JP. Currently scheduled: ${currentJpSum} JP. Attempted to add: ${sessionData.jpCount} JP.`;
+      toast.error(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
+    // 4. Validate JP Conflict Engine Validation (jp_ke Overlap Prevention)
+    const newJpRange = parseJpRange(sessionData.jpKe);
+    if (newJpRange.length === 2) {
+      const jpCollision = sessions.find(s => 
+        s.id !== id &&
+        s.batchId === sessionData.batchId &&
+        s.date === sessionData.date &&
+        isJpOverlapping(newJpRange, parseJpRange(s.jpKe))
+      );
+
+      if (jpCollision) {
+        const errorMsg = `❌ Slot JP tersebut sudah terisi pada tanggal ini! (Collision with existing JP ${jpCollision.jpKe})`;
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+    }
+
+    // 5. Validate WI Collision (Widyaswara cannot teach in two places at the same time)
+    const wiCollision = sessions.find(s => 
+      s.id !== id &&
+      s.wiId === sessionData.wiId && 
+      s.date === sessionData.date && 
+      (
+        (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
+        (sessionData.endTime > s.startTime && sessionData.endTime <= s.endTime) ||
+        (sessionData.startTime <= s.startTime && sessionData.endTime >= s.endTime)
+      )
+    );
+
+    if (wiCollision) {
+      const collidingBatch = batches.find(b => b.id === wiCollision.batchId);
+      const errorMsg = `Widyaswara Collision: ${wi.name} is already scheduled to teach in batch "${collidingBatch?.name || 'Another Batch'}" from ${wiCollision.startTime} to ${wiCollision.endTime} on this day.`;
+      toast.error(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
+    // 6. Validate Location Clash (For Klasikal format)
+    if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
+      const locationClash = sessions.find(s => 
+        s.id !== id &&
+        s.format === 'Klasikal' &&
+        s.lokasiId === sessionData.lokasiId &&
+        s.date === sessionData.date &&
+        (
+          (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
+          (sessionData.endTime > s.startTime && sessionData.endTime <= s.endTime) ||
+          (sessionData.startTime <= s.startTime && sessionData.endTime >= s.endTime)
+        )
+      );
+
+      if (locationClash) {
+        const collidingBatch = batches.find(b => b.id === locationClash.batchId);
+        const locName = lokasiList.find(l => l.id === sessionData.lokasiId)?.name || 'this location';
+        const errorMsg = `Location Clash: ${locName} is already booked for batch "${collidingBatch?.name || 'Another Batch'}" from ${locationClash.startTime} to ${locationClash.endTime} on this day.`;
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+    }
+
+    // All validations passed!
+    const updated = sessions.map(s => s.id === id ? { ...s, ...sessionData } : s);
+    setSessions(updated);
+    saveToStorage('wtms_sessions', updated);
+    toast.success("Session successfully updated!");
+    return { success: true };
+  };
+
   const deleteSession = (sessionId: string) => {
     const updated = sessions.filter(s => s.id !== sessionId);
     setSessions(updated);
@@ -411,14 +655,39 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessions,
       userRole,
       selectedWiId,
-      setUserRole,
-      setSelectedWiId,
+      isAuthenticated,
+      setUserRole: handleSetUserRole,
+      setSelectedWiId: handleSetSelectedWiId,
+      setIsAuthenticated: handleSetIsAuthenticated,
+      
+      // Widyaswara CRUD
       addWidyaswara,
+      updateWidyaswara,
+      deleteWidyaswara,
+      
+      // Kategori CRUD
       addKategori,
+      updateKategori,
+      deleteKategori,
+      
+      // Mapel CRUD
       addMapel,
+      updateMapel,
+      deleteMapel,
+      
+      // Lokasi CRUD
       addLokasi,
+      updateLokasi,
+      deleteLokasi,
+      
+      // Batch CRUD
       addBatch,
+      updateBatch,
+      deleteBatch,
+      
+      // Session CRUD
       addSession,
+      updateSession,
       deleteSession
     }}>
       {children}

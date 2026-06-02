@@ -12,6 +12,7 @@ import {
   LogOut, 
   Plus, 
   Trash2, 
+  Edit,
   AlertTriangle, 
   Clock, 
   MapPin, 
@@ -26,7 +27,11 @@ import {
   Sliders,
   Sparkles,
   GraduationCap,
-  Table as TableIcon
+  Table as TableIcon,
+  Download,
+  Search,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,6 +46,10 @@ import { Progress } from '@/components/ui/progress';
 import { Combobox } from '@/components/ui/combobox';
 import { CalendarView } from '@/components/calendar-view';
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import { toast } from 'sonner';
+
+// Recharts imports
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -50,19 +59,34 @@ export default function AdminDashboard() {
     kategoriList, 
     mapelList, 
     lokasiList, 
+    batches,
+    sessions,
+    isAuthenticated,
+    setIsAuthenticated,
     addWidyaswara, 
+    updateWidyaswara,
+    deleteWidyaswara,
     addKategori, 
+    updateKategori,
+    deleteKategori,
     addMapel, 
+    updateMapel,
+    deleteMapel,
     addLokasi, 
-    addBatch 
+    updateLokasi,
+    deleteLokasi,
+    addBatch,
+    updateBatch,
+    deleteBatch,
+    updateSession
   } = useWTMS();
 
-  // Redirect if not admin (for safety, but allow bypass)
+  // Secure Route Guard
   React.useEffect(() => {
-    if (userRole !== 'admin') {
-      setUserRole('admin');
+    if (!isAuthenticated || userRole !== 'admin') {
+      router.push('/login');
     }
-  }, [userRole, setUserRole]);
+  }, [isAuthenticated, userRole, router]);
 
   // Active Tab in Sidebar
   const [activeTab, setActiveTab] = useState<'overview' | 'master' | 'scheduling' | 'reports'>('overview');
@@ -90,14 +114,24 @@ export default function AdminDashboard() {
     jabatan: 'WI Ahli Madya' as any,
     level: '3' 
   });
+  const [editingWiId, setEditingWiId] = useState<string | null>(null);
+
   // 2. Kategori Form
   const [katForm, setKatForm] = useState({ name: '', minWeight: '3' });
+  const [editingKatId, setEditingKatId] = useState<string | null>(null);
+
   // 3. Mapel Form
   const [mapelForm, setMapelForm] = useState({ name: '', kategoriId: '', jpTotal: '4' });
+  const [editingMapelId, setEditingMapelId] = useState<string | null>(null);
+
   // 4. Lokasi Form
   const [lokForm, setLokForm] = useState({ name: '' });
+  const [editingLokId, setEditingLokId] = useState<string | null>(null);
+
   // 5. Batch Form
   const [batchForm, setBatchForm] = useState({ name: '', kategoriId: '', pola: 'APBD' as 'APBD' | 'Kontribusi' | 'Kemitraan', startDate: '2026-03-01', endDate: '2026-03-15' });
+  const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
+
   // 6. Session Form
   const [sessionForm, setSessionForm] = useState({
     mapelId: '',
@@ -110,6 +144,7 @@ export default function AdminDashboard() {
     jpKe: '1-2',
     jpCount: '2'
   });
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
 
   // Update default date in session form when active batch changes
   React.useEffect(() => {
@@ -129,6 +164,14 @@ export default function AdminDashboard() {
   const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false);
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
 
+  // Advanced Reports Filtering & Pagination States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterPola, setFilterPola] = useState<string>('ALL');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   // Handle Form Submissions
   const handleAddWi = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,29 +181,53 @@ export default function AdminDashboard() {
     const labels = ['PPPK', 'Latsar', 'PKP', 'PKA', 'PKM'];
     const levelLabel = labels[levelNum - 1] || 'PPPK';
 
-    const success = addWidyaswara({
-      name: wiForm.name,
-      gelar: wiForm.gelar,
-      email: wiForm.email,
-      nip: wiForm.nip,
-      jabatan: wiForm.jabatan,
-      level: levelNum,
-      levelLabel
-    });
-
-    if (success) {
-      setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' });
-      setIsWiDialogOpen(false);
+    if (editingWiId) {
+      const success = updateWidyaswara(editingWiId, {
+        name: wiForm.name,
+        gelar: wiForm.gelar,
+        email: wiForm.email,
+        nip: wiForm.nip,
+        jabatan: wiForm.jabatan,
+        level: levelNum,
+        levelLabel
+      });
+      if (success) {
+        setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' });
+        setEditingWiId(null);
+        setIsWiDialogOpen(false);
+      }
+    } else {
+      const success = addWidyaswara({
+        name: wiForm.name,
+        gelar: wiForm.gelar,
+        email: wiForm.email,
+        nip: wiForm.nip,
+        jabatan: wiForm.jabatan,
+        level: levelNum,
+        levelLabel
+      });
+      if (success) {
+        setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' });
+        setIsWiDialogOpen(false);
+      }
     }
   };
 
   const handleAddKat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!katForm.name) return;
-    addKategori({
-      name: katForm.name,
-      minWeight: parseInt(katForm.minWeight)
-    });
+    if (editingKatId) {
+      updateKategori(editingKatId, {
+        name: katForm.name,
+        minWeight: parseInt(katForm.minWeight)
+      });
+      setEditingKatId(null);
+    } else {
+      addKategori({
+        name: katForm.name,
+        minWeight: parseInt(katForm.minWeight)
+      });
+    }
     setKatForm({ name: '', minWeight: '3' });
     setIsKatDialogOpen(false);
   };
@@ -168,11 +235,20 @@ export default function AdminDashboard() {
   const handleAddMapel = (e: React.FormEvent) => {
     e.preventDefault();
     if (!mapelForm.name || !mapelForm.kategoriId) return;
-    addMapel({
-      name: mapelForm.name,
-      kategoriId: mapelForm.kategoriId,
-      jpTotal: parseInt(mapelForm.jpTotal)
-    });
+    if (editingMapelId) {
+      updateMapel(editingMapelId, {
+        name: mapelForm.name,
+        kategoriId: mapelForm.kategoriId,
+        jpTotal: parseInt(mapelForm.jpTotal)
+      });
+      setEditingMapelId(null);
+    } else {
+      addMapel({
+        name: mapelForm.name,
+        kategoriId: mapelForm.kategoriId,
+        jpTotal: parseInt(mapelForm.jpTotal)
+      });
+    }
     setMapelForm({ name: '', kategoriId: '', jpTotal: '4' });
     setIsMapelDialogOpen(false);
   };
@@ -180,7 +256,12 @@ export default function AdminDashboard() {
   const handleAddLok = (e: React.FormEvent) => {
     e.preventDefault();
     if (!lokForm.name) return;
-    addLokasi({ name: lokForm.name });
+    if (editingLokId) {
+      updateLokasi(editingLokId, { name: lokForm.name });
+      setEditingLokId(null);
+    } else {
+      addLokasi({ name: lokForm.name });
+    }
     setLokForm({ name: '' });
     setIsLokDialogOpen(false);
   };
@@ -188,7 +269,12 @@ export default function AdminDashboard() {
   const handleAddBatch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!batchForm.name || !batchForm.kategoriId) return;
-    addBatch(batchForm);
+    if (editingBatchId) {
+      updateBatch(editingBatchId, batchForm);
+      setEditingBatchId(null);
+    } else {
+      addBatch(batchForm);
+    }
     setBatchForm({ name: '', kategoriId: '', pola: 'APBD', startDate: '2026-03-01', endDate: '2026-03-15' });
     setIsBatchDialogOpen(false);
   };
@@ -197,38 +283,69 @@ export default function AdminDashboard() {
     e.preventDefault();
     if (!sessionForm.mapelId || !sessionForm.wiId) return;
 
-    const res = addSession({
-      batchId: selectedBatchId,
-      mapelId: sessionForm.mapelId,
-      wiId: sessionForm.wiId,
-      date: sessionForm.date,
-      startTime: sessionForm.startTime,
-      endTime: sessionForm.endTime,
-      format: sessionForm.format,
-      lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
-      jpKe: sessionForm.jpKe,
-      jpCount: parseInt(sessionForm.jpCount)
-    });
-
-    if (res.success) {
-      setIsSessionDialogOpen(false);
-      setSessionForm({
-        mapelId: '',
-        wiId: '',
-        date: activeBatch ? activeBatch.startDate : '2026-03-02',
-        startTime: '08:00',
-        endTime: '09:30',
-        format: 'Klasikal',
-        lokasiId: '',
-        jpKe: '1-2',
-        jpCount: '2'
+    if (editingSessionId) {
+      const res = updateSession(editingSessionId, {
+        batchId: selectedBatchId,
+        mapelId: sessionForm.mapelId,
+        wiId: sessionForm.wiId,
+        date: sessionForm.date,
+        startTime: sessionForm.startTime,
+        endTime: sessionForm.endTime,
+        format: sessionForm.format,
+        lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
+        jpKe: sessionForm.jpKe,
+        jpCount: parseInt(sessionForm.jpCount)
       });
+      if (res.success) {
+        setIsSessionDialogOpen(false);
+        setEditingSessionId(null);
+        setSessionForm({
+          mapelId: '',
+          wiId: '',
+          date: activeBatch ? activeBatch.startDate : '2026-03-02',
+          startTime: '08:00',
+          endTime: '09:30',
+          format: 'Klasikal',
+          lokasiId: '',
+          jpKe: '1-2',
+          jpCount: '2'
+        });
+      }
+    } else {
+      const res = addSession({
+        batchId: selectedBatchId,
+        mapelId: sessionForm.mapelId,
+        wiId: sessionForm.wiId,
+        date: sessionForm.date,
+        startTime: sessionForm.startTime,
+        endTime: sessionForm.endTime,
+        format: sessionForm.format,
+        lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
+        jpKe: sessionForm.jpKe,
+        jpCount: parseInt(sessionForm.jpCount)
+      });
+
+      if (res.success) {
+        setIsSessionDialogOpen(false);
+        setSessionForm({
+          mapelId: '',
+          wiId: '',
+          date: activeBatch ? activeBatch.startDate : '2026-03-02',
+          startTime: '08:00',
+          endTime: '09:30',
+          format: 'Klasikal',
+          lokasiId: '',
+          jpKe: '1-2',
+          jpCount: '2'
+        });
+      }
     }
   };
 
   const handleLogout = () => {
+    setIsAuthenticated(false);
     setUserRole(null);
-    router.push('/');
+    router.push('/login');
   };
 
   // Prepare Combobox Options
@@ -269,16 +386,123 @@ export default function AdminDashboard() {
     jpKe: s.jpKe
   }));
 
-  // Helper to format date to Indonesian style
-  const formatIndoDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
+  // Chart Data Preparation
+  const barChartData = wiData.map(wi => ({
+    name: wi.name.split(' ')[0], // Short name for X-axis
+    fullName: `${wi.name}, ${wi.gelar}`,
+    'Total JP': wi.jpCurrentMonth
+  }));
+
+  const pieChartData = [
+    { name: 'APBD', value: reportData.polaBreakdown.apbd, color: '#3b82f6' },
+    { name: 'Kontribusi', value: reportData.polaBreakdown.kontribusi, color: '#10b981' },
+    { name: 'Kemitraan', value: reportData.polaBreakdown.kemitraan, color: '#f59e0b' }
+  ].filter(item => item.value > 0);
+
+  // Advanced Filtering for Monthly Recap Table
+  const filteredRecapData = wiData.filter(wi => {
+    const matchesSearch = wi.name.toLowerCase().includes(searchQuery.toLowerCase()) || wi.nip.includes(searchQuery);
+    
+    // Calculate dynamic JP based on filters
+    const wiSessions = sessions.filter(s => {
+      if (s.wiId !== wi.id) return false;
+      
+      // Date Range Filter
+      if (startDateFilter && s.date < startDateFilter) return false;
+      if (endDateFilter && s.date > endDateFilter) return false;
+      
+      // Pola Filter
+      if (filterPola !== 'ALL') {
+        const batch = batches.find(b => b.id === s.batchId);
+        if (!batch || batch.pola !== filterPola) return false;
+      }
+      
+      return true;
     });
+
+    return matchesSearch && (wiSessions.length > 0 || searchQuery === '');
+  }).map(wi => {
+    // Calculate filtered JP breakdown
+    const wiSessions = sessions.filter(s => {
+      if (s.wiId !== wi.id) return false;
+      if (startDateFilter && s.date < startDateFilter) return false;
+      if (endDateFilter && s.date > endDateFilter) return false;
+      if (filterPola !== 'ALL') {
+        const batch = batches.find(b => b.id === s.batchId);
+        if (!batch || batch.pola !== filterPola) return false;
+      }
+      return true;
+    });
+
+    let apbd = 0;
+    let kontribusi = 0;
+    let kemitraan = 0;
+
+    wiSessions.forEach(s => {
+      const batch = batches.find(b => b.id === s.batchId);
+      if (batch) {
+        if (batch.pola === 'APBD') apbd += s.jpCount;
+        else if (batch.pola === 'Kontribusi') kontribusi += s.jpCount;
+        else if (batch.pola === 'Kemitraan') kemitraan += s.jpCount;
+      }
+    });
+
+    return {
+      ...wi,
+      apbd,
+      kontribusi,
+      kemitraan,
+      grandTotal: apbd + kontribusi + kemitraan
+    };
+  });
+
+  // Pagination Logic
+  const totalRows = filteredRecapData.length;
+  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  const paginatedRecapData = filteredRecapData.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
+  // Export Global Recap (Simulated .docx layout generation)
+  const handleExportGlobalRecap = () => {
+    const header = "LAPORAN REKAPITULASI GLOBAL BULANAN WIDYASWARA\n==================================================\n\n";
+    const tableHeader = "NIP | Nama Widyaswara | Jabatan | APBD | Kontribusi | Kemitraan | Grand Total JP\n";
+    const rows = filteredRecapData.map(wi => 
+      `${wi.nip} | ${wi.name}, ${wi.gelar} | ${wi.jabatan} | ${wi.apbd} JP | ${wi.kontribusi} JP | ${wi.kemitraan} JP | ${wi.grandTotal} JP`
+    ).join('\n');
+    
+    const blob = new Blob([header + tableHeader + rows], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Global_Recap_Report_${new Date().toISOString().split('T')[0]}.txt`;
+    link.click();
+    toast.success("Global Recap exported successfully!");
   };
+
+  // Export Individual WI Report (Simulated .docx layout generation)
+  const handleExportIndividualReport = (wi: any) => {
+    const header = `LAPORAN KINERJA INDIVIDU WIDYASWARA\n====================================\n\n`;
+    const metadata = `NIP: ${wi.nip}\nNama: ${wi.name}, ${wi.gelar}\nJabatan: ${wi.jabatan}\nCompetency Level: Level ${wi.level} (${wi.levelLabel})\n\n`;
+    const summary = `REKAPITULASI JAM PELAJARAN (JP):\n--------------------------------\nAPBD: ${wi.apbd} JP\nKontribusi: ${wi.kontribusi} JP\nKemitraan: ${wi.kemitraan} JP\nGrand Total: ${wi.grandTotal} JP\n`;
+    
+    const blob = new Blob([header + metadata + summary], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `WI_Report_${wi.name.replace(/\s+/g, '_')}.txt`;
+    link.click();
+    toast.success(`Individual report for ${wi.name} exported successfully!`);
+  };
+
+  if (!isAuthenticated || userRole !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-slate-500">Redirecting to login...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50">
@@ -402,58 +626,57 @@ export default function AdminDashboard() {
           {/* 1. OVERVIEW TAB */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
-              {/* Stats Cards */}
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="shadow-sm border-slate-200">
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Instructors</CardDescription>
-                    <CardTitle className="text-3xl font-bold text-slate-900">{wiData.length}</CardTitle>
+              {/* Visual Charts Integration */}
+              <div className="grid md:grid-cols-3 gap-6">
+                <Card className="md:col-span-2 shadow-sm border-slate-200">
+                  <CardHeader>
+                    <CardTitle className="text-base font-bold">Widyaswara Load Balancing (Current Month JP)</CardTitle>
+                    <CardDescription>Easily spot underutilized or overloaded instructors.</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>All active & certified</span>
-                    </div>
+                  <CardContent className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={barChartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="Total JP" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </CardContent>
                 </Card>
 
                 <Card className="shadow-sm border-slate-200">
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Batches</CardDescription>
-                    <CardTitle className="text-3xl font-bold text-slate-900">{batchData.length}</CardTitle>
+                  <CardHeader>
+                    <CardTitle className="text-base font-bold">Funding Distribution (Pola)</CardTitle>
+                    <CardDescription>Ratio allocation of training hours.</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-1.5 text-xs text-blue-600 font-medium">
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span>In progress / scheduled</span>
+                  <CardContent className="h-80 flex flex-col justify-between">
+                    <div className="h-60">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pieChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {pieChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="shadow-sm border-slate-200">
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Sessions</CardDescription>
-                    <CardTitle className="text-3xl font-bold text-slate-900">{allSessions.length}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-1.5 text-xs text-indigo-600 font-medium">
-                      <Sliders className="h-3.5 w-3.5" />
-                      <span>Across all formats</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="shadow-sm border-slate-200">
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-500">Avg JP per WI</CardDescription>
-                    <CardTitle className="text-3xl font-bold text-slate-900">
-                      {wiData.length ? (reportData.totalJp / wiData.length).toFixed(1) : 0} JP
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-1.5 text-xs text-amber-600 font-medium">
-                      <TrendingUp className="h-3.5 w-3.5" />
-                      <span>Balanced distribution</span>
+                    <div className="flex justify-around text-xs font-semibold">
+                      <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-blue-500"></span> APBD</span>
+                      <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-emerald-500"></span> Kontribusi</span>
+                      <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-amber-500"></span> Kemitraan</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -578,14 +801,17 @@ export default function AdminDashboard() {
                   <div className="flex gap-2">
                     <Dialog open={isWiDialogOpen} onOpenChange={setIsWiDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button className="bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
+                        <Button onClick={() => {
+                          setEditingWiId(null);
+                          setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' });
+                        }} className="bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
                           <Plus className="h-4 w-4" /> Add Widyaswara
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="bg-white">
                         <DialogHeader>
-                          <DialogTitle>Add New Widyaswara</DialogTitle>
-                          <DialogDescription>Create a new instructor profile with competency level weight.</DialogDescription>
+                          <DialogTitle>{editingWiId ? 'Edit Widyaswara' : 'Add New Widyaswara'}</DialogTitle>
+                          <DialogDescription>Create or update instructor profile with competency level weight.</DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleAddWi} className="space-y-4 py-4">
                           <div className="grid grid-cols-2 gap-4">
@@ -648,14 +874,17 @@ export default function AdminDashboard() {
 
                     <Dialog open={isBatchDialogOpen} onOpenChange={setIsBatchDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button variant="outline" className="border-slate-200 hover:bg-slate-50 flex items-center gap-2">
+                        <Button variant="outline" onClick={() => {
+                          setEditingBatchId(null);
+                          setBatchForm({ name: '', kategoriId: '', pola: 'APBD', startDate: '2026-03-01', endDate: '2026-03-15' });
+                        }} className="border-slate-200 hover:bg-slate-50 flex items-center gap-2">
                           <Plus className="h-4 w-4" /> Create Batch
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="bg-white">
                         <DialogHeader>
-                          <DialogTitle>Create Training Batch</DialogTitle>
-                          <DialogDescription>Set up a new training batch with specific category and funding pattern.</DialogDescription>
+                          <DialogTitle>{editingBatchId ? 'Edit Training Batch' : 'Create Training Batch'}</DialogTitle>
+                          <DialogDescription>Set up or update a training batch with specific category and funding pattern.</DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleAddBatch} className="space-y-4 py-4">
                           <div className="space-y-2">
@@ -699,7 +928,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                           <DialogFooter className="pt-4">
-                            <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white">Create Batch</Button>
+                            <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white">Save Batch</Button>
                           </DialogFooter>
                         </form>
                       </DialogContent>
@@ -718,7 +947,8 @@ export default function AdminDashboard() {
                             <TableHead>NIP</TableHead>
                             <TableHead>Jabatan</TableHead>
                             <TableHead>Competency Level</TableHead>
-                            <TableHead className="pr-6">Allowed Training Categories</TableHead>
+                            <TableHead>Allowed Training Categories</TableHead>
+                            <TableHead className="pr-6 text-right">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -732,7 +962,7 @@ export default function AdminDashboard() {
                                   Level {wi.level} - {wi.levelLabel}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="pr-6">
+                              <TableCell>
                                 <div className="flex flex-wrap gap-1">
                                   {kategoriList.filter(k => wi.level >= k.minWeight).map(k => (
                                     <Badge key={k.id} variant="secondary" className="text-xs bg-slate-100 text-slate-700">
@@ -740,6 +970,29 @@ export default function AdminDashboard() {
                                     </Badge>
                                   ))}
                                 </div>
+                              </TableCell>
+                              <TableCell className="pr-6 text-right space-x-2">
+                                <Button size="sm" variant="ghost" onClick={() => {
+                                  setEditingWiId(wi.id);
+                                  setWiForm({
+                                    name: wi.name,
+                                    gelar: wi.gelar,
+                                    email: wi.email,
+                                    nip: wi.nip,
+                                    jabatan: wi.jabatan,
+                                    level: String(wi.level)
+                                  });
+                                  setIsWiDialogOpen(true);
+                                }} className="text-blue-600 hover:text-blue-800">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => {
+                                  if (confirm(`Are you sure you want to delete ${wi.name}?`)) {
+                                    deleteWidyaswara(wi.id);
+                                  }
+                                }} className="text-red-600 hover:text-red-800">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -758,17 +1011,34 @@ export default function AdminDashboard() {
                           <TableHeader>
                             <TableRow>
                               <TableHead className="pl-6">Category Name</TableHead>
-                              <TableHead className="pr-6">Minimum Competency Weight Required</TableHead>
+                              <TableHead>Minimum Competency Weight Required</TableHead>
+                              <TableHead className="pr-6 text-right">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {kategoriList.map(k => (
                               <TableRow key={k.id}>
                                 <TableCell className="font-semibold text-slate-900 pl-6">{k.name}</TableCell>
-                                <TableCell className="pr-6">
+                                <TableCell>
                                   <Badge className="bg-amber-100 text-amber-800 border-amber-200 font-semibold">
                                     Level {k.minWeight} or higher
                                   </Badge>
+                                </TableCell>
+                                <TableCell className="pr-6 text-right space-x-2">
+                                  <Button size="sm" variant="ghost" onClick={() => {
+                                    setEditingKatId(k.id);
+                                    setKatForm({ name: k.name, minWeight: String(k.minWeight) });
+                                    setIsKatDialogOpen(true);
+                                  }} className="text-blue-600 hover:text-blue-800">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => {
+                                    if (confirm(`Are you sure you want to delete category ${k.name}?`)) {
+                                      deleteKategori(k.id);
+                                    }
+                                  }} className="text-red-600 hover:text-red-800">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -779,8 +1049,8 @@ export default function AdminDashboard() {
 
                     <Card className="shadow-sm border-slate-200">
                       <CardHeader>
-                        <CardTitle className="text-base font-bold">Add Category</CardTitle>
-                        <CardDescription>Create a new training category with minimum competency weight.</CardDescription>
+                        <CardTitle className="text-base font-bold">{editingKatId ? 'Edit Category' : 'Add Category'}</CardTitle>
+                        <CardDescription>Create or update a training category with minimum competency weight.</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <form onSubmit={handleAddKat} className="space-y-4">
@@ -820,7 +1090,8 @@ export default function AdminDashboard() {
                             <TableRow>
                               <TableHead className="pl-6">Subject Name (Mapel)</TableHead>
                               <TableHead>Category</TableHead>
-                              <TableHead className="pr-6">Total JP Allocation</TableHead>
+                              <TableHead>Total JP Allocation</TableHead>
+                              <TableHead className="pr-6 text-right">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -830,10 +1101,26 @@ export default function AdminDashboard() {
                                 <TableRow key={m.id}>
                                   <TableCell className="font-semibold text-slate-900 pl-6">{m.name}</TableCell>
                                   <TableCell className="text-slate-600">{cat ? cat.name.split(' ')[0] : 'Unknown'}</TableCell>
-                                  <TableCell className="pr-6">
+                                  <TableCell>
                                     <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 font-semibold">
                                       {m.jpTotal} JP ({m.jpTotal * 45} Mins)
                                     </Badge>
+                                  </TableCell>
+                                  <TableCell className="pr-6 text-right space-x-2">
+                                    <Button size="sm" variant="ghost" onClick={() => {
+                                      setEditingMapelId(m.id);
+                                      setMapelForm({ name: m.name, kategoriId: m.kategoriId, jpTotal: String(m.jpTotal) });
+                                      setIsMapelDialogOpen(true);
+                                    }} className="text-blue-600 hover:text-blue-800">
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={() => {
+                                      if (confirm(`Are you sure you want to delete subject ${m.name}?`)) {
+                                        deleteMapel(m.id);
+                                      }
+                                    }} className="text-red-600 hover:text-red-800">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
                                   </TableCell>
                                 </TableRow>
                               );
@@ -845,8 +1132,8 @@ export default function AdminDashboard() {
 
                     <Card className="shadow-sm border-slate-200">
                       <CardHeader>
-                        <CardTitle className="text-base font-bold">Add Subject (Mapel)</CardTitle>
-                        <CardDescription>Create a new subject with JP constraint (2 to 6 JP).</CardDescription>
+                        <CardTitle className="text-base font-bold">{editingMapelId ? 'Edit Subject' : 'Add Subject'}</CardTitle>
+                        <CardDescription>Create or update a subject with JP constraint (2 to 6 JP).</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <form onSubmit={handleAddMapel} className="space-y-4">
@@ -898,7 +1185,8 @@ export default function AdminDashboard() {
                           <TableHeader>
                             <TableRow>
                               <TableHead className="pl-6">Location / Room Name</TableHead>
-                              <TableHead className="pr-6">Status</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="pr-6 text-right">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -908,10 +1196,26 @@ export default function AdminDashboard() {
                                   <MapPin className="h-4 w-4 text-slate-400" />
                                   {l.name}
                                 </TableCell>
-                                <TableCell className="pr-6">
+                                <TableCell>
                                   <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 font-semibold">
                                     Available
                                   </Badge>
+                                </TableCell>
+                                <TableCell className="pr-6 text-right space-x-2">
+                                  <Button size="sm" variant="ghost" onClick={() => {
+                                    setEditingLokId(l.id);
+                                    setLokForm({ name: l.name });
+                                    setIsLokDialogOpen(true);
+                                  }} className="text-blue-600 hover:text-blue-800">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => {
+                                    if (confirm(`Are you sure you want to delete location ${l.name}?`)) {
+                                      deleteLokasi(l.id);
+                                    }
+                                  }} className="text-red-600 hover:text-red-800">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -922,8 +1226,8 @@ export default function AdminDashboard() {
 
                     <Card className="shadow-sm border-slate-200">
                       <CardHeader>
-                        <CardTitle className="text-base font-bold">Add Location</CardTitle>
-                        <CardDescription>Create a new physical classroom or venue.</CardDescription>
+                        <CardTitle className="text-base font-bold">{editingLokId ? 'Edit Location' : 'Add Location'}</CardTitle>
+                        <CardDescription>Create or update a physical classroom or venue.</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <form onSubmit={handleAddLok} className="space-y-4">
@@ -950,7 +1254,7 @@ export default function AdminDashboard() {
                             <TableHead>Funding Pattern (Pola)</TableHead>
                             <TableHead>Duration</TableHead>
                             <TableHead className="text-center">Scheduled JP</TableHead>
-                            <TableHead className="pr-6 text-right">Action</TableHead>
+                            <TableHead className="pr-6 text-right">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -973,7 +1277,7 @@ export default function AdminDashboard() {
                               <TableCell className="text-center font-bold text-slate-900">
                                 {batch.totalJpScheduled} JP
                               </TableCell>
-                              <TableCell className="pr-6 text-right">
+                              <TableCell className="pr-6 text-right space-x-2">
                                 <Button 
                                   size="sm" 
                                   variant="outline" 
@@ -984,6 +1288,26 @@ export default function AdminDashboard() {
                                   className="border-blue-200 text-blue-700 hover:bg-blue-50"
                                 >
                                   Open Scheduler
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => {
+                                  setEditingBatchId(batch.id);
+                                  setBatchForm({
+                                    name: batch.name,
+                                    kategoriId: batch.kategoriId,
+                                    pola: batch.pola,
+                                    startDate: batch.startDate,
+                                    endDate: batch.endDate
+                                  });
+                                  setIsBatchDialogOpen(true);
+                                }} className="text-blue-600 hover:text-blue-800">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => {
+                                  if (confirm(`Are you sure you want to delete batch ${batch.name}?`)) {
+                                    deleteBatch(batch.id);
+                                  }
+                                }} className="text-red-600 hover:text-red-800">
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </TableCell>
                             </TableRow>
@@ -1138,14 +1462,27 @@ export default function AdminDashboard() {
                       
                       <Dialog open={isSessionDialogOpen} onOpenChange={setIsSessionDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button className="bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
+                          <Button onClick={() => {
+                            setEditingSessionId(null);
+                            setSessionForm({
+                              mapelId: '',
+                              wiId: '',
+                              date: activeBatch ? activeBatch.startDate : '2026-03-02',
+                              startTime: '08:00',
+                              endTime: '09:30',
+                              format: 'Klasikal',
+                              lokasiId: '',
+                              jpKe: '1-2',
+                              jpCount: '2'
+                            });
+                          }} className="bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
                             <Plus className="h-4 w-4" /> Assign Session
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="bg-white max-w-lg">
                           <DialogHeader>
-                            <DialogTitle>Assign Training Session</DialogTitle>
-                            <DialogDescription>Schedule a new session for {activeBatch.name}.</DialogDescription>
+                            <DialogTitle>{editingSessionId ? 'Edit Training Session' : 'Assign Training Session'}</DialogTitle>
+                            <DialogDescription>Schedule or update a session for {activeBatch.name}.</DialogDescription>
                           </DialogHeader>
                           <form onSubmit={handleAddSession} className="space-y-4 py-4">
                             <div className="grid grid-cols-2 gap-4">
@@ -1247,7 +1584,7 @@ export default function AdminDashboard() {
                             )}
 
                             <DialogFooter className="pt-4">
-                              <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white w-full">Schedule Session</Button>
+                              <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white w-full">Save Session</Button>
                             </DialogFooter>
                           </form>
                         </DialogContent>
@@ -1302,14 +1639,42 @@ export default function AdminDashboard() {
                                 </div>
                               </div>
 
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => deleteSession(session.id)}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50 self-end sm:self-center"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => {
+                                    setEditingSessionId(session.id);
+                                    setSessionForm({
+                                      mapelId: session.mapelId,
+                                      wiId: session.wiId,
+                                      date: session.date,
+                                      startTime: session.startTime,
+                                      endTime: session.endTime,
+                                      format: session.format,
+                                      lokasiId: session.lokasiId || '',
+                                      jpKe: session.jpKe,
+                                      jpCount: String(session.jpCount)
+                                    });
+                                    setIsSessionDialogOpen(true);
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => {
+                                    if (confirm("Are you sure you want to delete this session?")) {
+                                      deleteSession(session.id);
+                                    }
+                                  }}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </CardContent>
                           </Card>
                         ))}
@@ -1326,137 +1691,135 @@ export default function AdminDashboard() {
           {/* 4. REPORTS TAB */}
           {activeTab === 'reports' && (
             <div className="space-y-8">
-              {/* Reports Overview Cards */}
-              <div className="grid sm:grid-cols-3 gap-6">
-                <Card className="shadow-sm border-slate-200">
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Scheduled JP</CardDescription>
-                    <CardTitle className="text-3xl font-bold text-slate-900">{reportData.totalJp} JP</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-slate-500">Equivalent to {reportData.totalJp * 45} minutes of training.</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="shadow-sm border-slate-200">
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Sessions</CardDescription>
-                    <CardTitle className="text-3xl font-bold text-slate-900">{reportData.sessionCount} Sessions</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-slate-500">Across all active training batches.</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="shadow-sm border-slate-200">
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Instructors</CardDescription>
-                    <CardTitle className="text-3xl font-bold text-slate-900">{reportData.topWidyaswaras.length} WIs</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-slate-500">Instructors with scheduled sessions.</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-8">
-                {/* Format & Pola Breakdown */}
-                <Card className="shadow-sm border-slate-200">
-                  <CardHeader className="border-b border-slate-100">
-                    <CardTitle className="text-base font-bold text-slate-900">Training Format & Funding Breakdown</CardTitle>
-                    <CardDescription>Distribution of teaching hours across formats and funding patterns.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-6">
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-slate-700">By Format</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span>Klasikal (In-Person)</span>
-                          <span className="font-bold">{reportData.formatBreakdown.klasikal} JP</span>
-                        </div>
-                        <Progress value={reportData.totalJp ? (reportData.formatBreakdown.klasikal / reportData.totalJp) * 100 : 0} className="h-2 bg-slate-100" />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span>Virtual (Online)</span>
-                          <span className="font-bold">{reportData.formatBreakdown.virtual} JP</span>
-                        </div>
-                        <Progress value={reportData.totalJp ? (reportData.formatBreakdown.virtual / reportData.totalJp) * 100 : 0} className="h-2 bg-slate-100" />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span>Asinkron</span>
-                          <span className="font-bold">{reportData.formatBreakdown.asinkron} JP</span>
-                        </div>
-                        <Progress value={reportData.totalJp ? (reportData.formatBreakdown.asinkron / reportData.totalJp) * 100 : 0} className="h-2 bg-slate-100" />
-                      </div>
+              {/* Advanced Filtering Controls */}
+              <Card className="shadow-sm border-slate-200 bg-white">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base font-bold">Advanced Filtering & Search</CardTitle>
+                  <CardDescription>Filter the monthly recap table by date range, funding pattern, or search by instructor name.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid sm:grid-cols-4 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-bold text-slate-500 uppercase">Search Instructor</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input 
+                        placeholder="Search by name or NIP..." 
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="pl-9"
+                      />
                     </div>
+                  </div>
 
-                    <div className="space-y-3 pt-4 border-t border-slate-100">
-                      <h4 className="text-sm font-semibold text-slate-700">By Funding Pattern (Pola)</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span>APBD</span>
-                          <span className="font-bold">{reportData.polaBreakdown.apbd} JP</span>
-                        </div>
-                        <Progress value={reportData.totalJp ? (reportData.polaBreakdown.apbd / reportData.totalJp) * 100 : 0} className="h-2 bg-slate-100" />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span>Kontribusi</span>
-                          <span className="font-bold">{reportData.polaBreakdown.kontribusi} JP</span>
-                        </div>
-                        <Progress value={reportData.totalJp ? (reportData.polaBreakdown.kontribusi / reportData.totalJp) * 100 : 0} className="h-2 bg-slate-100" />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span>Kemitraan</span>
-                          <span className="font-bold">{reportData.polaBreakdown.kemitraan} JP</span>
-                        </div>
-                        <Progress value={reportData.totalJp ? (reportData.polaBreakdown.kemitraan / reportData.totalJp) * 100 : 0} className="h-2 bg-slate-100" />
-                      </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-bold text-slate-500 uppercase">Funding Pattern (Pola)</Label>
+                    <Select value={filterPola} onValueChange={setFilterPola}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Patterns" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white">
+                        <SelectItem value="ALL">All Patterns</SelectItem>
+                        <SelectItem value="APBD">APBD</SelectItem>
+                        <SelectItem value="Kontribusi">Kontribusi</SelectItem>
+                        <SelectItem value="Kemitraan">Kemitraan</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs font-bold text-slate-500 uppercase">Start Date</Label>
+                    <Input 
+                      type="date" 
+                      value={startDateFilter}
+                      onChange={e => setStartDateFilter(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs font-bold text-slate-500 uppercase">End Date</Label>
+                    <Input 
+                      type="date" 
+                      value={endDateFilter}
+                      onChange={e => setEndDateFilter(e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Monthly Recap Table with Pagination & Export */}
+              <Card className="shadow-sm border-slate-200">
+                <CardHeader className="border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <CardTitle className="text-lg font-bold text-slate-900">Monthly Recap Table</CardTitle>
+                    <CardDescription>Detailed breakdown of teaching hours per Widyaswara.</CardDescription>
+                  </div>
+                  <Button onClick={handleExportGlobalRecap} className="bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
+                    <Download className="h-4 w-4" /> Export Global Recap
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50/70">
+                        <TableHead className="font-semibold text-slate-700 pl-6">NIP</TableHead>
+                        <TableHead className="font-semibold text-slate-700">Nama Widyaswara</TableHead>
+                        <TableHead className="font-semibold text-slate-700">Jabatan</TableHead>
+                        <TableHead className="font-semibold text-slate-700 text-center">Total JP APBD</TableHead>
+                        <TableHead className="font-semibold text-slate-700 text-center">Total JP Kontribusi</TableHead>
+                        <TableHead className="font-semibold text-slate-700 text-center">Total JP Kemitraan</TableHead>
+                        <TableHead className="font-semibold text-slate-700 text-center">Grand Total JP</TableHead>
+                        <TableHead className="font-semibold text-slate-700 pr-6 text-right">Export Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedRecapData.map((wi) => (
+                        <TableRow key={wi.id} className="hover:bg-slate-50/50 transition-colors">
+                          <TableCell className="font-mono text-xs pl-6">{wi.nip || 'N/A'}</TableCell>
+                          <TableCell className="font-semibold text-slate-900">{wi.name}, {wi.gelar}</TableCell>
+                          <TableCell className="text-slate-600 text-xs font-medium">{wi.jabatan}</TableCell>
+                          <TableCell className="text-center font-medium text-blue-600">{wi.apbd} JP</TableCell>
+                          <TableCell className="text-center font-medium text-emerald-600">{wi.kontribusi} JP</TableCell>
+                          <TableCell className="text-center font-medium text-amber-600">{wi.kemitraan} JP</TableCell>
+                          <TableCell className="text-center font-bold text-slate-900">{wi.grandTotal} JP</TableCell>
+                          <TableCell className="pr-6 text-right">
+                            <Button size="sm" variant="outline" onClick={() => handleExportIndividualReport(wi)} className="border-blue-200 text-blue-700 hover:bg-blue-50 flex items-center gap-1.5 ml-auto">
+                              <Download className="h-3.5 w-3.5" /> Export WI Report
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  {/* Pagination Controls */}
+                  <div className="p-4 border-t border-slate-100 flex items-center justify-between">
+                    <div className="text-xs text-slate-500">
+                      Showing {Math.min((currentPage - 1) * rowsPerPage + 1, totalRows)} to {Math.min(currentPage * rowsPerPage, totalRows)} of {totalRows} entries
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Top Performing Instructors */}
-                <Card className="shadow-sm border-slate-200">
-                  <CardHeader className="border-b border-slate-100">
-                    <CardTitle className="text-base font-bold text-slate-900">Top Instructors by Scheduled JP</CardTitle>
-                    <CardDescription>Ranking of Widyaswaras based on current month scheduled hours.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {reportData.topWidyaswaras.length === 0 ? (
-                      <p className="text-sm text-slate-500 text-center py-12">No teaching hours scheduled yet.</p>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="pl-6">Rank</TableHead>
-                            <TableHead>Instructor</TableHead>
-                            <TableHead>Level</TableHead>
-                            <TableHead className="pr-6 text-right">Total JP</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {reportData.topWidyaswaras.map((wi, idx) => (
-                            <TableRow key={idx}>
-                              <TableCell className="pl-6 font-bold text-slate-500">#{idx + 1}</TableCell>
-                              <TableCell className="font-semibold text-slate-900">{wi.name}</TableCell>
-                              <TableCell>
-                                <Badge variant="secondary" className="text-xs bg-slate-100 text-slate-700">
-                                  {wi.levelLabel}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="pr-6 text-right font-bold text-blue-600">{wi.jp} JP</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(prev => prev - 1)}
+                      >
+                        <ChevronLeft className="h-4 w-4" /> Previous
+                      </Button>
+                      <span className="text-xs font-semibold text-slate-700">
+                        Page {currentPage} of {totalPages || 1}
+                      </span>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        disabled={currentPage === totalPages || totalPages === 0}
+                        onClick={() => setCurrentPage(prev => prev + 1)}
+                      >
+                        Next <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
 

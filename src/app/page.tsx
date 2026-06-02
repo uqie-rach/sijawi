@@ -6,32 +6,21 @@ import { useWTMS } from '@/context/wtms-context';
 import { ShieldAlert, GraduationCap, BookOpen, Calendar, Award, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 
 export default function Home() {
   const router = useRouter();
-  const { widyaswaras, setUserRole, setSelectedWiId } = useWTMS();
-  const [selectedWi, setSelectedWi] = React.useState<string>('');
+  const { isAuthenticated, userRole } = useWTMS();
 
-  const handleAdminSignIn = () => {
-    setUserRole('admin');
-    setSelectedWiId(null);
-    router.push('/admin');
-  };
-
-  const handleWiSignIn = () => {
-    if (!selectedWi) {
-      setSelectedWi(widyaswaras[0]?.id || '');
-      setUserRole('wi');
-      setSelectedWiId(widyaswaras[0]?.id || null);
-      router.push('/widyaswara');
-      return;
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      if (userRole === 'admin') {
+        router.push('/admin');
+      } else if (userRole === 'wi') {
+        router.push('/widyaswara');
+      }
     }
-    setUserRole('wi');
-    setSelectedWiId(selectedWi);
-    router.push('/widyaswara');
-  };
+  }, [isAuthenticated, userRole, router]);
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-gradient-to-b from-slate-900 via-slate-800 to-slate-950 text-white">
@@ -47,7 +36,7 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Development Mode Bypassed
+          Secure Portal Active
         </div>
       </header>
 
@@ -61,19 +50,18 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl w-full">
-          {/* Super Admin Card */}
+        <div className="max-w-md w-full">
           <Card className="bg-slate-900/80 border-slate-800 text-white hover:border-blue-500/50 transition-all duration-300 shadow-xl flex flex-col justify-between">
-            <CardHeader>
-              <div className="h-12 w-12 rounded-lg bg-blue-600/10 border border-blue-500/20 flex items-center justify-center mb-4">
+            <CardHeader className="text-center">
+              <div className="h-12 w-12 rounded-lg bg-blue-600/10 border border-blue-500/20 flex items-center justify-center mx-auto mb-4">
                 <ShieldAlert className="h-6 w-6 text-blue-400" />
               </div>
-              <CardTitle className="text-2xl font-bold">Super Admin Portal</CardTitle>
+              <CardTitle className="text-2xl font-bold">Access Portal</CardTitle>
               <CardDescription className="text-slate-400">
-                Full access to scheduling engine, load balancing, master data, and compliance reports.
+                Sign in to access the Super Admin or Widyaswara dashboard.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 flex-1">
+            <CardContent className="space-y-4">
               <div className="space-y-2 text-sm text-slate-300">
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-blue-400"></span>
@@ -91,60 +79,10 @@ export default function Home() {
             </CardContent>
             <CardFooter className="pt-4 border-t border-slate-800/60">
               <Button 
-                onClick={handleAdminSignIn}
+                onClick={() => router.push('/login')}
                 className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-6 text-base shadow-lg shadow-blue-600/20"
               >
-                Sign In as Super Admin
-              </Button>
-            </CardFooter>
-          </Card>
-
-          {/* Widyaswara Card */}
-          <Card className="bg-slate-900/80 border-slate-800 text-white hover:border-indigo-500/50 transition-all duration-300 shadow-xl flex flex-col justify-between">
-            <CardHeader>
-              <div className="h-12 w-12 rounded-lg bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mb-4">
-                <BookOpen className="h-6 w-6 text-indigo-400" />
-              </div>
-              <CardTitle className="text-2xl font-bold">Widyaswara Portal</CardTitle>
-              <CardDescription className="text-slate-400">
-                Read-only access to personalized teaching schedules, calendar views, and venue details.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 flex-1">
-              <div className="space-y-3">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Select Widyaswara Profile
-                </label>
-                <Select value={selectedWi} onValueChange={setSelectedWi}>
-                  <SelectTrigger className="bg-slate-950 border-slate-800 text-white focus:ring-indigo-500">
-                    <SelectValue placeholder="Choose a Widyaswara..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                    {widyaswaras.map((wi) => (
-                      <SelectItem key={wi.id} value={wi.id} className="hover:bg-slate-800 focus:bg-slate-800">
-                        {wi.name}, {wi.gelar} (Level {wi.level} - {wi.levelLabel})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 text-sm text-slate-300 pt-2">
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400"></span>
-                  <span>Personalized calendar & list schedule views</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400"></span>
-                  <span>Real-time venue and batch details</span>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="pt-4 border-t border-slate-800/60">
-              <Button 
-                onClick={handleWiSignIn}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-6 text-base shadow-lg shadow-indigo-600/20"
-              >
-                Sign In as Widyaswara
+                Go to Login Page
               </Button>
             </CardFooter>
           </Card>

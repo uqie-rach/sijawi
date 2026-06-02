@@ -34,18 +34,17 @@ export default function WidyaswaraDashboard() {
     setUserRole, 
     widyaswaras, 
     selectedWiId, 
-    setSelectedWiId 
+    setSelectedWiId,
+    isAuthenticated,
+    setIsAuthenticated
   } = useWTMS();
 
-  // Redirect if not in WI mode (for safety, but allow bypass)
+  // Secure Route Guard
   React.useEffect(() => {
-    if (userRole !== 'wi') {
-      setUserRole('wi');
+    if (!isAuthenticated || userRole !== 'wi') {
+      router.push('/login');
     }
-    if (!selectedWiId && widyaswaras.length > 0) {
-      setSelectedWiId(widyaswaras[0].id);
-    }
-  }, [userRole, setUserRole, selectedWiId, widyaswaras, setSelectedWiId]);
+  }, [isAuthenticated, userRole, router]);
 
   // View Mode for Schedule (Table vs Calendar)
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('calendar');
@@ -75,10 +74,19 @@ export default function WidyaswaraDashboard() {
   });
 
   const handleLogout = () => {
+    setIsAuthenticated(false);
     setUserRole(null);
     setSelectedWiId(null);
-    router.push('/');
+    router.push('/login');
   };
+
+  if (!isAuthenticated || userRole !== 'wi') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-slate-500">Redirecting to login...</p>
+      </div>
+    );
+  }
 
   if (!activeWi) {
     return (
