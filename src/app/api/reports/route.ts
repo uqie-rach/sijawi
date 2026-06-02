@@ -1,94 +1,84 @@
-'use server';
-
-import { prisma } from '@/lib/prisma';
+import { sql } from '@/db';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 
-// Helper to check if user is admin
 async function isAdmin() {
-  const token = cookies().get('sessionToken')?.value;
-  if (!token) return false;
+  const cookieStore = await cookies();
+  const token = cookieStore.get('sessionToken')?.value;
   return token === 'admin-session-token';
 }
 
-export async function GET(request) {
-  if (!(await isAdmin)()) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+export async function GET(request: Request) {
+  if (!(await isAdmin())) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get('page') || '1');
     const pageSize = parseInt(url.searchParams.get('pageSize') || '10');
-    const startDate = url.searchParams.get('startDate');
-    const endDate = url.searchParams.get('endDate');
+    const startDate = url.searchParams.get('startDate') || '';
+    const endDate = url.searchParams.get('endDate') || '';
     const search = url.searchParams.get('search') || '';
     const pola = url.searchParams.get('pola') || '';
 
-    // Convert dates to UTC
-    const startDateUTC = startDate ? new Date(startDate).toISOString().split('T')[0] : null;
-    const endDateUTC = endDate ? new Date(endDate).toISOString().split('T')[0] : null;
+    // Fetch all sessions with joined details
+    const allSessionsRows = await sql`
+      SELECT 
+        s.id, s.batch_id as "batchId", s.mapel_id as "mapelId", s.wi_id as "wiId", 
+        s.date, s.start_time as "startTime", s.end_time as "endTime", s.format, 
+        s.lokasi_id as "lokasiId", s.jp_ke as "jpKe", s.jp_count as "jpCount",
+        b.name as "batchName", b.pola,
+        m.name as "mapelName",
+        w.name as "wiName", w.email as "wiEmail"
+      FROM sessions s
+      JOIN batches b ON s.batch_id = b.id
+      JOIN mata_pelatihan m ON s.mapel_id = m.id
+      JOIN widyaswaras w ON s.wi_id = w.id
+      ORDER BY s.date DESC, s.start_time ASC
+    `;
 
-    const skip = (page - 1) * pageSize;
-    const take = pageSize;
+    // Filter in-memory to support flexible search and dynamic parameters easily
+    let filtered = allSessionsRows;
 
-    // Build filter object
-    const whereClause = {};
-
-    if (startDateUTC) whereClause.date = { gte: startDateUTC };
-    if (endDateUTC) whereClause.date = { lte: endDateUTC };
+    if (startDate) {
+      filtered = filtered.filter(s => s.date >= startDate);
+    }
+    if (endDate) {
+      filtered = filtered.filter(s => s.date <= endDate);
+    }
+    if (pola && pola !== 'ALL') {
+      filtered = filtered.filter(s => s.pola === pola);
+    }
     if (search) {
-      whereClause OR: [
-        { wi_name: { contains: search, mode: 'insensitive' } },
-        { wi_email: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-    if (pola) {
-      whereClause.pola = pola;
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(s => 
+        s.wiName.toLowerCase().includes(searchLower) || 
+        s.wiEmail.toLowerCase().includes(searchLower)
+      );
     }
 
-    // Get total count
-    const totalCount = await prisma.session.count({
-      where: whereClause,
+    const totalCount = filtered.length;
+    const paginatedSessions = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+    // Calculate format breakdown
+    const formatBreakdown: Record<string, number> = {};
+    filtered.forEach(s => {
+      formatBreakdown[s.format] = (formatBreakdown[s.format] || 0) + s.jpCount;
     });
 
-    // Get paginated sessions
-    const sessions = await prisma.session.findMany({
-      skip,
-      take,
-      where: whereClause,
-      include: {
-        batch: { include: { kategori: true } },
-        wi: true,
-        mapel: true,
-      },
-      orderBy: { date: 'desc' },
+    // Calculate pola breakdown
+    const polaBreakdown: Record<string, number> = {};
+    filtered.forEach(s => {
+      polaBreakdown[s.pola] = (polaBreakdown[s.pola] || 0) + s.jpCount;
     });
 
-    // Aggregations
-    const formatBreakdown = await prisma.session.groupBy({
-      by: { format: true },
-      _sum: { jp_count: true },
-    });
+    // Get distinct WI names
+    const wiNames = Array.from(new Set(filtered.map(s => s.wiName))).map(name => ({ name }));
 
-    const polaBreakdown = await prisma.session.groupBy({
-      by: { batch: { pola: true } },
-      _sum: { jp_count: true },
-    });
-
-    // WI names for search
-    const wiNames = await prisma.widyaswara.findMany({
-      where: search ? { email: { contains: search, mode: 'insensitive' } } : {},
-      select: { name: true },
-    });
-
-    return new Response(JSON.stringify({
-      sessions,
-      formatBreakdown,
-      polaBreakdown,
+    return Response.json({
+      sessions: paginatedSessions,
+      formatBreakdown: Object.entries(formatBreakdown).map(([format, sum]) => ({ format, _sum: { jp_count: sum } })),
+      polaBreakdown: Object.entries(polaBreakdown).map(([pola, sum]) => ({ batch: { pola }, _sum: { jp_count: sum } })),
       totalCount,
       wiNames,
       page,
@@ -97,15 +87,9 @@ export async function GET(request) {
       endDate,
       search,
       pola,
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating report:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return Response.json({ error: error.message }, { status: 500 });
   }
 }
