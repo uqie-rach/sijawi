@@ -180,7 +180,7 @@ export default function WidyaswaraDashboard() {
                   <span className="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
                   <span className="flex items-center gap-1">
                     <Award className="h-4 w-4 text-slate-400" />
-                    Competency Level {activeWi.level} ({activeWi.levelLabel === 'PKM' ? 'PKN' : activeWi.levelLabel})
+                    Competency Level {activeWi.level} ({activeWi.levelLabel})
                   </span>
                 </div>
                 <div className="text-xs text-slate-500 font-medium">
