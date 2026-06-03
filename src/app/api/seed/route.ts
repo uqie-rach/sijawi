@@ -27,7 +27,7 @@ export async function POST() {
 
     // Seed Widyaswaras
     const widyaswaras = [
-      { id: 'wi-1', name: 'Uqie Rachmadie', gelar: 'M.Pd.', email: 'wtms+wi.uqie@gmail.com', nip: '197508122001121002', jabatan: 'WI Ahli Utama', level: 5, level_label: 'PKM', jp_last_month: 32 },
+      { id: 'wi-1', name: 'Uqie Rachmadie', gelar: 'M.Pd.', email: 'wtms+wi.uqie@gmail.com', nip: '197508122001121002', jabatan: 'WI Ahli Utama', level: 5, level_label: 'PKN', jp_last_month: 32 },
       { id: 'wi-2', name: 'Americo Block', gelar: 'S.T.', email: 'wtms+wi.americo@gmail.com', nip: '198803152010121001', jabatan: 'WI Ahli Muda', level: 2, level_label: 'Latsar', jp_last_month: 24 },
       { id: 'wi-3', name: 'Dr. H. Ahmad Yani', gelar: 'M.Si.', email: 'wtms+wi.yani@gmail.com', nip: '197001011995031001', jabatan: 'WI Ahli Madya', level: 4, level_label: 'PKA', jp_last_month: 28 },
       { id: 'wi-4', name: 'Rina Wijaya', gelar: 'M.Si.', email: 'wtms+wi.rina@gmail.com', nip: '198211202006042003', jabatan: 'WI Ahli Madya', level: 3, level_label: 'PKP', jp_last_month: 18 },
@@ -81,7 +81,7 @@ export async function POST() {
     const batches = [
       { id: 'batch-1', name: 'PKA Angkatan I', kategori_id: 'kat-pka', pola: 'APBD', start_date: '2026-03-01', end_date: '2026-03-15' },
       { id: 'batch-2', name: 'Latsar CPNS 2026', kategori_id: 'kat-latsar', pola: 'Kontribusi', start_date: '2026-03-10', end_date: '2026-03-25' },
-      { id: 'batch-3', name: 'PKM Kepemimpinan Nasional', kategori_id: 'kat-pkn', pola: 'Kemitraan', start_date: '2026-03-05', end_date: '2026-03-20' },
+      { id: 'batch-3', name: 'PKN Kepemimpinan Nasional', kategori_id: 'kat-pkn', pola: 'Kemitraan', start_date: '2026-03-05', end_date: '2026-03-20' },
       { id: 'batch-4', name: 'PKA Angkatan II (April)', kategori_id: 'kat-pka', pola: 'APBD', start_date: '2026-04-01', end_date: '2026-04-15' },
       { id: 'batch-5', name: 'PKP Angkatan I (April)', kategori_id: 'kat-pkp', pola: 'Kontribusi', start_date: '2026-04-05', end_date: '2026-04-20' },
     ];
