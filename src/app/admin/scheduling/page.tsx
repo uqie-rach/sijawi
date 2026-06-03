@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Calendar, Layers, MapPin, ArrowUpRight } from 'lucide-react';
-import { SchedulingWorkspaceClient } from "@/components/admin/SchedulingWorkspaceClient"
+import { SchedulingWorkspaceClient } from "@/components/admin/scheduling-workspace-client";
 
 interface BatchListItem {
   id: string;
