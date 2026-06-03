@@ -103,7 +103,7 @@ export default function Home() {
             <div className="space-y-1">
               <h4 className="font-semibold text-slate-200">Mapel Constraint</h4>
               <p>1 Subject (Mapel) spans 2 to 6 JP.</p>
-              <p>Can be split across multiple days or multiple Widyaswaras within different hours.</p>
+              <p>Can be split across multiple days or multiple Widyaiswaras within different hours.</p>
             </div>
             <div className="space-y-1">
               <h4 className="font-semibold text-slate-200">Hierarchy Restriction</h4>
