@@ -69,7 +69,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-blue-400"></span>
-                  <span>Monitor Widyaswara JP load balancing</span>
+                  <span>Monitor Widyaiswara JP load balancing</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-blue-400"></span>
