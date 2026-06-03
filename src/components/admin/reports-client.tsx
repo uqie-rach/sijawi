@@ -65,7 +65,7 @@ export function ReportsClient({ initialWis }: ReportsClientProps) {
   };
 
   const handleExportIndividual = (wi: any) => {
-    const header = `LAPORAN KINERJA INDIVIDU WIDYASWARA\n====================================\n\n`;
+    const header = `LAPORAN KINERJA INDIVIDU WIDYAISWARA\n====================================\n\n`;
     const metadata = `NIP: ${wi.nip}\nNama: ${wi.name}, ${wi.gelar}\nJabatan: ${wi.jabatan}\nCompetency Level: Level ${wi.level} (${wi.levelLabel})\n\n`;
     const summary = `REKAPITULASI JAM PELAJARAN (JP):\n--------------------------------\nAPBD: ${wi.apbd} JP\nKontribusi: ${wi.kontribusi} JP\nKemitraan: ${wi.kemitraan} JP\nGrand Total: ${wi.grandTotal} JP\n`;
     
