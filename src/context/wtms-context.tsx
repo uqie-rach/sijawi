@@ -57,7 +57,7 @@ export interface Session {
 }
 
 interface WTMSContextType {
-  widyaswaras: Widyaiswara[]; // Keep database naming for compatibility, map to Widyaiswara internally
+  widyaswaras: Widyaiswara[];
   kategoriList: Kategori[];
   mapelList: Mapel[];
   lokasiList: Lokasi[];
@@ -105,7 +105,7 @@ interface WTMSContextType {
 
 const WTMSContext = createContext<WTMSContextType | undefined>(undefined);
 
-// Helper to parse JP range (e.g., "1-2" -> [1, 2], "3" -> [3, 3])
+// Helper to parse JP range
 function parseJpRange(jpKe: string): number[] {
   const clean = jpKe.replace(/\s+/g, '');
   const parts = clean.split('-');
@@ -141,7 +141,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Fetch all data from API
         const [resWi, resKat, resMapel, resLok, resBatches, resSessions] = await Promise.all([
           fetch('/api/widyaswara').then(r => r.ok ? r.json() : []),
           fetch('/api/kategori-pelatihan').then(r => r.ok ? r.json() : []),
@@ -151,7 +150,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           fetch('/api/sessions').then(r => r.ok ? r.json() : [])
         ]);
 
-        // Jika database kosong, panggil endpoint seed tunggal di server
         if (Array.isArray(resWi) && resWi.length === 0 && Array.isArray(resKat) && resKat.length === 0) {
           const seedRes = await fetch('/api/seed', {
             method: 'POST',
@@ -159,36 +157,16 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }).then(r => r.json());
 
           if (seedRes.success) {
-            // Reload setelah seeding berhasil
             window.location.reload();
           }
           return;
         }
 
-        if (Array.isArray(resWi)) {
-          // Replace PKM to PKN dynamically
-          const formattedWi = resWi.map((w: any) => ({
-            ...w,
-            levelLabel: w.levelLabel === 'PKM' ? 'PKN' : w.levelLabel
-          }));
-          setWidyaswaras(formattedWi);
-        }
-        if (Array.isArray(resKat)) {
-          const formattedKat = resKat.map((k: any) => ({
-            ...k,
-            name: k.name.replace('PKM', 'PKN')
-          }));
-          setKategoriList(formattedKat);
-        }
+        if (Array.isArray(resWi)) setWidyaswaras(resWi);
+        if (Array.isArray(resKat)) setKategoriList(resKat);
         if (Array.isArray(resMapel)) setMapelList(resMapel);
         if (Array.isArray(resLok)) setLokasiList(resLok);
-        if (Array.isArray(resBatches)) {
-          const formattedBatches = resBatches.map((b: any) => ({
-            ...b,
-            name: b.name.replace('PKM', 'PKN')
-          }));
-          setBatches(formattedBatches);
-        }
+        if (Array.isArray(resBatches)) setBatches(resBatches);
         if (Array.isArray(resSessions)) setSessions(resSessions);
       } catch (err) {
         console.error("Failed to load data from API:", err);
@@ -197,7 +175,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     loadData();
 
-    // Load auth state from localStorage
     const storedAuth = localStorage.getItem('wtms_auth');
     const storedRole = localStorage.getItem('wtms_role');
     const storedWiId = localStorage.getItem('wtms_wi_id');
@@ -207,7 +184,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (storedWiId) setSelectedWiId(JSON.parse(storedWiId));
   }, []);
 
-  // Save to localStorage on changes
   const saveToStorage = (key: string, data: any) => {
     localStorage.setItem(key, JSON.stringify(data));
   };
@@ -246,11 +222,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetch('/api/widyaswara', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...newWi,
-        // map PKN back to database expectations (PKM) if any
-        levelLabel: newWi.levelLabel === 'PKN' ? 'PKM' : newWi.levelLabel
-      })
+      body: JSON.stringify(newWi)
     }).catch(err => console.error(err));
 
     toast.success(`Widyaiswara ${wi.name} successfully added!`);
@@ -270,10 +242,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetch('/api/widyaswara', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...updatedWi,
-        levelLabel: updatedWi.levelLabel === 'PKN' ? 'PKM' : updatedWi.levelLabel
-      })
+      body: JSON.stringify(updatedWi)
     }).catch(err => console.error(err));
 
     toast.success(`Widyaiswara ${wi.name} successfully updated!`);
@@ -301,10 +270,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetch('/api/kategori-pelatihan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...newKat,
-        name: newKat.name.replace('PKN', 'PKM')
-      })
+      body: JSON.stringify(newKat)
     }).catch(err => console.error(err));
 
     toast.success(`Category ${kat.name} successfully added!`);
@@ -317,10 +283,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetch('/api/kategori-pelatihan', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...updatedKat,
-        name: updatedKat.name.replace('PKN', 'PKM')
-      })
+      body: JSON.stringify(updatedKat)
     }).catch(err => console.error(err));
 
     toast.success(`Category ${kat.name} successfully updated!`);
@@ -427,10 +390,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetch('/api/batches', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...newBatch,
-        name: newBatch.name.replace('PKN', 'PKM')
-      })
+      body: JSON.stringify(newBatch)
     }).catch(err => console.error(err));
 
     toast.success(`Batch ${batch.name} successfully created!`);
@@ -443,10 +403,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetch('/api/batches', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...updatedBatch,
-        name: updatedBatch.name.replace('PKN', 'PKM')
-      })
+      body: JSON.stringify(updatedBatch)
     }).catch(err => console.error(err));
 
     toast.success(`Batch ${batch.name} successfully updated!`);
@@ -464,13 +421,12 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Session CRUD
   const addSession = (sessionData: Omit<Session, 'id'>) => {
-    // 1. Validate Hierarchy Restriction
     const wi = widyaswaras.find(w => w.id === sessionData.wiId);
     const batch = batches.find(b => b.id === sessionData.batchId);
     const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
 
     if (!wi || !batch || !category) {
-      return { success: false, error: "Invalid Widyaiswara, Batch, or Category selection." };
+      return { success: false, error: "Invalid selection parameters." };
     }
 
     if (wi.level < category.minWeight) {
@@ -479,7 +435,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 2. Validate Operational Hours for Klasikal
     if (sessionData.format === 'Klasikal') {
       const startHour = parseInt(sessionData.startTime.split(':')[0]);
       const endHour = parseInt(sessionData.endTime.split(':')[0]);
@@ -498,7 +453,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 3. Validate Mapel JP accumulation (Max 6 JP per Mapel in a batch)
     const existingMapelSessions = sessions.filter(s => s.batchId === sessionData.batchId && s.mapelId === sessionData.mapelId);
     const currentJpSum = existingMapelSessions.reduce((sum, s) => sum + s.jpCount, 0);
     const mapel = mapelList.find(m => m.id === sessionData.mapelId);
@@ -510,7 +464,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 4. Validate JP Conflict Engine Validation (jp_ke Overlap Prevention)
     const newJpRange = parseJpRange(sessionData.jpKe);
     if (newJpRange.length === 2) {
       const jpCollision = sessions.find(s => 
@@ -526,7 +479,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 5. Validate WI Collision (Widyaiswara cannot teach in two places at the same time)
     const wiCollision = sessions.find(s => 
       s.wiId === sessionData.wiId && 
       s.date === sessionData.date && 
@@ -544,7 +496,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 6. Validate Location Clash (For Klasikal format)
     if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
       const locationClash = sessions.find(s => 
         s.format === 'Klasikal' &&
@@ -566,7 +517,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // All validations passed!
     const newSession: Session = {
       ...sessionData,
       id: `sess-${Date.now()}`
@@ -584,13 +534,12 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateSession = (id: string, sessionData: Omit<Session, 'id'>) => {
-    // 1. Validate Hierarchy Restriction
     const wi = widyaswaras.find(w => w.id === sessionData.wiId);
     const batch = batches.find(b => b.id === sessionData.batchId);
     const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
 
     if (!wi || !batch || !category) {
-      return { success: false, error: "Invalid Widyaiswara, Batch, or Category selection." };
+      return { success: false, error: "Invalid selection parameters." };
     }
 
     if (wi.level < category.minWeight) {
@@ -599,7 +548,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 2. Validate Operational Hours for Klasikal
     if (sessionData.format === 'Klasikal') {
       const startHour = parseInt(sessionData.startTime.split(':')[0]);
       const endHour = parseInt(sessionData.endTime.split(':')[0]);
@@ -618,7 +566,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 3. Validate Mapel JP accumulation (Max 6 JP per Mapel in a batch)
     const existingMapelSessions = sessions.filter(s => s.id !== id && s.batchId === sessionData.batchId && s.mapelId === sessionData.mapelId);
     const currentJpSum = existingMapelSessions.reduce((sum, s) => sum + s.jpCount, 0);
     const mapel = mapelList.find(m => m.id === sessionData.mapelId);
@@ -630,7 +577,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 4. Validate JP Conflict Engine Validation (jp_ke Overlap Prevention)
     const newJpRange = parseJpRange(sessionData.jpKe);
     if (newJpRange.length === 2) {
       const jpCollision = sessions.find(s => 
@@ -647,7 +593,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 5. Validate WI Collision (Widyaiswara cannot teach in two places at the same time)
     const wiCollision = sessions.find(s => 
       s.id !== id &&
       s.wiId === sessionData.wiId && 
@@ -666,7 +611,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 6. Validate Location Clash (For Klasikal format)
     if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
       const locationClash = sessions.find(s => 
         s.id !== id &&
@@ -689,7 +633,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // All validations passed!
     const updatedSession = { ...sessionData, id };
     setSessions(prev => prev.map(s => s.id === id ? { ...s, ...sessionData } : s));
 
