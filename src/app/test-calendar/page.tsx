@@ -6,9 +6,9 @@ import { useWTMS } from '@/context/wtms-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar as CalendarIcon, Clock, MapPin, BookOpen, GraduationCap, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import { getDaysInMonth, format } from 'calendarkit-basic';
 
 export default function TestCalendarPage() {
   const router = useRouter();
@@ -18,23 +18,22 @@ export default function TestCalendarPage() {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Get total days in month
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayIndex = new Date(year, month, 1).getDay();
-
-  const calendarCells = [];
-  for (let i = 0; i < firstDayIndex; i++) {
-    calendarCells.push(null);
-  }
-  for (let i = 1; i <= daysInMonth; i++) {
-    calendarCells.push(new Date(year, month, i));
-  }
+  // Use calendarkit-basic to safely list all valid days
+  const calendarDaysList = getDaysInMonth(currentDate);
 
   const formatDateStr = (date: Date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
+  };
+
+  const nextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
+  };
+
+  const prevMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
   };
 
   const monthNames = [
@@ -52,7 +51,7 @@ export default function TestCalendarPage() {
           </div>
           <div>
             <h1 className="font-bold text-lg tracking-tight text-white">WTMS Calendar Sandbox</h1>
-            <p className="text-xs text-slate-400">Testing Sandbox Calendar Engine Integration</p>
+            <p className="text-xs text-slate-400">Powered by calendarkit-basic engine helpers</p>
           </div>
         </div>
         <Button 
@@ -91,7 +90,7 @@ export default function TestCalendarPage() {
                 </CardTitle>
                 <div className="flex items-center gap-3">
                   <button 
-                    onClick={() => setCurrentDate(new Date(year, month - 1, 1))} 
+                    onClick={prevMonth} 
                     className="p-1 rounded border border-slate-700 hover:bg-slate-800"
                   >
                     <ChevronLeft className="h-3.5 w-3.5 text-slate-300" />
@@ -100,7 +99,7 @@ export default function TestCalendarPage() {
                     {monthNames[month]} {year}
                   </span>
                   <button 
-                    onClick={() => setCurrentDate(new Date(year, month + 1, 1))} 
+                    onClick={nextMonth} 
                     className="p-1 rounded border border-slate-700 hover:bg-slate-800"
                   >
                     <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
@@ -112,8 +111,7 @@ export default function TestCalendarPage() {
                   <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
                 </div>
                 <div className="grid grid-cols-7 gap-1.5 min-h-[350px]">
-                  {calendarCells.map((day, idx) => {
-                    if (!day) return <div key={`empty-${idx}`} className="bg-slate-900/40 rounded border border-slate-800/30"></div>;
+                  {calendarDaysList.map((day: Date, idx: number) => {
                     const dateStr = formatDateStr(day);
                     const dayEvents = sessions.filter(s => s.date === dateStr);
 
