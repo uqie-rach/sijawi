@@ -43,7 +43,7 @@ export default function Home() {
       <main className="container mx-auto px-6 py-12 flex-1 flex flex-col items-center justify-center">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-gradient-to-r from-blue-400 via-indigo-200 to-white bg-clip-text text-transparent">
-            Widyaswara Training Management System
+            Widyaiswara Training Management System
           </h2>
           <p className="text-lg text-slate-300 max-w-2xl mx-auto">
             An enterprise-grade scheduling, load balancing, and compliance engine for civil service training centers.
@@ -58,7 +58,7 @@ export default function Home() {
               </div>
               <CardTitle className="text-2xl font-bold">Access Portal</CardTitle>
               <CardDescription className="text-slate-400">
-                Sign in to access the Super Admin or Widyaswara dashboard.
+                Sign in to access the Super Admin or Widyaiswara dashboard.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
