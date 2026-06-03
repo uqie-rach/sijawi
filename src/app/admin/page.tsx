@@ -54,7 +54,7 @@ async function getWidyaiswaraOverviewData(): Promise<WidyaiswaraWithCalculation[
         nip: wi.nip,
         jabatan: wi.jabatan,
         level: Number(wi.level),
-        levelLabel: wi.level_label === 'PKM' ? 'PKN' : wi.level_label,
+        levelLabel: wi.level_label,
         jpLastMonth: Number(wi.jp_last_month || 0),
         jpCurrentMonth,
         breakdown: { apbd, kontribusi, kemitraan },
