@@ -62,7 +62,7 @@ export default function LoginPage() {
           </div>
           <div>
             <h1 className="font-bold text-xl tracking-tight">WTMS</h1>
-            <p className="text-xs text-slate-400">Widyaswara Training Management</p>
+            <p className="text-xs text-slate-400">Widyaiswara Training Management</p>
           </div>
         </div>
       </header>
