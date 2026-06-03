@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Calendar, Layers, MapPin, ArrowUpRight } from 'lucide-react';
-import { SchedulingWorkspaceClient } from "@/components/admin/scheduling-workspace-client";
+import { SchedulingWorkspaceClient } from '@/components/admin/scheduling-workspace-client';
 
 interface BatchListItem {
   id: string;
@@ -21,7 +21,7 @@ interface BatchListItem {
   distinctLocations: string[];
 }
 
-async function getBatchesWithSchedulingProgress(): Promise<BatchListItem[]> {
+async function getSchedulingIndexData() {
   try {
     const batches = await sql`
       SELECT b.*, k.name as "categoryName" 
@@ -37,8 +37,10 @@ async function getBatchesWithSchedulingProgress(): Promise<BatchListItem[]> {
     `;
 
     const mapels = await sql`SELECT * FROM mata_pelatihan`;
+    const wis = await sql`SELECT * FROM widyaswaras ORDER BY name ASC`;
+    const lokasis = await sql`SELECT * FROM lokasi ORDER BY name ASC`;
 
-    return batches.map((b) => {
+    const formattedBatches: BatchListItem[] = batches.map((b) => {
       // Find all relevant mapels for this batch category to find required sum of JP
       const relevantMapels = mapels.filter((m) => m.kategori_id === b.kategori_id);
       const totalJpRequired = relevantMapels.reduce((sum, m) => sum + Number(m.jp_total), 0);
@@ -66,17 +68,39 @@ async function getBatchesWithSchedulingProgress(): Promise<BatchListItem[]> {
         distinctLocations: locations,
       };
     });
+
+    return {
+      batchesList: formattedBatches,
+      mapels: mapels.map(m => ({ id: m.id, name: m.name, kategoriId: m.kategori_id, jpTotal: Number(m.jp_total) })),
+      wis: wis.map(w => ({ id: w.id, name: w.name, gelar: w.gelar, email: w.email, nip: w.nip, jabatan: w.jabatan, level: Number(w.level), levelLabel: w.level_label })),
+      lokasis: lokasis.map(l => ({ id: l.id, name: l.name })),
+      sessions: sessions.map(s => ({
+        id: s.id,
+        batchId: s.batch_id,
+        mapelId: s.mapel_id,
+        wiId: s.wi_id,
+        date: s.date,
+        startTime: s.start_time,
+        endTime: s.end_time,
+        format: s.format,
+        lokasiId: s.lokasi_id || undefined,
+        jpKe: s.jp_ke,
+        jpCount: Number(s.jp_count)
+      })),
+      allBatches: batches.map(b => ({ id: b.id, name: b.name, startDate: b.start_date, endDate: b.end_date }))
+    };
   } catch (e) {
     console.error(e);
-    return [];
+    return { batchesList: [], mapels: [], wis: [], lokasis: [], sessions: [], allBatches: [] };
   }
 }
 
 export default async function SchedulingIndexPage() {
-  const batchesData = await getBatchesWithSchedulingProgress();
+  const data = await getSchedulingIndexData();
 
   return (
     <div className="space-y-8">
+      {/* Batch Listing Panel */}
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="bg-slate-50/50 border-b border-slate-100">
           <CardTitle className="text-lg font-bold">Select Batch to Schedule</CardTitle>
@@ -95,7 +119,7 @@ export default async function SchedulingIndexPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {batchesData.map((b) => {
+              {data.batchesList.map((b) => {
                 const percentage = Math.min((b.totalJpScheduled / b.totalJpRequired) * 100, 100);
                 return (
                   <TableRow key={b.id} className="hover:bg-slate-50/50 transition-colors">
@@ -162,7 +186,24 @@ export default async function SchedulingIndexPage() {
         </CardContent>
       </Card>
 
-      <SchedulingWorkspaceClient />
+      {/* Global Month/Day/Table Calendar Timeline Preview */}
+      <Card className="shadow-sm border-slate-200 bg-white">
+        <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+          <CardTitle className="text-lg font-bold">Global Schedules Control Engine</CardTitle>
+          <CardDescription>
+            Examine and preview all scheduled slots across all batch timelines simultaneously.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <SchedulingWorkspaceClient
+            initialMapels={data.mapels}
+            initialWis={data.wis}
+            initialLokasis={data.lokasis}
+            initialSessions={data.sessions}
+            allBatches={data.allBatches}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -16,8 +16,8 @@ import { Combobox } from '@/components/ui/combobox';
 import { Calendar, Clock, MapPin, UserCheck, Plus, Trash2, Edit, ListFilter, CalendarDays, TableProperties, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SchedulingWorkspaceClientProps {
-  batchId: string;
-  initialBatch: any;
+  batchId?: string;
+  initialBatch?: any;
   initialMapels: any[];
   initialWis: any[];
   initialLokasis: any[];
@@ -50,9 +50,8 @@ export function SchedulingWorkspaceClient({
   // Switch between views: 'calendar' | 'day' | 'table'
   const [viewMode, setViewMode] = useState<'calendar' | 'day' | 'table'>('calendar');
 
-  // Active dates track inside Workspace Calendar View
-  const activeBatch = batches.find(b => b.id === batchId) || initialBatch;
-  const batchStartDate = new Date(activeBatch?.startDate || '2026-03-01');
+  const activeBatch = batchId ? (batches.find(b => b.id === batchId) || initialBatch) : null;
+  const batchStartDate = activeBatch ? new Date(activeBatch.startDate) : new Date(2026, 2, 1); // Default to March 2026 for demo data
   const [selectedDayDate, setSelectedDayDate] = useState<string>(activeBatch?.startDate || '2026-03-02');
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date(batchStartDate.getFullYear(), batchStartDate.getMonth(), 1));
 
@@ -62,11 +61,14 @@ export function SchedulingWorkspaceClient({
   const activeLokasis = lokasiList.length ? lokasiList : initialLokasis;
   const activeSessions = sessions.length ? sessions : initialSessions;
 
-  // Filter current active sessions for this batch
-  const batchSessions = activeSessions.filter(s => s.batchId === batchId);
+  // Filter current active sessions (by batchId if specified, otherwise show all)
+  const batchSessions = batchId 
+    ? activeSessions.filter(s => s.batchId === batchId)
+    : activeSessions;
 
   // States for session Form
   const [sessionForm, setSessionForm] = useState({
+    batchId: batchId || '',
     mapelId: '',
     wiId: '',
     date: activeBatch?.startDate || '2026-03-02',
@@ -81,11 +83,13 @@ export function SchedulingWorkspaceClient({
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Filter mapels belonging to this batch's category
-  const relevantMapels = activeMapels.filter(m => m.kategoriId === activeBatch?.kategoriId);
+  // Filter mapels belonging to the current category if inside a batch context
+  const relevantMapels = activeBatch 
+    ? activeMapels.filter(m => m.kategoriId === activeBatch.kategoriId)
+    : activeMapels;
 
-  // Mapel status tracking for this batch
-  const mapelStatus = relevantMapels.map(mapel => {
+  // Mapel status tracking for this batch (only shown if batchId is provided)
+  const mapelStatus = activeBatch ? relevantMapels.map(mapel => {
     const scheduledSessions = batchSessions.filter(s => s.mapelId === mapel.id);
     const scheduledJp = scheduledSessions.reduce((sum, s) => sum + Number(s.jpCount), 0);
     const remainingJp = Number(mapel.jpTotal) - scheduledJp;
@@ -95,15 +99,16 @@ export function SchedulingWorkspaceClient({
       remainingJp,
       isFullyScheduled: remainingJp <= 0
     };
-  });
+  }) : [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sessionForm.mapelId || !sessionForm.wiId) return;
+    const targetBatchId = batchId || sessionForm.batchId;
+    if (!targetBatchId || !sessionForm.mapelId || !sessionForm.wiId) return;
 
     if (editingSessionId) {
       const res = updateSession(editingSessionId, {
-        batchId,
+        batchId: targetBatchId,
         mapelId: sessionForm.mapelId,
         wiId: sessionForm.wiId,
         date: sessionForm.date,
@@ -120,7 +125,7 @@ export function SchedulingWorkspaceClient({
       }
     } else {
       const res = addSession({
-        batchId,
+        batchId: targetBatchId,
         mapelId: sessionForm.mapelId,
         wiId: sessionForm.wiId,
         date: sessionForm.date,
@@ -141,6 +146,7 @@ export function SchedulingWorkspaceClient({
   const triggerEdit = (session: any) => {
     setEditingSessionId(session.id);
     setSessionForm({
+      batchId: session.batchId,
       mapelId: session.mapelId,
       wiId: session.wiId,
       date: session.date,
@@ -168,6 +174,11 @@ export function SchedulingWorkspaceClient({
   const lokasiOptions = activeLokasis.map(l => ({
     value: l.id,
     label: l.name
+  }));
+
+  const batchOptions = allBatches.map(b => ({
+    value: b.id,
+    label: b.name
   }));
 
   // Calendar render helper logic
@@ -231,38 +242,40 @@ export function SchedulingWorkspaceClient({
           </CardContent>
         </Card>
 
-        {/* Sidebar: Mapel JP status */}
-        <Card className="shadow-sm border-slate-200 bg-white">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-sm font-bold text-slate-800">Subject JP Accumulation</CardTitle>
-            <CardDescription className="text-xs">Required vs. allocated parameters.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 space-y-3">
-            {mapelStatus.length === 0 ? (
-              <p className="text-xs text-slate-500 text-center py-4">No subjects registered for this category.</p>
-            ) : (
-              mapelStatus.map(m => {
-                const percentage = (m.scheduledJp / m.jpTotal) * 100;
-                return (
-                  <div key={m.id} className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="font-semibold text-slate-700 truncate max-w-[120px]" title={m.name}>{m.name}</span>
-                      <span className="text-[10px] font-bold text-slate-500">{m.scheduledJp}/{m.jpTotal} JP</span>
+        {/* Sidebar: Mapel JP status - only shown when batchId is selected */}
+        {activeBatch && (
+          <Card className="shadow-sm border-slate-200 bg-white">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-sm font-bold text-slate-800">Subject JP Accumulation</CardTitle>
+              <CardDescription className="text-xs">Required vs. allocated parameters.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              {mapelStatus.length === 0 ? (
+                <p className="text-xs text-slate-500 text-center py-4">No subjects registered for this category.</p>
+              ) : (
+                mapelStatus.map(m => {
+                  const percentage = (m.scheduledJp / m.jpTotal) * 100;
+                  return (
+                    <div key={m.id} className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-semibold text-slate-700 truncate max-w-[120px]" title={m.name}>{m.name}</span>
+                        <span className="text-[10px] font-bold text-slate-500">{m.scheduledJp}/{m.jpTotal} JP</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Progress value={percentage} className="h-1.5 flex-1 bg-slate-100" />
+                        {m.isFullyScheduled ? (
+                          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[9px] px-1 py-0 font-bold">Done</Badge>
+                        ) : (
+                          <span className="text-[9px] font-bold text-slate-400">{m.remainingJp} left</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Progress value={percentage} className="h-1.5 flex-1 bg-slate-100" />
-                      {m.isFullyScheduled ? (
-                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[9px] px-1 py-0 font-bold">Done</Badge>
-                      ) : (
-                        <span className="text-[9px] font-bold text-slate-400">{m.remainingJp} left</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Main Workspace Workspace: Supports granular views */}
@@ -304,6 +317,7 @@ export function SchedulingWorkspaceClient({
               <Button onClick={() => {
                 setEditingSessionId(null);
                 setSessionForm({
+                  batchId: batchId || '',
                   mapelId: '',
                   wiId: '',
                   date: activeBatch?.startDate || '2026-03-02',
@@ -324,6 +338,12 @@ export function SchedulingWorkspaceClient({
                 <DialogDescription>Setup instructor mapping, date ranges and formatting operational limits.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 py-3">
+                {!batchId && (
+                  <div className="space-y-1">
+                    <Label>Batch Pelatihan</Label>
+                    <Combobox options={batchOptions} value={sessionForm.batchId} onValueChange={val => setSessionForm({ ...sessionForm, batchId: val })} placeholder="Select batch..." />
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label>Subject (Mapel)</Label>
@@ -399,7 +419,7 @@ export function SchedulingWorkspaceClient({
             <CardHeader className="border-b border-slate-100 flex flex-row justify-between items-center bg-slate-50/50 px-6 py-4">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <CalendarDays className="h-4.5 w-4.5 text-blue-600" />
-                Active Calendar Month View
+                Active Calendar Month View {batchId ? `(Batch: ${activeBatch?.name})` : '(All Batches)'}
               </CardTitle>
               <div className="flex items-center gap-3">
                 <button
@@ -435,7 +455,7 @@ export function SchedulingWorkspaceClient({
                   
                   const dateStr = formatDateString(day);
                   const dayEvents = batchSessions.filter(s => s.date === dateStr);
-                  const isDayInBatchRange = dateStr >= activeBatch?.startDate && dateStr <= activeBatch?.endDate;
+                  const isDayInBatchRange = batchId ? (dateStr >= activeBatch?.startDate && dateStr <= activeBatch?.endDate) : true;
 
                   return (
                     <div
