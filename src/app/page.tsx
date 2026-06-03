@@ -107,7 +107,7 @@ export default function Home() {
             </div>
             <div className="space-y-1">
               <h4 className="font-semibold text-slate-200">Hierarchy Restriction</h4>
-              <p>WIs have competency weights (PKM=5, PKA=4, PKP=3, Latsar=2, PPPK=1).</p>
+              <p>WIs have competency weights (PKN=5, PKA=4, PKP=3, Latsar=2, PPPK=1).</p>
               <p>System prevents assigning a WI to a training category exceeding their weight.</p>
             </div>
           </div>
