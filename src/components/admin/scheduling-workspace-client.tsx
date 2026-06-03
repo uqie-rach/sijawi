@@ -304,6 +304,13 @@ export function SchedulingWorkspaceClient({
     return `${y}-${m}-${d}`;
   };
 
+  const getMonthName = (monthIdx: number) => {
+    return [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ][monthIdx];
+  };
+
   return (
     <div className="grid lg:grid-cols-4 gap-8 animate-in fade-in duration-200">
       {/* Sidebar Navigation */}
