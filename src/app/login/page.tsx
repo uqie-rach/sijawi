@@ -119,7 +119,7 @@ export default function LoginPage() {
               <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800/60 text-[11px] text-slate-400 space-y-1">
                 <p className="font-semibold text-slate-300">💡 Quick Demo Credentials:</p>
                 <p>• Admin: <span className="font-mono text-blue-400">admin@wtms.com</span> / <span className="font-mono text-blue-400">admin123</span></p>
-                <p>• Widyaswara: <span className="font-mono text-indigo-400">wtms+wi.uqie@gmail.com</span> / <span className="font-mono text-indigo-400">wi123</span></p>
+                <p>• Widyaiswara: <span className="font-mono text-indigo-400">wtms+wi.uqie@gmail.com</span> / <span className="font-mono text-indigo-400">wi123</span></p>
               </div>
             </CardContent>
             <CardFooter>
