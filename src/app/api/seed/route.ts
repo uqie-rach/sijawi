@@ -10,7 +10,7 @@ export async function POST() {
 
     // Seed Kategori Pelatihan
     const kategori = [
-      { id: 'kat-pkm', name: 'PKM (Pelatihan Kepemimpinan Nasional)', min_weight: 5 },
+      { id: 'kat-pkn', name: 'PKN (Pelatihan Kepemimpinan Nasional)', min_weight: 5 },
       { id: 'kat-pka', name: 'PKA (Pelatihan Kepemimpinan Administrator)', min_weight: 4 },
       { id: 'kat-pkp', name: 'PKP (Pelatihan Kepemimpinan Pengawas)', min_weight: 3 },
       { id: 'kat-latsar', name: 'Latsar (Pelatihan Dasar CPNS)', min_weight: 2 },
