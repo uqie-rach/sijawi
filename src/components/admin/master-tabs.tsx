@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface MasterTabsProps {
   initialWis: any[];
@@ -58,7 +59,7 @@ export function MasterTabs({
   const activeLokasis = lokasiList.length ? lokasiList : initialLokasis;
   const activeBatches = batches.length ? batches : initialBatches;
 
-  // Form states
+  // Form states with LocalStorage persistence of drafts
   const [wiForm, setWiForm] = useState({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' });
   const [editingWiId, setEditingWiId] = useState<string | null>(null);
   const [isWiDialogOpen, setIsWiDialogOpen] = useState(false);
@@ -75,25 +76,111 @@ export function MasterTabs({
   const [batchForm, setBatchForm] = useState({ name: '', kategoriId: '', pola: 'APBD' as any, startDate: '2026-03-01', endDate: '2026-03-15' });
   const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
 
+  // Destructive Action Guard states (for Delete & Edit confirmation alerts)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  }>({
+    open: false,
+    title: '',
+    description: '',
+    onConfirm: () => {}
+  });
+
+  // LocalStorage state restore for creating drafts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedWiDraft = localStorage.getItem('draft_wiForm');
+      if (savedWiDraft && !editingWiId) setWiForm(JSON.parse(savedWiDraft));
+
+      const savedKatDraft = localStorage.getItem('draft_katForm');
+      if (savedKatDraft && !editingKatId) setKatForm(JSON.parse(savedKatDraft));
+
+      const savedMapelDraft = localStorage.getItem('draft_mapelForm');
+      if (savedMapelDraft && !editingMapelId) setMapelForm(JSON.parse(savedMapelDraft));
+
+      const savedLokDraft = localStorage.getItem('draft_lokForm');
+      if (savedLokDraft && !editingLokId) setLokForm(JSON.parse(savedLokDraft));
+
+      const savedBatchDraft = localStorage.getItem('draft_batchForm');
+      if (savedBatchDraft && !editingBatchId) setBatchForm(JSON.parse(savedBatchDraft));
+    }
+  }, [editingWiId, editingKatId, editingMapelId, editingLokId, editingBatchId]);
+
+  // Handle draft persistence changes
+  const updateWiForm = (fields: Partial<typeof wiForm>) => {
+    const newVal = { ...wiForm, ...fields };
+    setWiForm(newVal);
+    if (!editingWiId) localStorage.setItem('draft_wiForm', JSON.stringify(newVal));
+  };
+
+  const updateKatForm = (fields: Partial<typeof katForm>) => {
+    const newVal = { ...katForm, ...fields };
+    setKatForm(newVal);
+    if (!editingKatId) localStorage.setItem('draft_katForm', JSON.stringify(newVal));
+  };
+
+  const updateMapelForm = (fields: Partial<typeof mapelForm>) => {
+    const newVal = { ...mapelForm, ...fields };
+    setMapelForm(newVal);
+    if (!editingMapelId) localStorage.setItem('draft_mapelForm', JSON.stringify(newVal));
+  };
+
+  const updateLokForm = (fields: Partial<typeof lokForm>) => {
+    const newVal = { ...lokForm, ...fields };
+    setLokForm(newVal);
+    if (!editingLokId) localStorage.setItem('draft_lokForm', JSON.stringify(newVal));
+  };
+
+  const updateBatchForm = (fields: Partial<typeof batchForm>) => {
+    const newVal = { ...batchForm, ...fields };
+    setBatchForm(newVal);
+    if (!editingBatchId) localStorage.setItem('draft_batchForm', JSON.stringify(newVal));
+  };
+
+  const triggerConfirmation = (title: string, description: string, onConfirm: () => void) => {
+    setConfirmDialog({
+      open: true,
+      title,
+      description,
+      onConfirm
+    });
+  };
+
   const handleWiSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const lvl = parseInt(wiForm.level);
-    const labels = ['PPPK', 'Latsar', 'PKP', 'PKA', 'PKM'];
+    const labels = ['PPPK', 'Latsar', 'PKP', 'PKA', 'PKN'];
     const levelLabel = labels[lvl - 1] || 'PPPK';
 
+    const performSave = () => {
+      if (editingWiId) {
+        updateWidyaswara(editingWiId, { ...wiForm, level: lvl, levelLabel, jabatan: wiForm.jabatan as any });
+      } else {
+        addWidyaswara({ ...wiForm, level: lvl, levelLabel, jabatan: wiForm.wiForm?.jabatan as any || 'WI Ahli Madya' });
+        localStorage.removeItem('draft_wiForm');
+      }
+      setIsWiDialogOpen(false);
+    };
+
     if (editingWiId) {
-      updateWidyaswara(editingWiId, { ...wiForm, level: lvl, levelLabel, jabatan: wiForm.jabatan as any });
+      triggerConfirmation(
+        "Confirm Widyaiswara Update",
+        `Are you sure you want to save modifications for Widyaiswara ${wiForm.name}?`,
+        performSave
+      );
     } else {
-      addWidyaswara({ ...wiForm, level: lvl, levelLabel, jabatan: wiForm.jabatan as any });
+      performSave();
     }
-    setIsWiDialogOpen(false);
   };
 
   return (
     <Tabs defaultValue="wi" className="w-full space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <TabsList className="bg-slate-100 p-1 rounded-lg">
-          <TabsTrigger value="wi">Widyaswara</TabsTrigger>
+          <TabsTrigger value="wi">Widyaiswara</TabsTrigger>
           <TabsTrigger value="kategori">Kategori</TabsTrigger>
           <TabsTrigger value="mapel">Mata Pelajaran</TabsTrigger>
           <TabsTrigger value="lokasi">Lokasi / Ruangan</TabsTrigger>
@@ -103,39 +190,39 @@ export function MasterTabs({
         <Dialog open={isWiDialogOpen} onOpenChange={setIsWiDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => { setEditingWiId(null); setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' }); }} className="bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
-              <Plus className="h-4 w-4" /> Add Widyaswara
+              <Plus className="h-4 w-4" /> Add Widyaiswara
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-white">
             <DialogHeader>
-              <DialogTitle>{editingWiId ? 'Edit Widyaswara' : 'Add New Widyaswara'}</DialogTitle>
+              <DialogTitle>{editingWiId ? 'Edit Widyaiswara' : 'Add New Widyaiswara'}</DialogTitle>
               <DialogDescription>Setup instructor profile details and competency level.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleWiSubmit} className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label>Name</Label>
-                  <Input value={wiForm.name} onChange={e => setWiForm({ ...wiForm, name: e.target.value })} required />
+                  <Input value={wiForm.name} onChange={e => updateWiForm({ name: e.target.value })} required />
                 </div>
                 <div className="space-y-1">
                   <Label>Gelar</Label>
-                  <Input value={wiForm.gelar} onChange={e => setWiForm({ ...wiForm, gelar: e.target.value })} />
+                  <Input value={wiForm.gelar} onChange={e => updateWiForm({ gelar: e.target.value })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label>NIP</Label>
-                  <Input value={wiForm.nip} onChange={e => setWiForm({ ...wiForm, nip: e.target.value })} required />
+                  <Input value={wiForm.nip} onChange={e => updateWiForm({ nip: e.target.value })} required />
                 </div>
                 <div className="space-y-1">
                   <Label>Email</Label>
-                  <Input type="email" value={wiForm.email} onChange={e => setWiForm({ ...wiForm, email: e.target.value })} required />
+                  <Input type="email" value={wiForm.email} onChange={e => updateWiForm({ email: e.target.value })} required />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label>Jabatan</Label>
-                  <Select value={wiForm.jabatan} onValueChange={val => setWiForm({ ...wiForm, jabatan: val })}>
+                  <Select value={wiForm.jabatan} onValueChange={val => updateWiForm({ jabatan: val })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-white">
                       <SelectItem value="WI Ahli Pertama">WI Ahli Pertama</SelectItem>
@@ -147,10 +234,10 @@ export function MasterTabs({
                 </div>
                 <div className="space-y-1">
                   <Label>Level</Label>
-                  <Select value={wiForm.level} onValueChange={val => setWiForm({ ...wiForm, level: val })}>
+                  <Select value={wiForm.level} onValueChange={val => updateWiForm({ level: val })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-white">
-                      <SelectItem value="5">Level 5 (PKM)</SelectItem>
+                      <SelectItem value="5">Level 5 (PKN)</SelectItem>
                       <SelectItem value="4">Level 4 (PKA)</SelectItem>
                       <SelectItem value="3">Level 3 (PKP)</SelectItem>
                       <SelectItem value="2">Level 2 (Latsar)</SelectItem>
@@ -159,7 +246,7 @@ export function MasterTabs({
                   </Select>
                 </div>
               </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white mt-4">Save Widyaswara</Button>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white mt-4">Save Widyaiswara</Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -197,7 +284,13 @@ export function MasterTabs({
                       }} className="text-blue-600 hover:text-blue-800">
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => { if (confirm(`Delete ${wi.name}?`)) deleteWidyaswara(wi.id); }} className="text-red-600 hover:text-red-800">
+                      <Button size="sm" variant="ghost" onClick={() => {
+                        triggerConfirmation(
+                          "Delete Widyaiswara Profile",
+                          `Are you sure you want to permanently remove Widyaiswara ${wi.name}?`,
+                          () => deleteWidyaswara(wi.id)
+                        );
+                      }} className="text-red-600 hover:text-red-800">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -232,7 +325,13 @@ export function MasterTabs({
                       </TableCell>
                       <TableCell className="pr-6 text-right space-x-2">
                         <Button size="sm" variant="ghost" onClick={() => { setEditingKatId(k.id); setKatForm({ name: k.name, minWeight: String(k.minWeight) }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
-                        <Button size="sm" variant="ghost" onClick={() => { if (confirm('Delete?')) deleteKategori(k.id); }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          triggerConfirmation(
+                            "Delete Category",
+                            `Are you sure you want to permanently remove category ${k.name}?`,
+                            () => deleteKategori(k.id)
+                          );
+                        }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -245,21 +344,32 @@ export function MasterTabs({
             <CardTitle className="text-base font-bold mb-4">{editingKatId ? 'Edit Category' : 'Add Category'}</CardTitle>
             <form onSubmit={(e) => {
               e.preventDefault();
-              if (editingKatId) updateKategori(editingKatId, { name: katForm.name, minWeight: parseInt(katForm.minWeight) });
-              else addKategori({ name: katForm.name, minWeight: parseInt(katForm.minWeight) });
-              setKatForm({ name: '', minWeight: '3' });
-              setEditingKatId(null);
+              const performSave = () => {
+                if (editingKatId) updateKategori(editingKatId, { name: katForm.name, minWeight: parseInt(katForm.minWeight) });
+                else {
+                  addKategori({ name: katForm.name, minWeight: parseInt(katForm.minWeight) });
+                  localStorage.removeItem('draft_katForm');
+                }
+                setKatForm({ name: '', minWeight: '3' });
+                setEditingKatId(null);
+              };
+
+              if (editingKatId) {
+                triggerConfirmation("Confirm Category Update", "Save changes to this training category?", performSave);
+              } else {
+                performSave();
+              }
             }} className="space-y-4">
               <div className="space-y-1">
                 <Label>Category Name</Label>
-                <Input value={katForm.name} onChange={e => setKatForm({ ...katForm, name: e.target.value })} required />
+                <Input value={katForm.name} onChange={e => updateKatForm({ name: e.target.value })} required />
               </div>
               <div className="space-y-1">
                 <Label>Minimum Competency Weight</Label>
-                <Select value={katForm.minWeight} onValueChange={val => setKatForm({ ...katForm, minWeight: val })}>
+                <Select value={katForm.minWeight} onValueChange={val => updateKatForm({ minWeight: val })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-white">
-                    <SelectItem value="5">Level 5 (PKM)</SelectItem>
+                    <SelectItem value="5">Level 5 (PKN)</SelectItem>
                     <SelectItem value="4">Level 4 (PKA)</SelectItem>
                     <SelectItem value="3">Level 3 (PKP)</SelectItem>
                     <SelectItem value="2">Level 2 (Latsar)</SelectItem>
@@ -298,7 +408,13 @@ export function MasterTabs({
                         </TableCell>
                         <TableCell className="pr-6 text-right space-x-2">
                           <Button size="sm" variant="ghost" onClick={() => { setEditingMapelId(m.id); setMapelForm({ name: m.name, kategoriId: m.kategoriId, jpTotal: String(m.jpTotal) }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
-                          <Button size="sm" variant="ghost" onClick={() => { if (confirm('Delete?')) deleteMapel(m.id); }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => {
+                            triggerConfirmation(
+                              "Delete Subject",
+                              `Are you sure you want to delete subject ${m.name}?`,
+                              () => deleteMapel(m.id)
+                            );
+                          }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
                         </TableCell>
                       </TableRow>
                     );
@@ -312,18 +428,29 @@ export function MasterTabs({
             <CardTitle className="text-base font-bold mb-4">{editingMapelId ? 'Edit Subject' : 'Add Subject'}</CardTitle>
             <form onSubmit={(e) => {
               e.preventDefault();
-              if (editingMapelId) updateMapel(editingMapelId, { name: mapelForm.name, kategoriId: mapelForm.kategoriId, jpTotal: parseInt(mapelForm.jpTotal) });
-              else addMapel({ name: mapelForm.name, kategoriId: mapelForm.kategoriId, jpTotal: parseInt(mapelForm.jpTotal) });
-              setMapelForm({ name: '', kategoriId: '', jpTotal: '4' });
-              setEditingMapelId(null);
+              const performSave = () => {
+                if (editingMapelId) updateMapel(editingMapelId, { name: mapelForm.name, kategoriId: mapelForm.kategoriId, jpTotal: parseInt(mapelForm.jpTotal) });
+                else {
+                  addMapel({ name: mapelForm.name, kategoriId: mapelForm.kategoriId, jpTotal: parseInt(mapelForm.jpTotal) });
+                  localStorage.removeItem('draft_mapelForm');
+                }
+                setMapelForm({ name: '', kategoriId: '', jpTotal: '4' });
+                setEditingMapelId(null);
+              };
+
+              if (editingMapelId) {
+                triggerConfirmation("Confirm Subject Update", "Save alterations to this mata pelajaran?", performSave);
+              } else {
+                performSave();
+              }
             }} className="space-y-4">
               <div className="space-y-1">
                 <Label>Subject Name</Label>
-                <Input value={mapelForm.name} onChange={e => setMapelForm({ ...mapelForm, name: e.target.value })} required />
+                <Input value={mapelForm.name} onChange={e => updateMapelForm({ name: e.target.value })} required />
               </div>
               <div className="space-y-1">
                 <Label>Training Category</Label>
-                <Select value={mapelForm.kategoriId} onValueChange={val => setMapelForm({ ...mapelForm, kategoriId: val })}>
+                <Select value={mapelForm.kategoriId} onValueChange={val => updateMapelForm({ kategoriId: val })}>
                   <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
                   <SelectContent className="bg-white">
                     {activeKats.map(k => (
@@ -334,7 +461,7 @@ export function MasterTabs({
               </div>
               <div className="space-y-1">
                 <Label>Total JP Allocation (2-6 JP)</Label>
-                <Select value={mapelForm.jpTotal} onValueChange={val => setMapelForm({ ...mapelForm, jpTotal: val })}>
+                <Select value={mapelForm.jpTotal} onValueChange={val => updateMapelForm({ jpTotal: val })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-white">
                     <SelectItem value="2">2 JP</SelectItem>
@@ -371,7 +498,13 @@ export function MasterTabs({
                       </TableCell>
                       <TableCell className="pr-6 text-right space-x-2">
                         <Button size="sm" variant="ghost" onClick={() => { setEditingLokId(l.id); setLokForm({ name: l.name }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
-                        <Button size="sm" variant="ghost" onClick={() => { if (confirm('Delete?')) deleteLokasi(l.id); }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          triggerConfirmation(
+                            "Delete Location",
+                            `Remove location ${l.name}?`,
+                            () => deleteLokasi(l.id)
+                          );
+                        }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -384,14 +517,25 @@ export function MasterTabs({
             <CardTitle className="text-base font-bold mb-4">{editingLokId ? 'Edit Location' : 'Add Location'}</CardTitle>
             <form onSubmit={(e) => {
               e.preventDefault();
-              if (editingLokId) updateLokasi(editingLokId, { name: lokForm.name });
-              else addLokasi({ name: lokForm.name });
-              setLokForm({ name: '' });
-              setEditingLokId(null);
+              const performSave = () => {
+                if (editingLokId) updateLokasi(editingLokId, { name: lokForm.name });
+                else {
+                  addLokasi({ name: lokForm.name });
+                  localStorage.removeItem('draft_lokForm');
+                }
+                setLokForm({ name: '' });
+                setEditingLokId(null);
+              };
+
+              if (editingLokId) {
+                triggerConfirmation("Confirm Location Update", "Save modifications to this classroom location?", performSave);
+              } else {
+                performSave();
+              }
             }} className="space-y-4">
               <div className="space-y-1">
                 <Label>Location Name</Label>
-                <Input value={lokForm.name} onChange={e => setLokForm({ name: e.target.value })} required />
+                <Input value={lokForm.name} onChange={e => updateLokForm({ name: e.target.value })} required />
               </div>
               <Button type="submit" className="w-full bg-blue-600 text-white">Save Location</Button>
             </form>
@@ -426,7 +570,13 @@ export function MasterTabs({
                         <TableCell className="text-xs text-slate-500">{b.startDate} to {b.endDate}</TableCell>
                         <TableCell className="pr-6 text-right space-x-2">
                           <Button size="sm" variant="ghost" onClick={() => { setEditingBatchId(b.id); setBatchForm({ name: b.name, kategoriId: b.kategoriId, pola: b.pola, startDate: b.startDate, endDate: b.endDate }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
-                          <Button size="sm" variant="ghost" onClick={() => { if (confirm('Delete?')) deleteBatch(b.id); }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => {
+                            triggerConfirmation(
+                              "Delete Batch",
+                              `Are you sure you want to delete batch ${b.name}?`,
+                              () => deleteBatch(b.id)
+                            );
+                          }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
                         </TableCell>
                       </TableRow>
                     );
@@ -440,18 +590,29 @@ export function MasterTabs({
             <CardTitle className="text-base font-bold mb-4">{editingBatchId ? 'Edit Batch' : 'Create Batch'}</CardTitle>
             <form onSubmit={(e) => {
               e.preventDefault();
-              if (editingBatchId) updateBatch(editingBatchId, batchForm);
-              else addBatch(batchForm);
-              setBatchForm({ name: '', kategoriId: '', pola: 'APBD', startDate: '2026-03-01', endDate: '2026-03-15' });
-              setEditingBatchId(null);
+              const performSave = () => {
+                if (editingBatchId) updateBatch(editingBatchId, batchForm);
+                else {
+                  addBatch(batchForm);
+                  localStorage.removeItem('draft_batchForm');
+                }
+                setBatchForm({ name: '', kategoriId: '', pola: 'APBD', startDate: '2026-03-01', endDate: '2026-03-15' });
+                setEditingBatchId(null);
+              };
+
+              if (editingBatchId) {
+                triggerConfirmation("Confirm Batch Update", "Save edits to this training batch?", performSave);
+              } else {
+                performSave();
+              }
             }} className="space-y-4">
               <div className="space-y-1">
                 <Label>Batch Name</Label>
-                <Input value={batchForm.name} onChange={e => setBatchForm({ ...batchForm, name: e.target.value })} required />
+                <Input value={batchForm.name} onChange={e => updateBatchForm({ name: e.target.value })} required />
               </div>
               <div className="space-y-1">
                 <Label>Training Category</Label>
-                <Select value={batchForm.kategoriId} onValueChange={val => setBatchForm({ ...batchForm, kategoriId: val })}>
+                <Select value={batchForm.kategoriId} onValueChange={val => updateBatchForm({ kategoriId: val })}>
                   <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
                   <SelectContent className="bg-white">
                     {activeKats.map(k => (
@@ -462,7 +623,7 @@ export function MasterTabs({
               </div>
               <div className="space-y-1">
                 <Label>Funding Pattern (Pola)</Label>
-                <Select value={batchForm.pola} onValueChange={(val: any) => setBatchForm({ ...batchForm, pola: val })}>
+                <Select value={batchForm.pola} onValueChange={(val: any) => updateBatchForm({ pola: val })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-white">
                     <SelectItem value="APBD">APBD</SelectItem>
@@ -474,11 +635,11 @@ export function MasterTabs({
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label>Start Date</Label>
-                  <Input type="date" value={batchForm.startDate} onChange={e => setBatchForm({ ...batchForm, startDate: e.target.value })} required />
+                  <Input type="date" value={batchForm.startDate} onChange={e => updateBatchForm({ startDate: e.target.value })} required />
                 </div>
                 <div className="space-y-1">
                   <Label>End Date</Label>
-                  <Input type="date" value={batchForm.endDate} onChange={e => setBatchForm({ ...batchForm, endDate: e.target.value })} required />
+                  <Input type="date" value={batchForm.endDate} onChange={e => updateBatchForm({ endDate: e.target.value })} required />
                 </div>
               </div>
               <Button type="submit" className="w-full bg-blue-600 text-white">Save Batch</Button>
@@ -486,6 +647,19 @@ export function MasterTabs({
           </Card>
         </div>
       </TabsContent>
+
+      <AlertDialog open={confirmDialog.open} onOpenChange={open => setConfirmDialog(prev => ({ ...prev, open }))}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-900 font-bold text-lg">{confirmDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 text-sm">{confirmDialog.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-slate-200 text-slate-700 hover:bg-slate-50">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDialog.onConfirm} className="bg-blue-600 hover:bg-blue-500 text-white">Confirm Action</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Tabs>
   );
 }

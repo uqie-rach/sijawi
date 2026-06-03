@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
-export interface Widyaswara {
+export interface Widyaiswara {
   id: string;
   name: string;
   gelar: string;
@@ -11,7 +11,7 @@ export interface Widyaswara {
   nip: string; // Unique identifier
   jabatan: 'WI Ahli Pertama' | 'WI Ahli Muda' | 'WI Ahli Madya' | 'WI Ahli Utama';
   level: number; // 1 to 5
-  levelLabel: string; // PPPK, Latsar, PKP, PKA, PKM
+  levelLabel: string; // PPPK, Latsar, PKP, PKA, PKN
   jpLastMonth: number; // Static historical data
 }
 
@@ -57,7 +57,7 @@ export interface Session {
 }
 
 interface WTMSContextType {
-  widyaswaras: Widyaswara[];
+  widyaswaras: Widyaiswara[]; // Keep database naming for compatibility, map to Widyaiswara internally
   kategoriList: Kategori[];
   mapelList: Mapel[];
   lokasiList: Lokasi[];
@@ -72,9 +72,9 @@ interface WTMSContextType {
   setSelectedWiId: (id: string | null) => void;
   setIsAuthenticated: (auth: boolean) => void;
   
-  // Widyaswara CRUD
-  addWidyaswara: (wi: Omit<Widyaswara, 'id' | 'jpLastMonth'>) => boolean;
-  updateWidyaswara: (id: string, wi: Omit<Widyaswara, 'id' | 'jpLastMonth'>) => boolean;
+  // Widyaiswara CRUD
+  addWidyaswara: (wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>) => boolean;
+  updateWidyaswara: (id: string, wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>) => boolean;
   deleteWidyaswara: (id: string) => void;
   
   // Kategori CRUD
@@ -127,7 +127,7 @@ function isJpOverlapping(range1: number[], range2: number[]): boolean {
 }
 
 export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [widyaswaras, setWidyaswaras] = useState<Widyaswara[]>([]);
+  const [widyaswaras, setWidyaswaras] = useState<Widyaiswara[]>([]);
   const [kategoriList, setKategoriList] = useState<Kategori[]>([]);
   const [mapelList, setMapelList] = useState<Mapel[]>([]);
   const [lokasiList, setLokasiList] = useState<Lokasi[]>([]);
@@ -165,11 +165,30 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
-        if (Array.isArray(resWi)) setWidyaswaras(resWi);
-        if (Array.isArray(resKat)) setKategoriList(resKat);
+        if (Array.isArray(resWi)) {
+          // Replace PKM to PKN dynamically
+          const formattedWi = resWi.map((w: any) => ({
+            ...w,
+            levelLabel: w.levelLabel === 'PKM' ? 'PKN' : w.levelLabel
+          }));
+          setWidyaswaras(formattedWi);
+        }
+        if (Array.isArray(resKat)) {
+          const formattedKat = resKat.map((k: any) => ({
+            ...k,
+            name: k.name.replace('PKM', 'PKN')
+          }));
+          setKategoriList(formattedKat);
+        }
         if (Array.isArray(resMapel)) setMapelList(resMapel);
         if (Array.isArray(resLok)) setLokasiList(resLok);
-        if (Array.isArray(resBatches)) setBatches(resBatches);
+        if (Array.isArray(resBatches)) {
+          const formattedBatches = resBatches.map((b: any) => ({
+            ...b,
+            name: b.name.replace('PKM', 'PKN')
+          }));
+          setBatches(formattedBatches);
+        }
         if (Array.isArray(resSessions)) setSessions(resSessions);
       } catch (err) {
         console.error("Failed to load data from API:", err);
@@ -208,15 +227,15 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveToStorage('wtms_auth', auth);
   };
 
-  // Widyaswara CRUD
-  const addWidyaswara = (wi: Omit<Widyaswara, 'id' | 'jpLastMonth'>): boolean => {
+  // Widyaiswara CRUD
+  const addWidyaswara = (wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>): boolean => {
     const nipExists = widyaswaras.some(w => w.nip === wi.nip);
     if (nipExists) {
-      toast.error(`Validation Error: Widyaswara with NIP ${wi.nip} already exists!`);
+      toast.error(`Validation Error: Widyaiswara with NIP ${wi.nip} already exists!`);
       return false;
     }
 
-    const newWi: Widyaswara = {
+    const newWi: Widyaiswara = {
       ...wi,
       id: `wi-${Date.now()}`,
       jpLastMonth: Math.floor(Math.random() * 20) + 10
@@ -227,17 +246,21 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetch('/api/widyaswara', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newWi)
+      body: JSON.stringify({
+        ...newWi,
+        // map PKN back to database expectations (PKM) if any
+        levelLabel: newWi.levelLabel === 'PKN' ? 'PKM' : newWi.levelLabel
+      })
     }).catch(err => console.error(err));
 
-    toast.success(`Widyaswara ${wi.name} successfully added!`);
+    toast.success(`Widyaiswara ${wi.name} successfully added!`);
     return true;
   };
 
-  const updateWidyaswara = (id: string, wi: Omit<Widyaswara, 'id' | 'jpLastMonth'>): boolean => {
+  const updateWidyaswara = (id: string, wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>): boolean => {
     const nipExists = widyaswaras.some(w => w.nip === wi.nip && w.id !== id);
     if (nipExists) {
-      toast.error(`Validation Error: Widyaswara with NIP ${wi.nip} already exists!`);
+      toast.error(`Validation Error: Widyaiswara with NIP ${wi.nip} already exists!`);
       return false;
     }
 
@@ -247,10 +270,13 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetch('/api/widyaswara', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedWi)
+      body: JSON.stringify({
+        ...updatedWi,
+        levelLabel: updatedWi.levelLabel === 'PKN' ? 'PKM' : updatedWi.levelLabel
+      })
     }).catch(err => console.error(err));
 
-    toast.success(`Widyaswara ${wi.name} successfully updated!`);
+    toast.success(`Widyaiswara ${wi.name} successfully updated!`);
     return true;
   };
 
@@ -261,7 +287,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       method: 'DELETE'
     }).catch(err => console.error(err));
 
-    toast.success("Widyaswara successfully deleted.");
+    toast.success("Widyaiswara successfully deleted.");
   };
 
   // Kategori CRUD
@@ -275,7 +301,10 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetch('/api/kategori-pelatihan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newKat)
+      body: JSON.stringify({
+        ...newKat,
+        name: newKat.name.replace('PKN', 'PKM')
+      })
     }).catch(err => console.error(err));
 
     toast.success(`Category ${kat.name} successfully added!`);
@@ -288,7 +317,10 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetch('/api/kategori-pelatihan', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedKat)
+      body: JSON.stringify({
+        ...updatedKat,
+        name: updatedKat.name.replace('PKN', 'PKM')
+      })
     }).catch(err => console.error(err));
 
     toast.success(`Category ${kat.name} successfully updated!`);
@@ -395,7 +427,10 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetch('/api/batches', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newBatch)
+      body: JSON.stringify({
+        ...newBatch,
+        name: newBatch.name.replace('PKN', 'PKM')
+      })
     }).catch(err => console.error(err));
 
     toast.success(`Batch ${batch.name} successfully created!`);
@@ -408,7 +443,10 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetch('/api/batches', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedBatch)
+      body: JSON.stringify({
+        ...updatedBatch,
+        name: updatedBatch.name.replace('PKN', 'PKM')
+      })
     }).catch(err => console.error(err));
 
     toast.success(`Batch ${batch.name} successfully updated!`);
@@ -432,7 +470,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
 
     if (!wi || !batch || !category) {
-      return { success: false, error: "Invalid Widyaswara, Batch, or Category selection." };
+      return { success: false, error: "Invalid Widyaiswara, Batch, or Category selection." };
     }
 
     if (wi.level < category.minWeight) {
@@ -488,7 +526,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 5. Validate WI Collision (Widyaswara cannot teach in two places at the same time)
+    // 5. Validate WI Collision (Widyaiswara cannot teach in two places at the same time)
     const wiCollision = sessions.find(s => 
       s.wiId === sessionData.wiId && 
       s.date === sessionData.date && 
@@ -501,7 +539,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (wiCollision) {
       const collidingBatch = batches.find(b => b.id === wiCollision.batchId);
-      const errorMsg = `Widyaswara Collision: ${wi.name} is already scheduled to teach in batch "${collidingBatch?.name || 'Another Batch'}" from ${wiCollision.startTime} to ${wiCollision.endTime} on this day.`;
+      const errorMsg = `Widyaiswara Collision: ${wi.name} is already scheduled to teach in batch "${collidingBatch?.name || 'Another Batch'}" from ${wiCollision.startTime} to ${wiCollision.endTime} on this day.`;
       toast.error(errorMsg);
       return { success: false, error: errorMsg };
     }
@@ -552,7 +590,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
 
     if (!wi || !batch || !category) {
-      return { success: false, error: "Invalid Widyaswara, Batch, or Category selection." };
+      return { success: false, error: "Invalid Widyaiswara, Batch, or Category selection." };
     }
 
     if (wi.level < category.minWeight) {
@@ -609,7 +647,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 5. Validate WI Collision (Widyaswara cannot teach in two places at the same time)
+    // 5. Validate WI Collision (Widyaiswara cannot teach in two places at the same time)
     const wiCollision = sessions.find(s => 
       s.id !== id &&
       s.wiId === sessionData.wiId && 
@@ -623,7 +661,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (wiCollision) {
       const collidingBatch = batches.find(b => b.id === wiCollision.batchId);
-      const errorMsg = `Widyaswara Collision: ${wi.name} is already scheduled to teach in batch "${collidingBatch?.name || 'Another Batch'}" from ${wiCollision.startTime} to ${wiCollision.endTime} on this day.`;
+      const errorMsg = `Widyaiswara Collision: ${wi.name} is already scheduled to teach in batch "${collidingBatch?.name || 'Another Batch'}" from ${wiCollision.startTime} to ${wiCollision.endTime} on this day.`;
       toast.error(errorMsg);
       return { success: false, error: errorMsg };
     }
@@ -690,7 +728,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSelectedWiId: handleSetSelectedWiId,
       setIsAuthenticated: handleSetIsAuthenticated,
       
-      // Widyaswara CRUD
+      // Widyaiswara CRUD
       addWidyaswara,
       updateWidyaswara,
       deleteWidyaswara,

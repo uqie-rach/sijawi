@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWTMS } from '@/context/wtms-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Combobox } from '@/components/ui/combobox';
-import { Calendar, Clock, MapPin, UserCheck, Plus, Trash2, Edit, ListFilter, CalendarDays, TableProperties, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Calendar, Clock, MapPin, UserCheck, Plus, Trash2, Edit, CalendarDays, TableProperties, Layers, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 
 interface SchedulingWorkspaceClientProps {
   batchId?: string;
@@ -51,17 +52,17 @@ export function SchedulingWorkspaceClient({
   const [viewMode, setViewMode] = useState<'calendar' | 'day' | 'table'>('calendar');
 
   const activeBatch = batchId ? (batches.find(b => b.id === batchId) || initialBatch) : null;
-  const batchStartDate = activeBatch ? new Date(activeBatch.startDate) : new Date(2026, 2, 1); // Default to March 2026 for demo data
+  const batchStartDate = activeBatch ? new Date(activeBatch.startDate) : new Date(2026, 2, 1);
   const [selectedDayDate, setSelectedDayDate] = useState<string>(activeBatch?.startDate || '2026-03-02');
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date(batchStartDate.getFullYear(), batchStartDate.getMonth(), 1));
 
-  // Load contextual active lists (syncing context with SSR initial state fallback)
+  // Sync contextual active lists
   const activeMapels = mapelList.length ? mapelList : initialMapels;
   const activeWis = widyaswaras.length ? widyaswaras : initialWis;
   const activeLokasis = lokasiList.length ? lokasiList : initialLokasis;
   const activeSessions = sessions.length ? sessions : initialSessions;
 
-  // Filter current active sessions (by batchId if specified, otherwise show all)
+  // Filter sessions by selected batch
   const batchSessions = batchId 
     ? activeSessions.filter(s => s.batchId === batchId)
     : activeSessions;
@@ -83,66 +84,142 @@ export function SchedulingWorkspaceClient({
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Filter mapels belonging to the current category if inside a batch context
-  const relevantMapels = activeBatch 
-    ? activeMapels.filter(m => m.kategoriId === activeBatch.kategoriId)
+  // Destructive Confirmation Guard States
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  }>({
+    open: false,
+    title: '',
+    description: '',
+    onConfirm: () => {}
+  });
+
+  // Draft Restore logic
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !editingSessionId) {
+      const draft = localStorage.getItem('draft_sessionForm');
+      if (draft) {
+        setSessionForm(JSON.parse(draft));
+      }
+    }
+  }, [editingSessionId]);
+
+  const updateForm = (fields: Partial<typeof sessionForm>) => {
+    const newVal = { ...sessionForm, ...fields };
+    setSessionForm(newVal);
+    if (!editingSessionId) {
+      localStorage.setItem('draft_sessionForm', JSON.stringify(newVal));
+    }
+  };
+
+  // Automated End-Time Calculation: 1 JP = 45 Minutes
+  useEffect(() => {
+    if (sessionForm.startTime && sessionForm.jpCount) {
+      const [h, m] = sessionForm.startTime.split(':').map(Number);
+      const totalMinutes = h * 60 + m + parseInt(sessionForm.jpCount) * 45;
+      const endH = Math.floor(totalMinutes / 60) % 24;
+      const endM = totalMinutes % 60;
+      const endStr = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+      if (sessionForm.endTime !== endStr) {
+        setSessionForm(prev => ({ ...prev, endTime: endStr }));
+      }
+    }
+  }, [sessionForm.startTime, sessionForm.jpCount]);
+
+  // Selected Batch Context
+  const currentBatchSelectionId = batchId || sessionForm.batchId;
+  const currentBatchObj = batches.find(b => b.id === currentBatchSelectionId) || (currentBatchSelectionId === initialBatch?.id ? initialBatch : null);
+  const currentCategory = currentBatchObj ? kategoriList.find(k => k.id === currentBatchObj.kategoriId) : null;
+
+  // Dynamic Filtering: Subjects belonging to selected batch's category
+  const filteredMapels = currentBatchObj
+    ? activeMapels.filter(m => m.kategoriId === currentBatchObj.kategoriId)
     : activeMapels;
 
-  // Mapel status tracking for this batch (only shown if batchId is provided)
-  const mapelStatus = activeBatch ? relevantMapels.map(mapel => {
-    const scheduledSessions = batchSessions.filter(s => s.mapelId === mapel.id);
+  // Dynamic Filtering: Widyaiswaras level_weight >= selected batch category minWeight
+  const filteredWisList = currentCategory
+    ? activeWis.filter(wi => wi.level >= currentCategory.minWeight)
+    : activeWis;
+
+  // Mapel status tracking adjacent widget calculation
+  const trackingMapelStatus = filteredMapels.map(mapel => {
+    const scheduledSessions = activeSessions.filter(s => s.batchId === currentBatchSelectionId && s.mapelId === mapel.id);
     const scheduledJp = scheduledSessions.reduce((sum, s) => sum + Number(s.jpCount), 0);
-    const remainingJp = Number(mapel.jpTotal) - scheduledJp;
+    const remainingJp = Math.max(0, Number(mapel.jpTotal) - scheduledJp);
     return {
       ...mapel,
       scheduledJp,
       remainingJp,
       isFullyScheduled: remainingJp <= 0
     };
-  }) : [];
+  });
+
+  const triggerConfirmation = (title: string, description: string, onConfirm: () => void) => {
+    setConfirmDialog({
+      open: true,
+      title,
+      description,
+      onConfirm
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const targetBatchId = batchId || sessionForm.batchId;
+    const targetBatchId = currentBatchSelectionId;
     if (!targetBatchId || !sessionForm.mapelId || !sessionForm.wiId) return;
 
+    const performSave = () => {
+      if (editingSessionId) {
+        const res = updateSession(editingSessionId, {
+          batchId: targetBatchId,
+          mapelId: sessionForm.mapelId,
+          wiId: sessionForm.wiId,
+          date: sessionForm.date,
+          startTime: sessionForm.startTime,
+          endTime: sessionForm.endTime,
+          format: sessionForm.format,
+          lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
+          jpKe: sessionForm.jpKe,
+          jpCount: parseInt(sessionForm.jpCount)
+        });
+        if (res.success) {
+          setIsDialogOpen(false);
+          setEditingSessionId(null);
+        }
+      } else {
+        const res = addSession({
+          batchId: targetBatchId,
+          mapelId: sessionForm.mapelId,
+          wiId: sessionForm.wiId,
+          date: sessionForm.date,
+          startTime: sessionForm.startTime,
+          endTime: sessionForm.endTime,
+          format: sessionForm.format,
+          lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
+          jpKe: sessionForm.jpKe,
+          jpCount: parseInt(sessionForm.jpCount)
+        });
+        if (res.success) {
+          localStorage.removeItem('draft_sessionForm');
+          setIsDialogOpen(false);
+        }
+      }
+    };
+
     if (editingSessionId) {
-      const res = updateSession(editingSessionId, {
-        batchId: targetBatchId,
-        mapelId: sessionForm.mapelId,
-        wiId: sessionForm.wiId,
-        date: sessionForm.date,
-        startTime: sessionForm.startTime,
-        endTime: sessionForm.endTime,
-        format: sessionForm.format,
-        lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
-        jpKe: sessionForm.jpKe,
-        jpCount: parseInt(sessionForm.jpCount)
-      });
-      if (res.success) {
-        setIsDialogOpen(false);
-        setEditingSessionId(null);
-      }
+      triggerConfirmation(
+        "Confirm Schedule Modification",
+        "Are you sure you want to update this allocated session?",
+        performSave
+      );
     } else {
-      const res = addSession({
-        batchId: targetBatchId,
-        mapelId: sessionForm.mapelId,
-        wiId: sessionForm.wiId,
-        date: sessionForm.date,
-        startTime: sessionForm.startTime,
-        endTime: sessionForm.endTime,
-        format: sessionForm.format,
-        lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
-        jpKe: sessionForm.jpKe,
-        jpCount: parseInt(sessionForm.jpCount)
-      });
-      if (res.success) {
-        setIsDialogOpen(false);
-      }
+      performSave();
     }
   };
 
-  // Helper to trigger edit form initialization
   const triggerEdit = (session: any) => {
     setEditingSessionId(session.id);
     setSessionForm({
@@ -160,28 +237,53 @@ export function SchedulingWorkspaceClient({
     setIsDialogOpen(true);
   };
 
-  // Combobox Options
-  const mapelOptions = relevantMapels.map(m => ({
-    value: m.id,
-    label: `${m.name} (${m.jpTotal} JP)`
-  }));
+  // Helper to determine if a Lokasi has a time clash on the chosen date & hours
+  const isLocationClashed = (lokId: string) => {
+    if (sessionForm.format !== 'Klasikal' || !sessionForm.date || !sessionForm.startTime || !sessionForm.endTime) return false;
+    return activeSessions.some(s => 
+      s.id !== editingSessionId &&
+      s.format === 'Klasikal' &&
+      s.lokasiId === lokId &&
+      s.date === sessionForm.date &&
+      (
+        (sessionForm.startTime >= s.startTime && sessionForm.startTime < s.endTime) ||
+        (sessionForm.endTime > s.startTime && sessionForm.endTime <= s.endTime) ||
+        (sessionForm.startTime <= s.startTime && sessionForm.endTime >= s.endTime)
+      )
+    );
+  };
 
-  const wiOptions = activeWis.map(wi => ({
+  // Build Options with disabling state rules
+  const mapelOptions = filteredMapels.map(m => {
+    const statusObj = trackingMapelStatus.find(status => status.id === m.id);
+    const isExceeded = statusObj ? statusObj.isFullyScheduled : false;
+    return {
+      value: m.id,
+      label: `${m.name} (${m.jpTotal} JP) ${isExceeded ? ' - [Capacity Exceeded]' : ''}`,
+      disabled: isExceeded
+    };
+  });
+
+  const wiOptions = filteredWisList.map(wi => ({
     value: wi.id,
     label: `${wi.name}, ${wi.gelar} (Lvl ${wi.level} - ${wi.jabatan})`
   }));
 
-  const lokasiOptions = activeLokasis.map(l => ({
-    value: l.id,
-    label: l.name
-  }));
+  const lokasiOptions = activeLokasis.map(l => {
+    const clashed = isLocationClashed(l.id);
+    return {
+      value: l.id,
+      label: `${l.name} ${clashed ? ' - [Clash Detected]' : ''}`,
+      disabled: clashed
+    };
+  });
 
   const batchOptions = allBatches.map(b => ({
     value: b.id,
     label: b.name
   }));
 
-  // Calendar render helper logic
+  // Calendar render helpers
   const year = calendarMonth.getFullYear();
   const month = calendarMonth.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -202,85 +304,74 @@ export function SchedulingWorkspaceClient({
     return `${y}-${m}-${d}`;
   };
 
-  const getMonthName = (monthIdx: number) => {
-    return [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
-    ][monthIdx];
-  };
-
   return (
-    <div className="grid lg:grid-cols-4 gap-8">
-      {/* Sidebar Navigation: List of Other Batches & Subject Status */}
+    <div className="grid lg:grid-cols-4 gap-8 animate-in fade-in duration-200">
+      {/* Sidebar Navigation */}
       <div className="space-y-6 lg:col-span-1">
-        {/* Navigation Sidebar: Other Batches */}
-        <Card className="shadow-sm border-slate-200 bg-white">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-            <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800">
-              <Layers className="h-4 w-4 text-blue-500" />
-              Navigate Batches
-            </CardTitle>
-            <CardDescription className="text-xs">Quick jump between core scheduling workspaces.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-3">
-            <div className="space-y-1 max-h-[220px] overflow-y-auto pr-1">
-              {allBatches.map(b => (
-                <button
-                  key={b.id}
-                  onClick={() => router.push(`/admin/scheduling/${b.id}`)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${
-                    b.id === batchId 
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200' 
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
-                  <span className="truncate max-w-[130px]">{b.name}</span>
-                  <span className="text-[9px] opacity-75">{b.startDate}</span>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Sidebar: Mapel JP status - only shown when batchId is selected */}
-        {activeBatch && (
+        {allBatches && allBatches.length > 0 && (
           <Card className="shadow-sm border-slate-200 bg-white">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="text-sm font-bold text-slate-800">Subject JP Accumulation</CardTitle>
-              <CardDescription className="text-xs">Required vs. allocated parameters.</CardDescription>
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-3">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800">
+                <Layers className="h-4 w-4 text-blue-500" />
+                Navigate Batches
+              </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 space-y-3">
-              {mapelStatus.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-4">No subjects registered for this category.</p>
+            <CardContent className="p-3">
+              <div className="space-y-1 max-h-[220px] overflow-y-auto pr-1">
+                {allBatches.map(b => (
+                  <button
+                    key={b.id}
+                    onClick={() => router.push(`/admin/scheduling/${b.id}`)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${
+                      b.id === batchId 
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <span className="truncate max-w-[130px]">{b.name}</span>
+                    <span className="text-[9px] opacity-75">{b.startDate}</span>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Smart JP Tracking Sidebar Widget */}
+        {currentBatchSelectionId && (
+          <Card className="shadow-sm border-slate-200 bg-white">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-3">
+              <CardTitle className="text-sm font-bold text-slate-800">JP Allocation Tracker</CardTitle>
+              <CardDescription className="text-xs">Capacity balances for selected category.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3 max-h-[300px] overflow-y-auto">
+              {trackingMapelStatus.length === 0 ? (
+                <p className="text-xs text-slate-500 text-center py-4">No registered subjects.</p>
               ) : (
-                mapelStatus.map(m => {
-                  const percentage = (m.scheduledJp / m.jpTotal) * 100;
-                  return (
-                    <div key={m.id} className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span className="font-semibold text-slate-700 truncate max-w-[120px]" title={m.name}>{m.name}</span>
-                        <span className="text-[10px] font-bold text-slate-500">{m.scheduledJp}/{m.jpTotal} JP</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Progress value={percentage} className="h-1.5 flex-1 bg-slate-100" />
-                        {m.isFullyScheduled ? (
-                          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[9px] px-1 py-0 font-bold">Done</Badge>
-                        ) : (
-                          <span className="text-[9px] font-bold text-slate-400">{m.remainingJp} left</span>
-                        )}
-                      </div>
+                trackingMapelStatus.map(m => (
+                  <div key={m.id} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-semibold text-slate-700 truncate max-w-[120px]" title={m.name}>{m.name}</span>
+                      <span className="text-[10px] font-bold text-slate-500">{m.scheduledJp}/{m.jpTotal} JP</span>
                     </div>
-                  );
-                })
+                    <div className="flex items-center gap-2">
+                      <Progress value={(m.scheduledJp / m.jpTotal) * 100} className="h-1.5 flex-1 bg-slate-100" />
+                      {m.isFullyScheduled ? (
+                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[9px] font-bold">Done</Badge>
+                      ) : (
+                        <span className="text-[9px] font-bold text-slate-500">{m.remainingJp} left</span>
+                      )}
+                    </div>
+                  </div>
+                ))
               )}
             </CardContent>
           </Card>
         )}
       </div>
 
-      {/* Main Workspace Workspace: Supports granular views */}
+      {/* Main Workspace Workspace */}
       <div className="lg:col-span-3 space-y-6">
-        {/* View Mode Switching Controls Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
             <button
@@ -332,88 +423,122 @@ export function SchedulingWorkspaceClient({
                 <Plus className="h-4 w-4" /> Assign Slot Session
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-white max-w-lg">
-              <DialogHeader>
-                <DialogTitle>{editingSessionId ? 'Edit Session Slot' : 'Assign Session Slot'}</DialogTitle>
-                <DialogDescription>Setup instructor mapping, date ranges and formatting operational limits.</DialogDescription>
+            <DialogContent className="bg-white max-w-4xl p-0 overflow-hidden">
+              <DialogHeader className="p-6 pb-0">
+                <DialogTitle className="text-xl font-bold text-slate-900">
+                  {editingSessionId ? 'Edit Session Allocation' : 'Assign New Session Allocation'}
+                </DialogTitle>
+                <DialogDescription>Setup instructor mapping, classroom availability restrictions, and operational parameters.</DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4 py-3">
-                {!batchId && (
-                  <div className="space-y-1">
-                    <Label>Batch Pelatihan</Label>
-                    <Combobox options={batchOptions} value={sessionForm.batchId} onValueChange={val => setSessionForm({ ...sessionForm, batchId: val })} placeholder="Select batch..." />
+              
+              <div className="grid md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-slate-100 p-6 gap-6">
+                {/* Form Inputs (3 Cols) */}
+                <form onSubmit={handleSubmit} className="md:col-span-3 space-y-4">
+                  {!batchId && (
+                    <div className="space-y-1">
+                      <Label>Batch Pelatihan</Label>
+                      <Combobox options={batchOptions} value={sessionForm.batchId} onValueChange={val => updateForm({ batchId: val })} placeholder="Select batch..." />
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label>Mata Pelatihan (Mapel)</Label>
+                      <Combobox options={mapelOptions} value={sessionForm.mapelId} onValueChange={val => updateForm({ mapelId: val })} placeholder="Search subject..." />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Widyaiswara</Label>
+                      <Combobox options={wiOptions} value={sessionForm.wiId} onValueChange={val => updateForm({ wiId: val })} placeholder="Search instructor..." />
+                    </div>
                   </div>
-                )}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label>Subject (Mapel)</Label>
-                    <Combobox options={mapelOptions} value={sessionForm.mapelId} onValueChange={val => setSessionForm({ ...sessionForm, mapelId: val })} placeholder="Search subject..." />
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1 relative">
+                      <Label>Date</Label>
+                      <div className="flex gap-1">
+                        <Input type="date" min={activeBatch?.startDate} max={activeBatch?.endDate} value={sessionForm.date} onChange={e => updateForm({ date: e.target.value })} required className="pr-1 text-xs" />
+                        <Button type="button" variant="outline" size="icon" onClick={() => updateForm({ date: new Date().toISOString().split('T')[0] })} title="Smart Today Shortcut" className="h-9 w-9 shrink-0 border-blue-200 hover:bg-blue-50 text-blue-600">
+                          <Zap className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Start Time</Label>
+                      <Input type="time" value={sessionForm.startTime} onChange={e => updateForm({ startTime: e.target.value })} required />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>End Time</Label>
+                      <Input type="time" value={sessionForm.endTime} disabled className="bg-slate-100/80 text-slate-500 font-mono" />
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label>Widyaswara (WI)</Label>
-                    <Combobox options={wiOptions} value={sessionForm.wiId} onValueChange={val => setSessionForm({ ...sessionForm, wiId: val })} placeholder="Search instructor..." />
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label>Format</Label>
+                      <Select value={sessionForm.format} onValueChange={(val: any) => updateForm({ format: val })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="Klasikal">Klasikal</SelectItem>
+                          <SelectItem value="Virtual">Virtual</SelectItem>
+                          <SelectItem value="Asinkron">Asinkron</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>JP Ke</Label>
+                      <Input placeholder="1-2" value={sessionForm.jpKe} onChange={e => updateForm({ jpKe: e.target.value })} required />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>JP Count</Label>
+                      <Select value={sessionForm.jpCount} onValueChange={val => updateForm({ jpCount: val })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="1">1 JP</SelectItem>
+                          <SelectItem value="2">2 JP</SelectItem>
+                          <SelectItem value="3">3 JP</SelectItem>
+                          <SelectItem value="4">4 JP</SelectItem>
+                          <SelectItem value="5">5 JP</SelectItem>
+                          <SelectItem value="6">6 JP</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {sessionForm.format === 'Klasikal' && (
+                    <div className="space-y-1">
+                      <Label>Location / Room</Label>
+                      <Combobox options={lokasiOptions} value={sessionForm.lokasiId} onValueChange={val => updateForm({ lokasiId: val })} placeholder="Search location..." />
+                    </div>
+                  )}
+
+                  <DialogFooter className="pt-2">
+                    <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white w-full py-5 text-sm font-semibold">
+                      Save Allocation
+                    </Button>
+                  </DialogFooter>
+                </form>
+
+                {/* Real-time JP Tracking Widget (2 Cols) */}
+                <div className="md:col-span-2 pl-4 space-y-4">
+                  <h4 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Unallocated Balances Widget</h4>
+                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1">
+                    {trackingMapelStatus.map(status => (
+                      <div key={status.id} className="text-xs space-y-1">
+                        <div className="flex justify-between font-medium">
+                          <span className="truncate max-w-[140px] text-slate-700" title={status.name}>{status.name}</span>
+                          <span className="text-slate-500 font-bold">{status.scheduledJp}/{status.jpTotal} JP</span>
+                        </div>
+                        <Progress value={(status.scheduledJp / status.jpTotal) * 100} className="h-1 bg-slate-100" />
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="space-y-1">
-                    <Label>Date</Label>
-                    <Input type="date" min={activeBatch?.startDate} max={activeBatch?.endDate} value={sessionForm.date} onChange={e => setSessionForm({ ...sessionForm, date: e.target.value })} required />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Start Time</Label>
-                    <Input type="time" value={sessionForm.startTime} onChange={e => setSessionForm({ ...sessionForm, startTime: e.target.value })} required />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>End Time</Label>
-                    <Input type="time" value={sessionForm.endTime} onChange={e => setSessionForm({ ...sessionForm, endTime: e.target.value })} required />
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="space-y-1">
-                    <Label>Format</Label>
-                    <Select value={sessionForm.format} onValueChange={(val: any) => setSessionForm({ ...sessionForm, format: val })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-white">
-                        <SelectItem value="Klasikal">Klasikal</SelectItem>
-                        <SelectItem value="Virtual">Virtual</SelectItem>
-                        <SelectItem value="Asinkron">Asinkron</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label>JP Ke</Label>
-                    <Input placeholder="1-2" value={sessionForm.jpKe} onChange={e => setSessionForm({ ...sessionForm, jpKe: e.target.value })} required />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>JP Count</Label>
-                    <Select value={sessionForm.jpCount} onValueChange={val => setSessionForm({ ...sessionForm, jpCount: val })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-white">
-                        <SelectItem value="1">1 JP</SelectItem>
-                        <SelectItem value="2">2 JP</SelectItem>
-                        <SelectItem value="3">3 JP</SelectItem>
-                        <SelectItem value="4">4 JP</SelectItem>
-                        <SelectItem value="5">5 JP</SelectItem>
-                        <SelectItem value="6">6 JP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                {sessionForm.format === 'Klasikal' && (
-                  <div className="space-y-1">
-                    <Label>Location / Room</Label>
-                    <Combobox options={lokasiOptions} value={sessionForm.lokasiId} onValueChange={val => setSessionForm({ ...sessionForm, lokasiId: val })} placeholder="Search location..." />
-                  </div>
-                )}
-                <DialogFooter className="pt-4">
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white w-full">Save Allocated Session</Button>
-                </DialogFooter>
-              </form>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
 
-        {/* Render dynamically depending on selected viewMode */}
+        {/* View Layout Switch Components */}
         {viewMode === 'calendar' && (
           <Card className="shadow-sm border-slate-200 bg-white">
             <CardHeader className="border-b border-slate-100 flex flex-row justify-between items-center bg-slate-50/50 px-6 py-4">
@@ -422,37 +547,24 @@ export function SchedulingWorkspaceClient({
                 Active Calendar Month View {batchId ? `(Batch: ${activeBatch?.name})` : '(All Batches)'}
               </CardTitle>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setCalendarMonth(new Date(year, month - 1, 1))}
-                  className="p-1 rounded border border-slate-200 hover:bg-slate-50"
-                >
+                <button onClick={() => setCalendarMonth(new Date(year, month - 1, 1))} className="p-1 rounded border border-slate-200 hover:bg-slate-50">
                   <ChevronLeft className="h-3.5 w-3.5" />
                 </button>
                 <span className="text-xs font-bold text-slate-700 min-w-[100px] text-center">
                   {getMonthName(month)} {year}
                 </span>
-                <button
-                  onClick={() => setCalendarMonth(new Date(year, month + 1, 1))}
-                  className="p-1 rounded border border-slate-200 hover:bg-slate-50"
-                >
+                <button onClick={() => setCalendarMonth(new Date(year, month + 1, 1))} className="p-1 rounded border border-slate-200 hover:bg-slate-50">
                   <ChevronRight className="h-3.5 w-3.5" />
                 </button>
               </div>
             </CardHeader>
             <CardContent className="p-4">
               <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase mb-2">
-                <div>Sun</div>
-                <div>Mon</div>
-                <div>Tue</div>
-                <div>Wed</div>
-                <div>Thu</div>
-                <div>Fri</div>
-                <div>Sat</div>
+                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
               </div>
               <div className="grid grid-cols-7 gap-1.5 min-h-[300px]">
                 {calendarDaysList.map((day, index) => {
                   if (!day) return <div key={`empty-${index}`} className="bg-slate-50/40 rounded border border-slate-100/50"></div>;
-                  
                   const dateStr = formatDateString(day);
                   const dayEvents = batchSessions.filter(s => s.date === dateStr);
                   const isDayInBatchRange = batchId ? (dateStr >= activeBatch?.startDate && dateStr <= activeBatch?.endDate) : true;
@@ -479,10 +591,7 @@ export function SchedulingWorkspaceClient({
                           return (
                             <div
                               key={ev.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                triggerEdit(ev);
-                              }}
+                              onClick={(e) => { e.stopPropagation(); triggerEdit(ev); }}
                               className={`text-[9px] px-1 py-0.5 rounded truncate font-medium border ${
                                 ev.format === 'Klasikal' ? 'bg-blue-50 text-blue-800 border-blue-100' :
                                 ev.format === 'Virtual' ? 'bg-purple-50 text-purple-800 border-purple-100' :
@@ -515,14 +624,7 @@ export function SchedulingWorkspaceClient({
               </div>
               <div className="flex items-center gap-2">
                 <Label className="text-xs font-bold text-slate-500 whitespace-nowrap">Active Date Selector:</Label>
-                <Input
-                  type="date"
-                  min={activeBatch?.startDate}
-                  max={activeBatch?.endDate}
-                  value={selectedDayDate}
-                  onChange={e => setSelectedDayDate(e.target.value)}
-                  className="h-8 py-0 px-2 text-xs w-[140px]"
-                />
+                <Input type="date" min={activeBatch?.startDate} max={activeBatch?.endDate} value={selectedDayDate} onChange={e => setSelectedDayDate(e.target.value)} className="h-8 py-0 px-2 text-xs w-[140px]" />
               </div>
             </CardHeader>
             <CardContent className="p-6">
@@ -530,7 +632,6 @@ export function SchedulingWorkspaceClient({
                 <div className="text-center py-12 text-slate-400">
                   <Calendar className="h-10 w-10 mx-auto text-slate-300 mb-2" />
                   <p className="text-xs font-semibold">No assigned sessions on {selectedDayDate}.</p>
-                  <p className="text-[11px] opacity-80">Click 'Assign Slot Session' to populate schedules.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -540,10 +641,7 @@ export function SchedulingWorkspaceClient({
                     const lok = activeLokasis.find(l => l.id === session.lokasiId);
 
                     return (
-                      <div
-                        key={session.id}
-                        className="p-4 border border-slate-100 rounded-xl bg-slate-50/50 hover:border-blue-200 transition-all flex justify-between items-center"
-                      >
+                      <div key={session.id} className="p-4 border border-slate-100 rounded-xl bg-slate-50/50 hover:border-blue-200 transition-all flex justify-between items-center">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <Badge className={`text-[9px] font-bold ${
@@ -562,7 +660,7 @@ export function SchedulingWorkspaceClient({
                           <div className="flex items-center gap-4 text-xs text-slate-500">
                             <span className="flex items-center gap-1">
                               <UserCheck className="h-3.5 w-3.5 text-slate-400" />
-                              WI: <strong>{wi ? `${wi.name}, ${wi.gelar}` : 'Unknown'}</strong>
+                              Widyaiswara: <strong>{wi ? `${wi.name}, ${wi.gelar}` : 'Unknown'}</strong>
                             </span>
                             <span className="flex items-center gap-1">
                               <MapPin className="h-3.5 w-3.5 text-slate-400" />
@@ -570,12 +668,17 @@ export function SchedulingWorkspaceClient({
                             </span>
                           </div>
                         </div>
-
                         <div className="flex items-center gap-1">
                           <Button size="icon" variant="ghost" onClick={() => triggerEdit(session)} className="text-blue-600">
                             <Edit className="h-4.5 w-4.5" />
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={() => { if (confirm('Delete?')) deleteSession(session.id); }} className="text-red-500">
+                          <Button size="icon" variant="ghost" onClick={() => {
+                            triggerConfirmation(
+                              "Delete Allocated Session",
+                              "Are you sure you want to permanently delete this allocated session?",
+                              () => deleteSession(session.id)
+                            );
+                          }} className="text-red-500">
                             <Trash2 className="h-4.5 w-4.5" />
                           </Button>
                         </div>
@@ -595,13 +698,12 @@ export function SchedulingWorkspaceClient({
                 <TableProperties className="h-4.5 w-4.5 text-blue-600" />
                 Schedules Table Grid Matrix
               </CardTitle>
-              <CardDescription className="text-xs">Full tabulated structural details of batch allocations.</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {batchSessions.length === 0 ? (
                 <div className="text-center py-12 text-slate-400">
                   <Calendar className="h-10 w-10 mx-auto text-slate-300 mb-2" />
-                  <p className="text-xs font-semibold">No assigned sessions for this batch yet.</p>
+                  <p className="text-xs font-semibold">No assigned sessions yet.</p>
                 </div>
               ) : (
                 <Table>
@@ -609,7 +711,7 @@ export function SchedulingWorkspaceClient({
                     <TableRow className="bg-slate-50/40">
                       <TableHead className="pl-6 text-xs font-bold uppercase text-slate-500">Date</TableHead>
                       <TableHead className="text-xs font-bold uppercase text-slate-500">Subject (Mapel)</TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-slate-500">Instructor (WI)</TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-slate-500">Widyaiswara</TableHead>
                       <TableHead className="text-xs font-bold uppercase text-slate-500">Format & Room</TableHead>
                       <TableHead className="text-xs font-bold uppercase text-slate-500">JP Ke & Count</TableHead>
                       <TableHead className="pr-6 text-right text-xs font-bold uppercase text-slate-500">Actions</TableHead>
@@ -625,21 +727,15 @@ export function SchedulingWorkspaceClient({
                         <TableRow key={session.id} className="hover:bg-slate-50/30 transition-colors">
                           <TableCell className="pl-6 font-semibold text-slate-900 text-xs">{session.date}</TableCell>
                           <TableCell className="font-semibold text-slate-900 text-xs">{mapel?.name}</TableCell>
-                          <TableCell className="text-xs text-slate-600 font-medium">
-                            {wi ? `${wi.name}, ${wi.gelar}` : 'Unknown'}
-                          </TableCell>
+                          <TableCell className="text-xs text-slate-600 font-medium">{wi ? `${wi.name}, ${wi.gelar}` : 'Unknown'}</TableCell>
                           <TableCell>
                             <div className="space-y-1">
                               <Badge className={`text-[9px] font-bold ${
                                 session.format === 'Klasikal' ? 'bg-blue-100 text-blue-800' :
                                 session.format === 'Virtual' ? 'bg-purple-100 text-purple-800' :
                                 'bg-amber-100 text-amber-800'
-                              }`}>
-                                {session.format}
-                              </Badge>
-                              {session.format === 'Klasikal' && (
-                                <p className="text-[10px] text-slate-500 font-medium">{lok?.name || 'Classroom'}</p>
-                              )}
+                              }`}>{session.format}</Badge>
+                              {session.format === 'Klasikal' && <p className="text-[10px] text-slate-500 font-medium">{lok?.name || 'Classroom'}</p>}
                             </div>
                           </TableCell>
                           <TableCell className="text-xs">
@@ -648,12 +744,14 @@ export function SchedulingWorkspaceClient({
                           </TableCell>
                           <TableCell className="pr-6 text-right">
                             <div className="flex justify-end gap-1.5">
-                              <Button size="icon" variant="ghost" onClick={() => triggerEdit(session)} className="text-blue-600 h-8 w-8">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" onClick={() => { if (confirm('Delete?')) deleteSession(session.id); }} className="text-red-500 h-8 w-8">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <Button size="icon" variant="ghost" onClick={() => triggerEdit(session)} className="text-blue-600 h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                              <Button size="icon" variant="ghost" onClick={() => {
+                                triggerConfirmation(
+                                  "Delete Allocated Session",
+                                  "Are you sure you want to permanently delete this allocated session?",
+                                  () => deleteSession(session.id)
+                                );
+                              }} className="text-red-500 h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -666,6 +764,19 @@ export function SchedulingWorkspaceClient({
           </Card>
         )}
       </div>
+
+      <AlertDialog open={confirmDialog.open} onOpenChange={open => setConfirmDialog(prev => ({ ...prev, open }))}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-900 font-bold text-lg">{confirmDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 text-sm">{confirmDialog.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-slate-200 text-slate-700 hover:bg-slate-50">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDialog.onConfirm} className="bg-blue-600 hover:bg-blue-500 text-white">Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

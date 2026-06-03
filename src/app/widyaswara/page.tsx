@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useWTMS, Session } from '@/context/wtms-context';
+import { useWTMS } from '@/context/wtms-context';
 import { useScheduling } from '@/hooks/use-wtms-api';
 import { 
   GraduationCap, 
@@ -49,13 +49,13 @@ export default function WidyaswaraDashboard() {
   // View Mode for Schedule (Table vs Calendar)
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('calendar');
 
-  // Get current active Widyaswara profile
+  // Get current active Widyaiswara profile
   const activeWi = widyaswaras.find(w => w.id === selectedWiId) || widyaswaras[0];
 
   // Get all sessions with details
   const { sessions: allSessions } = useScheduling();
 
-  // Filter sessions for this specific Widyaswara
+  // Filter sessions for this specific Widyaiswara
   const wiSessions = allSessions.filter(s => s.wiId === activeWi?.id);
 
   // Sort sessions by date and start time
@@ -126,13 +126,12 @@ export default function WidyaswaraDashboard() {
             <GraduationCap className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-xl tracking-tight">WTMS Widyaswara Portal</h1>
+            <h1 className="font-bold text-xl tracking-tight">WTMS Widyaiswara Portal</h1>
             <p className="text-xs text-slate-400">Personalized Schedule & Compliance View</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4 flex-wrap">
-          {/* Profile Switcher for testing convenience */}
           <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
             <span className="text-xs text-slate-400 font-medium">Viewing Profile:</span>
             <Select value={activeWi.id} onValueChange={setSelectedWiId}>
@@ -163,7 +162,7 @@ export default function WidyaswaraDashboard() {
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-6 py-8 max-w-5xl space-y-8">
         
-        {/* Widyaswara Profile Card */}
+        {/* Widyaiswara Profile Card */}
         <Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
           <div className="bg-gradient-to-r from-indigo-600 to-blue-600 h-24"></div>
           <CardContent className="p-6 -mt-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -181,7 +180,7 @@ export default function WidyaswaraDashboard() {
                   <span className="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
                   <span className="flex items-center gap-1">
                     <Award className="h-4 w-4 text-slate-400" />
-                    Competency Level {activeWi.level} ({activeWi.levelLabel})
+                    Competency Level {activeWi.level} ({activeWi.levelLabel === 'PKM' ? 'PKN' : activeWi.levelLabel})
                   </span>
                 </div>
                 <div className="text-xs text-slate-500 font-medium">

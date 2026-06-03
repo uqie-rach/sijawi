@@ -49,8 +49,8 @@ export function ReportsClient({ initialWis }: ReportsClientProps) {
   );
 
   const handleExportGlobal = () => {
-    const header = "LAPORAN REKAPITULASI GLOBAL BULANAN WIDYASWARA\n==================================================\n\n";
-    const tableHeader = "NIP | Nama Widyaswara | Jabatan | APBD | Kontribusi | Kemitraan | Grand Total JP\n";
+    const header = "LAPORAN REKAPITULASI GLOBAL BULANAN WIDYAISWARA\n==================================================\n\n";
+    const tableHeader = "NIP | Nama Widyaiswara | Jabatan | APBD | Kontribusi | Kemitraan | Grand Total JP\n";
     const rows = filteredWis.map(wi => 
       `${wi.nip} | ${wi.name}, ${wi.gelar} | ${wi.jabatan} | ${wi.apbd} JP | ${wi.kontribusi} JP | ${wi.kemitraan} JP | ${wi.grandTotal} JP`
     ).join('\n');
@@ -79,7 +79,7 @@ export function ReportsClient({ initialWis }: ReportsClientProps) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-200">
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="pb-4">
           <CardTitle className="text-base font-bold">Advanced Filtering & Search</CardTitle>
@@ -87,7 +87,7 @@ export function ReportsClient({ initialWis }: ReportsClientProps) {
         </CardHeader>
         <CardContent className="grid sm:grid-cols-5 gap-4 items-end">
           <div className="space-y-1">
-            <Label className="text-xs font-bold text-slate-500 uppercase">Search Instructor</Label>
+            <Label className="text-xs font-bold text-slate-500 uppercase">Search Widyaiswara</Label>
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input 
@@ -130,7 +130,7 @@ export function ReportsClient({ initialWis }: ReportsClientProps) {
         <CardHeader className="border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <CardTitle className="text-lg font-bold">Monthly Recap Table</CardTitle>
-            <CardDescription>Detailed breakdown of teaching hours per Widyaswara.</CardDescription>
+            <CardDescription>Detailed breakdown of teaching hours per Widyaiswara.</CardDescription>
           </div>
           <Button onClick={handleExportGlobal} className="bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
             <Download className="h-4 w-4" /> Export Global Recap
@@ -141,7 +141,7 @@ export function ReportsClient({ initialWis }: ReportsClientProps) {
             <TableHeader>
               <TableRow className="bg-slate-50/70">
                 <TableHead className="font-semibold pl-6">NIP</TableHead>
-                <TableHead className="font-semibold">Nama Widyaswara</TableHead>
+                <TableHead className="font-semibold">Nama Widyaiswara</TableHead>
                 <TableHead className="font-semibold">Jabatan</TableHead>
                 <TableHead className="text-center font-semibold">APBD</TableHead>
                 <TableHead className="text-center font-semibold">Kontribusi</TableHead>

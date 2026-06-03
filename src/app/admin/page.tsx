@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 
-interface WidyaswaraWithCalculation {
+interface WidyaiswaraWithCalculation {
   id: string;
   name: string;
   gelar: string;
@@ -24,7 +24,7 @@ interface WidyaswaraWithCalculation {
   };
 }
 
-async function getWidyaswaraOverviewData(): Promise<WidyaswaraWithCalculation[]> {
+async function getWidyaiswaraOverviewData(): Promise<WidyaiswaraWithCalculation[]> {
   try {
     const wis = await sql`SELECT * FROM widyaswaras ORDER BY name ASC`;
     const sessions = await sql`
@@ -54,7 +54,7 @@ async function getWidyaswaraOverviewData(): Promise<WidyaswaraWithCalculation[]>
         nip: wi.nip,
         jabatan: wi.jabatan,
         level: Number(wi.level),
-        levelLabel: wi.level_label,
+        levelLabel: wi.level_label === 'PKM' ? 'PKN' : wi.level_label,
         jpLastMonth: Number(wi.jp_last_month || 0),
         jpCurrentMonth,
         breakdown: { apbd, kontribusi, kemitraan },
@@ -67,7 +67,7 @@ async function getWidyaswaraOverviewData(): Promise<WidyaswaraWithCalculation[]>
 }
 
 export default async function OverviewPage() {
-  const wiData = await getWidyaswaraOverviewData();
+  const wiData = await getWidyaiswaraOverviewData();
 
   const barChartData = wiData.map((wi) => ({
     name: wi.name.split(' ')[0],
@@ -91,14 +91,14 @@ export default async function OverviewPage() {
   ].filter((item) => item.value > 0);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-200">
       <OverviewCharts barChartData={barChartData} pieChartData={pieChartData} />
 
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="border-b border-slate-100 bg-slate-50/50">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <CardTitle className="text-lg font-bold text-slate-900">Widyaswara Load Balancing & JP Tracking</CardTitle>
+              <CardTitle className="text-lg font-bold text-slate-900">Widyaiswara Load Balancing & JP Tracking</CardTitle>
               <CardDescription>Real-time monitoring of teaching hours with breakdown by funding pattern (Pola).</CardDescription>
             </div>
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-semibold">
@@ -110,7 +110,7 @@ export default async function OverviewPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50/70">
-                <TableHead className="font-semibold text-slate-700 pl-6">Nama Widyaswara</TableHead>
+                <TableHead className="font-semibold text-slate-700 pl-6">Nama Widyaiswara</TableHead>
                 <TableHead className="font-semibold text-slate-700">NIP & Jabatan</TableHead>
                 <TableHead className="font-semibold text-slate-700">Competency Level</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-center">JP Bulan Lalu</TableHead>

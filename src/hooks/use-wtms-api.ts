@@ -1,14 +1,14 @@
 "use client";
 
-import { useWTMS, Widyaswara, Batch, Session, Mapel } from '@/context/wtms-context';
+import { useWTMS, Widyaiswara, Batch, Session, Mapel } from '@/context/wtms-context';
 
-// 1. useWidyaswaras(): Fetches WI data with current calculations
+// 1. useWidyaswaras(): Fetches Widyaiswara data with current calculations
 export function useWidyaswaras() {
   const { widyaswaras, sessions, batches, addWidyaswara } = useWTMS();
 
-  // Calculate current month JP for each Widyaswara
+  // Calculate current month JP for each Widyaiswara
   const widyaswarasWithCalculations = widyaswaras.map(wi => {
-    // Filter sessions for this WI
+    // Filter sessions for this Widyaiswara
     const wiSessions = sessions.filter(s => s.wiId === wi.id);
     
     // Calculate total JP
@@ -92,7 +92,7 @@ export function useScheduling(batchId?: string) {
     return {
       ...session,
       mapelName: mapel ? mapel.name : 'Unknown Subject',
-      wiName: wi ? `${wi.name}, ${wi.gelar}` : 'Unknown WI',
+      wiName: wi ? `${wi.name}, ${wi.gelar}` : 'Unknown Widyaiswara',
       lokasiName: lokasi ? lokasi.name : (session.format === 'Klasikal' ? 'Unknown Location' : session.format),
       batchName: batch ? batch.name : 'Unknown Batch'
     };
@@ -170,7 +170,7 @@ export function useReports(month?: number, year?: number) {
     }
   });
 
-  // Top Widyaswaras by JP
+  // Top Widyaiswaras by JP
   const wiJpMap: Record<string, number> = {};
   filteredSessions.forEach(s => {
     wiJpMap[s.wiId] = (wiJpMap[s.wiId] || 0) + s.jpCount;
