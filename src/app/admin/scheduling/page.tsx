@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Calendar, Layers, MapPin, ArrowUpRight } from 'lucide-react';
+import { SchedulingWorkspaceClient } from "@/components/admin/SchedulingWorkspaceClient"
 
 interface BatchListItem {
   id: string;
@@ -160,6 +161,8 @@ export default async function SchedulingIndexPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <SchedulingWorkspaceClient />
     </div>
   );
 }
