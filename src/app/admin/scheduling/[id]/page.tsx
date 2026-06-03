@@ -15,6 +15,7 @@ async function getBatchWorkspaceDetails(id: string) {
     const wis = await sql`SELECT * FROM widyaswaras ORDER BY name ASC`;
     const lokasis = await sql`SELECT * FROM lokasi ORDER BY name ASC`;
     const sessions = await sql`SELECT * FROM sessions ORDER BY date ASC, start_time ASC`;
+    const allBatches = await sql`SELECT id, name, start_date as "startDate", end_date as "endDate" FROM batches ORDER BY start_date DESC`;
 
     return {
       batch: { id: batch.id, name: batch.name, kategoriId: batch.kategori_id, pola: batch.pola, startDate: batch.start_date, endDate: batch.end_date },
@@ -34,6 +35,7 @@ async function getBatchWorkspaceDetails(id: string) {
         jpKe: s.jp_ke,
         jpCount: Number(s.jp_count)
       })),
+      allBatches: allBatches.map(b => ({ id: b.id, name: b.name, startDate: b.startDate, endDate: b.endDate }))
     };
   } catch (e) {
     console.error(e);
@@ -73,6 +75,7 @@ export default async function BatchWorkspacePage({
         initialWis={data.wis}
         initialLokasis={data.lokasis}
         initialSessions={data.sessions}
+        allBatches={data.allBatches}
       />
     </div>
   );
