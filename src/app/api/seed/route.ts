@@ -49,7 +49,7 @@ export async function POST() {
       { id: 'mapel-3', name: 'Etika dan Integritas Kepemimpinan', kategori_id: 'kat-pka', jp_total: 3 },
       { id: 'mapel-4', name: 'Agenda Bela Negara', kategori_id: 'kat-latsar', jp_total: 2 },
       { id: 'mapel-5', name: 'Nilai-Nilai Dasar PNS (BerAKHLAK)', kategori_id: 'kat-latsar', jp_total: 6 },
-      { id: 'mapel-6', name: 'Manajemen Strategis Nasional', kategori_id: 'kat-pkm', jp_total: 6 },
+      { id: 'mapel-6', name: 'Manajemen Strategis Nasional', kategori_id: 'kat-pkn', jp_total: 6 },
       { id: 'mapel-7', name: 'Inovasi Pelayanan Publik', kategori_id: 'kat-pkp', jp_total: 4 },
     ];
 
@@ -81,7 +81,7 @@ export async function POST() {
     const batches = [
       { id: 'batch-1', name: 'PKA Angkatan I', kategori_id: 'kat-pka', pola: 'APBD', start_date: '2026-03-01', end_date: '2026-03-15' },
       { id: 'batch-2', name: 'Latsar CPNS 2026', kategori_id: 'kat-latsar', pola: 'Kontribusi', start_date: '2026-03-10', end_date: '2026-03-25' },
-      { id: 'batch-3', name: 'PKM Kepemimpinan Nasional', kategori_id: 'kat-pkm', pola: 'Kemitraan', start_date: '2026-03-05', end_date: '2026-03-20' },
+      { id: 'batch-3', name: 'PKM Kepemimpinan Nasional', kategori_id: 'kat-pkn', pola: 'Kemitraan', start_date: '2026-03-05', end_date: '2026-03-20' },
       { id: 'batch-4', name: 'PKA Angkatan II (April)', kategori_id: 'kat-pka', pola: 'APBD', start_date: '2026-04-01', end_date: '2026-04-15' },
       { id: 'batch-5', name: 'PKP Angkatan I (April)', kategori_id: 'kat-pkp', pola: 'Kontribusi', start_date: '2026-04-05', end_date: '2026-04-20' },
     ];
