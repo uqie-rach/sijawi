@@ -4,52 +4,107 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { GraduationCap, ArrowLeft, ShieldAlert, Loader2 } from 'lucide-react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Scheduler, CalendarEvent, ViewType } from 'calendarkit-pro';
 import { toast } from 'sonner';
 
-// Mock data matching WTMS business logic structures
-const mockWidyaswaras = [
-  { id: 'wi-1', name: 'Uqie Rachmadie', level: 5, levelLabel: 'PKN' },
-  { id: 'wi-2', name: 'Americo Block', level: 2, levelLabel: 'Latsar' },
-  { id: 'wi-3', name: 'Dr. H. Ahmad Yani', level: 4, levelLabel: 'PKA' },
-];
+interface Widyaiswara {
+  id: string;
+  name: string;
+  gelar: string;
+  email: string;
+  nip: string;
+  jabatan: string;
+  level: number;
+  levelLabel: string;
+}
 
-const mockMapels = [
-  { id: 'mapel-1', name: 'Kepemimpinan Pancasila & Nasionalisme', jpTotal: 4, minWeight: 4 },
-  { id: 'mapel-2', name: 'Manajemen Perubahan Sektor Publik', jpTotal: 6, minWeight: 4 },
-  { id: 'mapel-3', name: 'Agenda Bela Negara', jpTotal: 2, minWeight: 2 },
-];
+interface Mapel {
+  id: string;
+  name: string;
+  kategoriId: string;
+  jpTotal: number;
+}
 
-const mockLokasis = [
-  { id: 'lok-1', name: 'Aula Utama' },
-  { id: 'lok-2', name: 'Lab Komputer' },
-];
+interface Lokasi {
+  id: string;
+  name: string;
+}
+
+interface Batch {
+  id: string;
+  name: string;
+  kategoriId: string;
+  pola: string;
+  startDate: string;
+  endDate: string;
+}
 
 export default function TestCalendarPage() {
   const router = useRouter();
 
-  // Calendar scheduler state
-  const [events, setEvents] = useState<CalendarEvent[]>([
-    {
-      id: 'sess-1',
-      title: 'Kepemimpinan Pancasila - Dr. H. Ahmad Yani (Aula Utama)',
-      start: new Date(2026, 2, 2, 8, 0),
-      end: new Date(2026, 2, 2, 9, 30),
-    },
-    {
-      id: 'sess-2',
-      title: 'Agenda Bela Negara - Americo Block (Lab Komputer)',
-      start: new Date(2026, 2, 3, 10, 0),
-      end: new Date(2026, 2, 3, 11, 30),
-    }
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [widyaswaras, setWidyaswaras] = useState<Widyaiswara[]>([]);
+  const [mapels, setMapels] = useState<Mapel[]>([]);
+  const [lokasis, setLokasis] = useState<Lokasi[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [view, setView] = useState<ViewType>('week');
   const [date, setDate] = useState<Date>(new Date(2026, 2, 1)); // March 2026
 
+  // Fetch real data from API
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [resWi, resMapel, resLok, resBatches, resSessions] = await Promise.all([
+        fetch('/api/widyaswara').then(r => r.ok ? r.json() : []),
+        fetch('/api/mata-pelatihan').then(r => r.ok ? r.json() : []),
+        fetch('/api/lokasi').then(r => r.ok ? r.json() : []),
+        fetch('/api/batches').then(r => r.ok ? r.json() : []),
+        fetch('/api/sessions').then(r => r.ok ? r.json() : [])
+      ]);
+
+      setWidyaswaras(resWi);
+      setMapels(resMapel);
+      setLokasis(resLok);
+      setBatches(resBatches);
+
+      // Map real sessions to CalendarEvent format
+      const mappedEvents: CalendarEvent[] = resSessions.map((s: any) => {
+        const mapel = resMapel.find((m: any) => m.id === s.mapelId);
+        const wi = resWi.find((w: any) => w.id === s.wiId);
+        const lokasi = resLok.find((l: any) => l.id === s.lokasiId);
+
+        const title = `${mapel ? mapel.name : 'Subject'} - ${wi ? wi.name : 'WI'} (${lokasi ? lokasi.name : s.format})`;
+        
+        // Parse date and times safely
+        const start = new Date(`${s.date}T${s.startTime}`);
+        const end = new Date(`${s.date}T${s.endTime}`);
+
+        return {
+          id: s.id,
+          title,
+          start,
+          end,
+        };
+      });
+
+      setEvents(mappedEvents);
+    } catch (err) {
+      console.error("Failed to load API data:", err);
+      toast.error("Failed to load real database schedules.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
   // Business logic validation helper
-  const validateSessionConstraints = (title: string, start: Date, end: Date): boolean => {
+  const validateSessionConstraints = (start: Date, end: Date, excludeId?: string): boolean => {
     const startHour = start.getHours();
     const endHour = end.getHours();
 
@@ -61,6 +116,7 @@ export default function TestCalendarPage() {
 
     // 2. Check for time overlaps with existing events
     const hasOverlap = events.some(event => {
+      if (excludeId && event.id === excludeId) return false;
       return (
         (start >= event.start && start < event.end) ||
         (end > event.start && end <= event.end) ||
@@ -76,6 +132,103 @@ export default function TestCalendarPage() {
     return true;
   };
 
+  // Handle event creation
+  const handleEventCreate = async (newEvent: CalendarEvent) => {
+    const isValid = validateSessionConstraints(newEvent.start, newEvent.end);
+    if (!isValid) return;
+
+    // Pick first available batch, mapel, wi, and lokasi for demo creation
+    const defaultBatch = batches[0];
+    const defaultMapel = mapels[0];
+    const defaultWi = widyaswaras[0];
+    const defaultLokasi = lokasis[0];
+
+    if (!defaultBatch || !defaultMapel || !defaultWi) {
+      toast.error("Cannot create session: Missing master data (Batch, Subject, or Widyaiswara).");
+      return;
+    }
+
+    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+    const formatTime = (d: Date) => d.toTimeString().split(' ')[0].substring(0, 5);
+
+    const sessionPayload = {
+      id: `sess-${Date.now()}`,
+      batchId: defaultBatch.id,
+      mapelId: defaultMapel.id,
+      wiId: defaultWi.id,
+      date: formatDate(newEvent.start),
+      startTime: formatTime(newEvent.start),
+      endTime: formatTime(newEvent.end),
+      format: 'Klasikal',
+      lokasiId: defaultLokasi?.id,
+      jpKe: '1-2',
+      jpCount: 2
+    };
+
+    try {
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sessionPayload)
+      });
+
+      if (res.ok) {
+        toast.success(`Successfully scheduled session: "${defaultMapel.name}"`);
+        loadData(); // Reload to get fresh mapped titles and details
+      } else {
+        const errData = await res.json();
+        toast.error(errData.error || "Failed to save session to database.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Network error saving session.");
+    }
+  };
+
+  // Handle event drop/move
+  const handleEventDrop = async (event: CalendarEvent, newStart: Date, newEnd: Date) => {
+    const isValid = validateSessionConstraints(newStart, newEnd, event.id);
+    if (!isValid) return;
+
+    // Fetch the original session details to preserve other fields
+    try {
+      const resSessions = await fetch('/api/sessions').then(r => r.ok ? r.json() : []);
+      const originalSession = resSessions.find((s: any) => s.id === event.id);
+
+      if (!originalSession) {
+        toast.error("Original session not found.");
+        return;
+      }
+
+      const formatDate = (d: Date) => d.toISOString().split('T')[0];
+      const formatTime = (d: Date) => d.toTimeString().split(' ')[0].substring(0, 5);
+
+      const updatedPayload = {
+        ...originalSession,
+        date: formatDate(newStart),
+        startTime: formatTime(newStart),
+        endTime: formatTime(newEnd),
+      };
+
+      const res = await fetch('/api/sessions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedPayload)
+      });
+
+      if (res.ok) {
+        toast.success("Session rescheduled successfully!");
+        loadData();
+      } else {
+        const errData = await res.json();
+        toast.error(errData.error || "Failed to update session.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Network error updating session.");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-white">
       {/* Top Header */}
@@ -89,9 +242,9 @@ export default function TestCalendarPage() {
             <p className="text-xs text-slate-400">Powered by calendarkit-pro Scheduler</p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
+        <Button 
+          variant="outline" 
+          size="sm" 
           onClick={() => router.push('/admin')}
           className="border-slate-800 text-slate-300 hover:bg-slate-900"
         >
@@ -118,7 +271,16 @@ export default function TestCalendarPage() {
             <CardTitle className="text-base font-bold">Pro Scheduler Grid Engine</CardTitle>
             <CardDescription className="text-slate-400 text-xs">Switch between month, week or day schedules seamlessly with advanced drag-and-drop capabilities.</CardDescription>
           </CardHeader>
-          <CardContent className="p-6 bg-slate-900 text-slate-900 rounded-b-xl">
+          <CardContent className="p-6 bg-slate-900 text-slate-900 rounded-b-xl relative min-h-[600px]">
+            {loading ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 rounded-b-xl z-10">
+                <div className="flex flex-col items-center gap-2 text-white">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                  <p className="text-sm font-medium">Loading database schedules...</p>
+                </div>
+              </div>
+            ) : null}
+
             {/* calendarkit-pro component wrapper with dark styles wrapper */}
             <div className="bg-white p-4 rounded-lg shadow-inner min-h-[600px]">
               <Scheduler
@@ -127,26 +289,8 @@ export default function TestCalendarPage() {
                 onViewChange={setView}
                 date={date}
                 onDateChange={setDate}
-                onEventCreate={(newEvent) => {
-                  const isValid = validateSessionConstraints(
-                    newEvent.title || 'Draft Session',
-                    newEvent.start,
-                    newEvent.end
-                  );
-
-                  if (isValid) {
-                    const id = `test-sess-${Date.now()}`;
-                    setEvents(prev => [...prev, { ...newEvent, id }]);
-                    toast.success(`Successfully scheduled session: "${newEvent.title || 'Draft Session'}"`);
-                  }
-                }}
-                onEventDrop={(event, newStart, newEnd) => {
-                  setEvents(events.map(e =>
-                    e.id === event.id
-                      ? { ...e, start: newStart, end: newEnd }
-                      : e
-                  ));
-                }}
+                onEventCreate={handleEventCreate}
+                onEventDrop={handleEventDrop}
               />
             </div>
           </CardContent>
