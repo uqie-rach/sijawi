@@ -1,14 +1,49 @@
 import type { Config } from "tailwindcss";
+import animatePlugin from "tailwindcss-animate";
 
 export default {
-    darkMode: ["class"],
+    darkMode: "class",
     content: [
+    "./src/**/*.tsx",
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
   	extend: {
+  		// [NEW] Font family injected
+  		fontFamily: {
+  			inter: "var(--font-inter)",
+  		},
+  		// [NEW] Custom font sizes injected
+  		fontSize: {
+  			xxs: ["0.625rem", "1rem"],
+  		},
+  		// [NEW] Max width injected
+  		maxWidth: {
+  			"8xl": "90rem",
+  		},
+  		// [NEW] Responsive screens injected
+  		screens: {
+  			xs: "460px",
+  			sm: "576px",
+  			md: "768px",
+  			lg: "1024px",
+  			xl: "1280px",
+  			"2xl": "1440px",
+  		},
+  		// [NEW] Custom spacing injected
+  		spacing: {
+  			"18": "4.5rem",
+  			"4.5": "1.125rem",
+  			"5.5": "1.375rem",
+  			"6.5": "1.625rem",
+  			"8.5": "2.125rem",
+  		},
+  		// [NEW] Background image for calendar injected
+  		backgroundImage: {
+  			"calendar-disabled-hour": "repeating-linear-gradient(-60deg, hsl(var(--border)) 0 0.5px, transparent 0.5px 8px)",
+  		},
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
@@ -61,11 +96,13 @@ export default {
   				ring: 'hsl(var(--sidebar-ring))'
   			}
   		},
+  		// [ORIGINAL] Border radius
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
+  		// [ORIGINAL] Keyframes animation
   		keyframes: {
   			'accordion-down': {
   				from: {
@@ -90,5 +127,5 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
-} satisfies Config;
+  plugins: [animatePlugin],
+} as const satisfies Config;

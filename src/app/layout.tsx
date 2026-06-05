@@ -1,8 +1,9 @@
+import { Toaster } from "@/components/ui/sonner";
+import { WTMSProvider } from "@/context/wtms-context";
 import type { Metadata } from "next";
+import { Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { WTMSProvider } from "@/context/wtms-context";
-import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,6 +19,12 @@ export const metadata: Metadata = {
   title: "Widyaswara Training Management System (WTMS)",
   description: "Highly functional web dashboard for managing Widyaswara training schedules, load balancing, and compliance.",
 };
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+  
 
 export default function RootLayout({
   children,

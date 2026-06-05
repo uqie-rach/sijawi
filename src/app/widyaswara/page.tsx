@@ -4,17 +4,17 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWTMS } from '@/context/wtms-context';
 import { useScheduling } from '@/hooks/use-wtms-api';
-import { 
-  GraduationCap, 
-  LogOut, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  BookOpen, 
-  User, 
-  Mail, 
-  Award, 
-  ChevronLeft, 
+import {
+  GraduationCap,
+  LogOut,
+  Calendar,
+  Clock,
+  MapPin,
+  BookOpen,
+  User,
+  Mail,
+  Award,
+  ChevronLeft,
   ChevronRight,
   Info,
   CheckCircle2,
@@ -35,11 +35,11 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 
 export default function WidyaswaraDashboard() {
   const router = useRouter();
-  const { 
-    userRole, 
-    setUserRole, 
-    widyaswaras, 
-    selectedWiId, 
+  const {
+    userRole,
+    setUserRole,
+    widyaswaras,
+    selectedWiId,
     setSelectedWiId,
     isAuthenticated,
     setIsAuthenticated
@@ -150,7 +150,7 @@ export default function WidyaswaraDashboard() {
 
   return (
     <div className="min-h-screen flex bg-slate-100">
-      
+
       {/* 2. OUTER SIDEBAR (Sidebar Utama) */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col justify-between border-r border-slate-800 shrink-0 hidden md:flex">
         <div>
@@ -190,12 +190,12 @@ export default function WidyaswaraDashboard() {
 
       {/* Main Workspace Frame */}
       <div className="flex-1 flex flex-col min-w-0">
-        
+
         {/* 3. ATTRAKTIF GRADIENT HEADER */}
         <header className="relative bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white px-8 py-6 shadow-lg overflow-hidden shrink-0">
           <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-purple-500/35 rounded-full blur-3xl" />
-          
+
           <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase mb-2 w-fit border border-white/20">
@@ -228,10 +228,10 @@ export default function WidyaswaraDashboard() {
 
         {/* Dashboard Workspace */}
         <div className="flex-1 p-8 overflow-y-auto grid lg:grid-cols-4 gap-8">
-          
+
           {/* LEFT SIDE: MAIN DASHBOARD AREA (3 COLS) */}
           <div className="lg:col-span-3 space-y-8">
-            
+
             {/* Widyaiswara Profile Details */}
             <Card className="bg-white border-slate-200 shadow-sm overflow-hidden rounded-xl">
               <CardContent className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -303,8 +303,8 @@ export default function WidyaswaraDashboard() {
                       <Bar dataKey="Scheduled JP" fill="url(#colorJp)" radius={[6, 6, 0, 0]} barSize={55} />
                       <defs>
                         <linearGradient id="colorJp" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.95}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                          <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.95} />
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.8} />
                         </linearGradient>
                       </defs>
                     </BarChart>
@@ -323,26 +323,24 @@ export default function WidyaswaraDashboard() {
                   </h3>
                   <p className="text-xs text-slate-500">Examine operational scheduled slots from either a personal or global center perspective.</p>
                 </div>
-                
+
                 {/* 1. PERSONAL VS GLOBAL TOGGLE */}
                 <div className="flex items-center gap-2 bg-slate-200/80 p-1 rounded-xl border border-slate-300">
                   <button
                     onClick={() => setScheduleFilter('personal')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      scheduleFilter === 'personal'
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${scheduleFilter === 'personal'
                         ? 'bg-white text-slate-900 shadow-sm'
                         : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     Personal Schedule
                   </button>
                   <button
                     onClick={() => setScheduleFilter('global')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      scheduleFilter === 'global'
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${scheduleFilter === 'global'
                         ? 'bg-white text-slate-900 shadow-sm'
                         : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     Global Schedules
                   </button>
@@ -358,18 +356,16 @@ export default function WidyaswaraDashboard() {
                 <div className="flex items-center bg-slate-200/60 p-1 rounded-lg border border-slate-300">
                   <button
                     onClick={() => setViewMode('table')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                      viewMode === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all ${viewMode === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      }`}
                   >
                     <TableIcon className="h-3.5 w-3.5" />
                     Table View
                   </button>
                   <button
                     onClick={() => setViewMode('calendar')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                      viewMode === 'calendar' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all ${viewMode === 'calendar' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      }`}
                   >
                     <Calendar className="h-3.5 w-3.5" />
                     Calendar View
@@ -408,13 +404,12 @@ export default function WidyaswaraDashboard() {
                         {sessions.map(session => {
                           const isOwnSession = session.wiId === activeWi.id;
                           return (
-                            <Card 
-                              key={session.id} 
-                              className={`bg-white border transition-all duration-200 shadow-sm rounded-xl relative ${
-                                isOwnSession 
-                                  ? 'border-indigo-400 ring-1 ring-indigo-100 bg-gradient-to-tr from-white to-indigo-50/10' 
+                            <Card
+                              key={session.id}
+                              className={`bg-white border transition-all duration-200 shadow-sm rounded-xl relative ${isOwnSession
+                                  ? 'border-indigo-400 ring-1 ring-indigo-100 bg-gradient-to-tr from-white to-indigo-50/10'
                                   : 'border-slate-200'
-                              }`}
+                                }`}
                             >
                               {/* Own Session Label Overlay */}
                               {isOwnSession && (
@@ -425,11 +420,10 @@ export default function WidyaswaraDashboard() {
 
                               <CardHeader className="pb-3 border-b border-slate-50">
                                 <div className="flex justify-between items-start gap-2">
-                                  <Badge className={`font-semibold ${
-                                    session.format === 'Klasikal' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                    session.format === 'Virtual' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                                    'bg-amber-100 text-amber-800 border-amber-200'
-                                  }`}>
+                                  <Badge className={`font-semibold ${session.format === 'Klasikal' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                      session.format === 'Virtual' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                                        'bg-amber-100 text-amber-800 border-amber-200'
+                                    }`}>
                                     {session.format}
                                   </Badge>
                                   <div className="flex items-center gap-1 text-xs text-slate-500 font-semibold">
@@ -491,7 +485,7 @@ export default function WidyaswaraDashboard() {
 
           {/* 2. RIGHT SIDE: INNER SIDEBAR AREA (1 COL) */}
           <div className="lg:col-span-1 space-y-8">
-            
+
             {/* Day View Timeline Component */}
             <Card className="shadow-sm border-slate-200 bg-white rounded-xl">
               <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
@@ -501,10 +495,10 @@ export default function WidyaswaraDashboard() {
               <CardContent className="p-4 space-y-4">
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Target Day</span>
-                  <input 
-                    type="date" 
-                    value={selectedDayDate} 
-                    onChange={e => setSelectedDayDate(e.target.value)} 
+                  <input
+                    type="date"
+                    value={selectedDayDate}
+                    onChange={e => setSelectedDayDate(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-250 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
@@ -543,7 +537,7 @@ export default function WidyaswaraDashboard() {
                       <div key={s.id} className="relative">
                         {/* Bullet point dot */}
                         <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-indigo-600 border border-white shadow-sm" />
-                        
+
                         <div className="space-y-1">
                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                             {new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} • {s.startTime}
