@@ -89,9 +89,9 @@ export default function TestCalendarPage() {
             <p className="text-xs text-slate-400">Powered by calendarkit-pro Scheduler</p>
           </div>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => router.push('/admin')}
           className="border-slate-800 text-slate-300 hover:bg-slate-900"
         >
@@ -139,6 +139,13 @@ export default function TestCalendarPage() {
                     setEvents(prev => [...prev, { ...newEvent, id }]);
                     toast.success(`Successfully scheduled session: "${newEvent.title || 'Draft Session'}"`);
                   }
+                }}
+                onEventDrop={(event, newStart, newEnd) => {
+                  setEvents(events.map(e =>
+                    e.id === event.id
+                      ? { ...e, start: newStart, end: newEnd }
+                      : e
+                  ));
                 }}
               />
             </div>
