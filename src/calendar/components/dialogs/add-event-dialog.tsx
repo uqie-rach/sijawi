@@ -2,8 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertTriangle } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { useCalendar } from "@/calendar/contexts/calendar-context";
 
@@ -30,9 +31,27 @@ interface IProps {
 }
 
 export function AddEventDialog({ children, startDate, startTime }: IProps) {
-  const { users } = useCalendar();
-
+  const { users, setLocalEvents } = useCalendar();
   const { isOpen, onClose, onToggle } = useDisclosure();
+
+  const [batches, setBatches] = useState<any[]>([]);
+  const [mapels, setMapels] = useState<any[]>([]);
+  const [lokasis, setLokasis] = useState<any[]>([]);
+
+  // Fetch master data for dropdowns
+  useEffect(() => {
+    if (isOpen) {
+      Promise.all([
+        fetch('/api/batches').then(r => r.ok ? r.json() : []),
+        fetch('/api/mata-pelatihan').then(r => r.ok ? r.json() : []),
+        fetch('/api/lokasi').then(r => r.ok ? r.json() : [])
+      ]).then(([b, m, l]) => {
+        setBatches(b);
+        setMapels(m);
+        setLokasis(l);
+      }).catch(err => console.error("Error loading master data:", err));
+    }
+  }, [isOpen]);
 
   const form = useForm<TEventFormData>({
     resolver: zodResolver(eventSchema),
@@ -44,10 +63,79 @@ export function AddEventDialog({ children, startDate, startTime }: IProps) {
     },
   });
 
-  const onSubmit = (_values: TEventFormData) => {
-    // TO DO: Create use-add-event hook
-    onClose();
-    form.reset();
+  const onSubmit = async (values: TEventFormData) => {
+    try {
+      const user = users.find(u => u.id === values.user);
+      if (!user) {
+        toast.error("Please select a responsible Widyaiswara.");
+        return;
+      }
+
+      // Find matching batch and mapel based on title or selection
+      const defaultBatch = batches[0];
+      const defaultMapel = mapels[0];
+      const defaultLokasi = lokasis[0];
+
+      if (!defaultBatch || !defaultMapel) {
+        toast.error("Missing master data (Batch or Subject) to create session.");
+        return;
+      }
+
+      const formatDate = (d: Date) => d.toISOString().split('T')[0];
+      const formatTime = (hour: number, minute: number) => 
+        `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+
+      const startDateTime = new Date(values.startDate);
+      startDateTime.setHours(values.startTime.hour, values.startTime.minute);
+
+      const endDateTime = new Date(values.endDate);
+      endDateTime.setHours(values.endTime.hour, values.endTime.minute);
+
+      const sessionPayload = {
+        id: `sess-${Date.now()}`,
+        batchId: defaultBatch.id,
+        mapelId: defaultMapel.id,
+        wiId: values.user,
+        date: formatDate(values.startDate),
+        startTime: formatTime(values.startTime.hour, values.startTime.minute),
+        endTime: formatTime(values.endTime.hour, values.endTime.minute),
+        format: 'Klasikal',
+        lokasiId: defaultLokasi?.id,
+        jpKe: '1-2',
+        jpCount: 2
+      };
+
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sessionPayload)
+      });
+
+      if (res.ok) {
+        toast.success("Session successfully scheduled in database!");
+        
+        // Update local state
+        const newEvent = {
+          id: sessionPayload.id,
+          startDate: startDateTime.toISOString(),
+          endDate: endDateTime.toISOString(),
+          title: `${values.title} (${defaultBatch.name})`,
+          color: values.color,
+          description: values.description,
+          user: user
+        };
+
+        setLocalEvents(prev => [...prev, newEvent]);
+        onClose();
+        form.reset();
+      } else {
+        const errData = await res.json();
+        toast.error(errData.error || "Failed to save session.");
+      }
+    } catch (error) {
+      console.error("Error creating session:", error);
+      toast.error("Network error creating session.");
+    }
   };
 
   useEffect(() => {
@@ -65,9 +153,7 @@ export function AddEventDialog({ children, startDate, startTime }: IProps) {
         <DialogHeader>
           <DialogTitle>Add New Event</DialogTitle>
           <DialogDescription>
-            <AlertTriangle className="mr-1 inline-block size-4 text-yellow-500" />
-            This form is for demonstration purposes only and will not actually create an event. In a real application, submit the form to the backend API to
-            save the event.
+            Create a new training session mapped directly to the database.
           </DialogDescription>
         </DialogHeader>
 
@@ -78,7 +164,7 @@ export function AddEventDialog({ children, startDate, startTime }: IProps) {
               name="user"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Responsible</FormLabel>
+                  <FormLabel>Responsible Widyaiswara</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger data-invalid={fieldState.invalid}>
@@ -111,7 +197,7 @@ export function AddEventDialog({ children, startDate, startTime }: IProps) {
               name="title"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel htmlFor="title">Title</FormLabel>
+                  <FormLabel htmlFor="title">Title / Subject Name</FormLabel>
 
                   <FormControl>
                     <Input id="title" placeholder="Enter a title" data-invalid={fieldState.invalid} {...field} />
@@ -188,11 +274,9 @@ export function AddEventDialog({ children, startDate, startTime }: IProps) {
                 render={({ field, fieldState }) => (
                   <FormItem className="flex-1">
                     <FormLabel>End Time</FormLabel>
-
                     <FormControl>
                       <TimeInput value={field.value as TimeValue} onChange={field.onChange} hourCycle={12} data-invalid={fieldState.invalid} />
                     </FormControl>
-
                     <FormMessage />
                   </FormItem>
                 )}
@@ -204,7 +288,7 @@ export function AddEventDialog({ children, startDate, startTime }: IProps) {
               name="color"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Color</FormLabel>
+                  <FormLabel>Color / Format Indicator</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger data-invalid={fieldState.invalid}>
@@ -215,49 +299,21 @@ export function AddEventDialog({ children, startDate, startTime }: IProps) {
                         <SelectItem value="blue">
                           <div className="flex items-center gap-2">
                             <div className="size-3.5 rounded-full bg-blue-600" />
-                            Blue
-                          </div>
-                        </SelectItem>
-
-                        <SelectItem value="green">
-                          <div className="flex items-center gap-2">
-                            <div className="size-3.5 rounded-full bg-green-600" />
-                            Green
-                          </div>
-                        </SelectItem>
-
-                        <SelectItem value="red">
-                          <div className="flex items-center gap-2">
-                            <div className="size-3.5 rounded-full bg-red-600" />
-                            Red
-                          </div>
-                        </SelectItem>
-
-                        <SelectItem value="yellow">
-                          <div className="flex items-center gap-2">
-                            <div className="size-3.5 rounded-full bg-yellow-600" />
-                            Yellow
+                            Blue (Klasikal)
                           </div>
                         </SelectItem>
 
                         <SelectItem value="purple">
                           <div className="flex items-center gap-2">
                             <div className="size-3.5 rounded-full bg-purple-600" />
-                            Purple
+                            Purple (Virtual)
                           </div>
                         </SelectItem>
 
                         <SelectItem value="orange">
                           <div className="flex items-center gap-2">
                             <div className="size-3.5 rounded-full bg-orange-600" />
-                            Orange
-                          </div>
-                        </SelectItem>
-
-                        <SelectItem value="gray">
-                          <div className="flex items-center gap-2">
-                            <div className="size-3.5 rounded-full bg-neutral-600" />
-                            Gray
+                            Orange (Asinkron)
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -273,7 +329,7 @@ export function AddEventDialog({ children, startDate, startTime }: IProps) {
               name="description"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Description / Notes</FormLabel>
 
                   <FormControl>
                     <Textarea {...field} value={field.value} data-invalid={fieldState.invalid} />
