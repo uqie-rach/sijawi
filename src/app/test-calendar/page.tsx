@@ -28,9 +28,62 @@ export default function TestCalendarPage() {
         </Card>
       </main>
 
-      <footer className="border-t border-slate-800 bg-slate-950 mt-auto">
-        <MadeWithDyad />
-      </footer>
+      
     </div>
+  );
+}
+
+import { ProScheduler } from '@calendarkit/react';
+import { useState } from 'react';
+import { fr } from 'date-fns/locale';
+
+export default function AdvancedCalendar() {
+  const [events, setEvents] = useState([]);
+  const [view, setView] = useState('week');
+  const [date, setDate] = useState(new Date());
+  const [isDark, setIsDark] = useState(false);
+  const [language, setLanguage] = useState('en');
+  const [timezone, setTimezone] = useState('America/New_York');
+
+  const calendars = [
+    { id: 'work', label: 'Work', color: '#3b82f6', active: true },
+    { id: 'personal', label: 'Personal', color: '#10b981', active: true },
+  ];
+
+  return (
+    <ProScheduler
+      events={events}
+      view={view}
+      onViewChange={setView}
+      date={date}
+      onDateChange={setDate}
+      calendars={calendars}
+      // Timezone support
+      timezone={timezone}
+      onTimezoneChange={setTimezone}
+      // i18n
+      language={language}
+      onLanguageChange={setLanguage}
+      locale={language === 'fr' ? fr : undefined}
+      // Theme
+      isDarkMode={isDark}
+      onThemeToggle={() => setIsDark(!isDark)}
+      // Event handlers
+      onEventCreate={(event) => {
+        setEvents(prev => [...prev, { ...event, id: Date.now().toString() }]);
+      }}
+      onEventUpdate={(updated) => {
+        setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
+      }}
+      onEventDelete={(id) => {
+        setEvents(prev => prev.filter(e => e.id !== id));
+      }}
+      // Drag & drop
+      onEventDrop={(event, newStart, newEnd) => {
+        setEvents(prev => prev.map(e =>
+          e.id === event.id ? { ...e, start: newStart, end: newEnd } : e
+        ));
+      }}
+    />
   );
 }
