@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { GraduationCap, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Scheduler, CalendarEvent, ViewType } from 'calendarkit-pro';
+import ProScheduler, { CalendarEvent, ViewType } from 'calendarkit-pro';
 import { toast } from 'sonner';
 
 // Mock data matching WTMS business logic structures
@@ -121,7 +121,7 @@ export default function TestCalendarPage() {
           <CardContent className="p-6 bg-slate-900 text-slate-900 rounded-b-xl">
             {/* calendarkit-pro component wrapper with dark styles wrapper */}
             <div className="bg-white p-4 rounded-lg shadow-inner min-h-[600px]">
-              <Scheduler
+              <ProScheduler
                 events={events}
                 view={view}
                 onViewChange={setView}
