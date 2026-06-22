@@ -1,10 +1,13 @@
-import { sql } from '@/db';
+import { connectToDatabase } from '@/lib/mongodb';
+import KategoriPelatihan from '@/models/KategoriPelatihan';
+import Widyaiswara from '@/models/Widyaiswara';
 import { cookies } from 'next/headers';
 
 async function isAdmin() {
   try {
-    const countResult = await sql`SELECT COUNT(*)::int as count FROM widyaswaras`;
-    if (countResult[0].count === 0) {
+    await connectToDatabase();
+    const count = await Widyaiswara.countDocuments();
+    if (count === 0) {
       return true;
     }
   } catch (e) {}
@@ -15,9 +18,10 @@ async function isAdmin() {
 
 export async function GET() {
   try {
-    const rows = await sql`SELECT * FROM kategori_pelatihan ORDER BY name ASC`;
+    await connectToDatabase();
+    const rows = await KategoriPelatihan.find().sort({ name: 1 });
     const kategori = rows.map(r => ({
-      id: r.id,
+      id: r._id,
       name: r.name,
       minWeight: r.min_weight
     }));
@@ -32,12 +36,17 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    await connectToDatabase();
     const body = await request.json();
     const { id, name, minWeight } = body;
-    await sql`
-      INSERT INTO kategori_pelatihan (id, name, min_weight)
-      VALUES (${id}, ${name}, ${minWeight})
-    `;
+    
+    const newKat = new KategoriPelatihan({
+      _id: id,
+      name,
+      min_weight: minWeight
+    });
+
+    await newKat.save();
     return Response.json({ success: true });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -49,13 +58,14 @@ export async function PUT(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    await connectToDatabase();
     const body = await request.json();
     const { id, name, minWeight } = body;
-    await sql`
-      UPDATE kategori_pelatihan
-      SET name = ${name}, min_weight = ${minWeight}
-      WHERE id = ${id}
-    `;
+    
+    await KategoriPelatihan.findByIdAndUpdate(id, {
+      name,
+      min_weight: minWeight
+    });
     return Response.json({ success: true });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -67,10 +77,12 @@ export async function DELETE(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    await connectToDatabase();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return Response.json({ error: 'ID is required' }, { status: 400 });
-    await sql`DELETE FROM kategori_pelatihan WHERE id = ${id}`;
+    
+    await KategoriPelatihan.findByIdAndDelete(id);
     return Response.json({ success: true });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });

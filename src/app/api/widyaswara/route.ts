@@ -1,14 +1,16 @@
-import { sql } from '@/db';
+import { connectToDatabase } from '@/lib/mongodb';
+import Widyaiswara from '@/models/Widyaiswara';
 import { cookies } from 'next/headers';
 
 async function isAdmin() {
   try {
-    const countResult = await sql`SELECT COUNT(*)::int as count FROM widyaswaras`;
-    if (countResult[0].count === 0) {
+    await connectToDatabase();
+    const count = await Widyaiswara.countDocuments();
+    if (count === 0) {
       return true;
     }
   } catch (e) {
-    // Jika tabel belum ada atau error lainnya, abaikan dan lanjut ke cek cookie
+    // Ignore and proceed to cookie check
   }
   const cookieStore = await cookies();
   const token = cookieStore.get('sessionToken')?.value;
@@ -17,9 +19,10 @@ async function isAdmin() {
 
 export async function GET() {
   try {
-    const rows = await sql`SELECT * FROM widyaswaras ORDER BY name ASC`;
+    await connectToDatabase();
+    const rows = await Widyaiswara.find().sort({ name: 1 });
     const widyaswaras = rows.map(r => ({
-      id: r.id,
+      id: r._id,
       name: r.name,
       gelar: r.gelar || '',
       email: r.email,
@@ -40,13 +43,23 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    await connectToDatabase();
     const body = await request.json();
     const { id, name, gelar, email, nip, jabatan, level, levelLabel, jpLastMonth } = body;
     
-    await sql`
-      INSERT INTO widyaswaras (id, name, gelar, email, nip, jabatan, level, level_label, jp_last_month)
-      VALUES (${id}, ${name}, ${gelar || ''}, ${email}, ${nip}, ${jabatan}, ${level}, ${levelLabel}, ${jpLastMonth || 0})
-    `;
+    const newWi = new Widyaiswara({
+      _id: id,
+      name,
+      gelar: gelar || '',
+      email,
+      nip,
+      jabatan,
+      level,
+      level_label: levelLabel,
+      jp_last_month: jpLastMonth || 0
+    });
+
+    await newWi.save();
     return Response.json({ success: true });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -58,14 +71,20 @@ export async function PUT(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    await connectToDatabase();
     const body = await request.json();
     const { id, name, gelar, email, nip, jabatan, level, levelLabel, jpLastMonth } = body;
     
-    await sql`
-      UPDATE widyaswaras
-      SET name = ${name}, gelar = ${gelar || ''}, email = ${email}, nip = ${nip}, jabatan = ${jabatan}, level = ${level}, level_label = ${levelLabel}, jp_last_month = ${jpLastMonth || 0}
-      WHERE id = ${id}
-    `;
+    await Widyaiswara.findByIdAndUpdate(id, {
+      name,
+      gelar: gelar || '',
+      email,
+      nip,
+      jabatan,
+      level,
+      level_label: levelLabel,
+      jp_last_month: jpLastMonth || 0
+    });
     return Response.json({ success: true });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -77,11 +96,12 @@ export async function DELETE(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    await connectToDatabase();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return Response.json({ error: 'ID is required' }, { status: 400 });
     
-    await sql`DELETE FROM widyaswaras WHERE id = ${id}`;
+    await Widyaiswara.findByIdAndDelete(id);
     return Response.json({ success: true });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });

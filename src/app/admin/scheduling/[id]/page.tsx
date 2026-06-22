@@ -1,30 +1,34 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { sql } from '@/db';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { connectToDatabase } from '@/lib/mongodb';
+import Pelatihan from '@/models/Pelatihan';
+import MataPelatihan from '@/models/MataPelatihan';
+import Widyaiswara from '@/models/Widyaiswara';
+import Lokasi from '@/models/Lokasi';
+import JadwalSesi from '@/models/JadwalSesi';
 import { Calendar } from 'lucide-react';
 import { SchedulingWorkspaceClient } from '@/components/admin/scheduling-workspace-client';
 import { BRANDING } from '@/lib/config';
 
 async function getBatchWorkspaceDetails(id: string) {
   try {
-    const batches = await sql`SELECT * FROM batches WHERE id = ${id}`;
-    if (batches.length === 0) return null;
+    await connectToDatabase();
+    const batch = await Pelatihan.findById(id);
+    if (!batch) return null;
 
-    const batch = batches[0];
-    const mapels = await sql`SELECT * FROM mata_pelatihan`;
-    const wis = await sql`SELECT * FROM widyaswaras ORDER BY name ASC`;
-    const lokasis = await sql`SELECT * FROM lokasi ORDER BY name ASC`;
-    const sessions = await sql`SELECT * FROM sessions ORDER BY date ASC, start_time ASC`;
-    const allBatches = await sql`SELECT id, name, start_date as "startDate", end_date as "endDate" FROM batches ORDER BY start_date DESC`;
+    const mapels = await MataPelatihan.find();
+    const wis = await Widyaiswara.find().sort({ name: 1 });
+    const lokasis = await Lokasi.find().sort({ name: 1 });
+    const sessions = await JadwalSesi.find().sort({ date: 1, start_time: 1 });
+    const allBatches = await Pelatihan.find().sort({ start_date: -1 });
 
     return {
-      batch: { id: batch.id, name: batch.name, kategoriId: batch.kategori_id, pola: batch.pola, startDate: batch.start_date, endDate: batch.end_date },
-      mapels: mapels.map(m => ({ id: m.id, name: m.name, kategoriId: m.kategori_id, jpTotal: Number(m.jp_total) })),
-      wis: wis.map(w => ({ id: w.id, name: w.name, gelar: w.gelar, email: w.email, nip: w.nip, jabatan: w.jabatan, level: Number(w.level), levelLabel: w.level_label })),
-      lokasis: lokasis.map(l => ({ id: l.id, name: l.name })),
+      batch: { id: batch._id, name: batch.name, kategoriId: batch.kategori_id, pola: batch.pola, startDate: batch.start_date, endDate: batch.end_date },
+      mapels: mapels.map(m => ({ id: m._id, name: m.name, kategoriId: m.kategori_id, jpTotal: Number(m.jp_total) })),
+      wis: wis.map(w => ({ id: w._id, name: w.name, gelar: w.gelar, email: w.email, nip: w.nip, jabatan: w.jabatan, level: Number(w.level), levelLabel: w.level_label })),
+      lokasis: lokasis.map(l => ({ id: l._id, name: l.name })),
       sessions: sessions.map(s => ({
-        id: s.id,
+        id: s._id,
         batchId: s.batch_id,
         mapelId: s.mapel_id,
         wiId: s.wi_id,
@@ -36,7 +40,7 @@ async function getBatchWorkspaceDetails(id: string) {
         jpKe: s.jp_ke,
         jpCount: Number(s.jp_count)
       })),
-      allBatches: allBatches.map(b => ({ id: b.id, name: b.name, startDate: b.startDate, endDate: b.endDate }))
+      allBatches: allBatches.map(b => ({ id: b._id, name: b.name, startDate: b.start_date, endDate: b.end_date }))
     };
   } catch (e) {
     console.error(e);

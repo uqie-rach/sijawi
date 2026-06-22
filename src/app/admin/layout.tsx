@@ -2,7 +2,8 @@ import React from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/admin/sidebar';
-import { sql } from '@/db';
+import { connectToDatabase } from '@/lib/mongodb';
+import JadwalSesi from '@/models/JadwalSesi';
 import { BRANDING } from '@/lib/config';
 
 async function checkAdminAuth() {
@@ -15,7 +16,15 @@ async function checkAdminAuth() {
 
 async function getTotalScheduledJp() {
   try {
-    const result = await sql`SELECT SUM(jp_count)::int as total FROM sessions`;
+    await connectToDatabase();
+    const result = await JadwalSesi.aggregate([
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$jp_count' }
+        }
+      }
+    ]);
     return result[0]?.total || 0;
   } catch (e) {
     return 0;

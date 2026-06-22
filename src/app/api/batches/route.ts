@@ -1,10 +1,13 @@
-import { sql } from '@/db';
+import { connectToDatabase } from '@/lib/mongodb';
+import Pelatihan from '@/models/Pelatihan';
+import Widyaiswara from '@/models/Widyaiswara';
 import { cookies } from 'next/headers';
 
 async function isAdmin() {
   try {
-    const countResult = await sql`SELECT COUNT(*)::int as count FROM widyaswaras`;
-    if (countResult[0].count === 0) {
+    await connectToDatabase();
+    const count = await Widyaiswara.countDocuments();
+    if (count === 0) {
       return true;
     }
   } catch (e) {}
@@ -15,9 +18,10 @@ async function isAdmin() {
 
 export async function GET() {
   try {
-    const rows = await sql`SELECT * FROM batches ORDER BY start_date DESC`;
+    await connectToDatabase();
+    const rows = await Pelatihan.find().sort({ start_date: -1 });
     const batches = rows.map(r => ({
-      id: r.id,
+      id: r._id,
       name: r.name,
       kategoriId: r.kategori_id,
       pola: r.pola,
@@ -35,12 +39,20 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    await connectToDatabase();
     const body = await request.json();
     const { id, name, kategoriId, pola, startDate, endDate } = body;
-    await sql`
-      INSERT INTO batches (id, name, kategori_id, pola, start_date, end_date)
-      VALUES (${id}, ${name}, ${kategoriId}, ${pola}, ${startDate}, ${endDate})
-    `;
+    
+    const newBatch = new Pelatihan({
+      _id: id,
+      name,
+      kategori_id: kategoriId,
+      pola,
+      start_date: startDate,
+      end_date: endDate
+    });
+
+    await newBatch.save();
     return Response.json({ success: true });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -52,13 +64,17 @@ export async function PUT(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    await connectToDatabase();
     const body = await request.json();
     const { id, name, kategoriId, pola, startDate, endDate } = body;
-    await sql`
-      UPDATE batches
-      SET name = ${name}, kategori_id = ${kategoriId}, pola = ${pola}, start_date = ${startDate}, end_date = ${endDate}
-      WHERE id = ${id}
-    `;
+    
+    await Pelatihan.findByIdAndUpdate(id, {
+      name,
+      kategori_id: kategoriId,
+      pola,
+      start_date: startDate,
+      end_date: endDate
+    });
     return Response.json({ success: true });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -70,10 +86,12 @@ export async function DELETE(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    await connectToDatabase();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return Response.json({ error: 'ID is required' }, { status: 400 });
-    await sql`DELETE FROM batches WHERE id = ${id}`;
+    
+    await Pelatihan.findByIdAndDelete(id);
     return Response.json({ success: true });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });

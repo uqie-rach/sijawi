@@ -1,22 +1,28 @@
 import React from 'react';
-import { sql } from '@/db';
+import { connectToDatabase } from '@/lib/mongodb';
+import Widyaiswara from '@/models/Widyaiswara';
+import KategoriPelatihan from '@/models/KategoriPelatihan';
+import MataPelatihan from '@/models/MataPelatihan';
+import Lokasi from '@/models/Lokasi';
+import Pelatihan from '@/models/Pelatihan';
 import { MasterTabs } from '@/components/admin/master-tabs';
 import { BRANDING } from '@/lib/config';
 
 async function getMasterData() {
   try {
-    const wis = await sql`SELECT * FROM widyaswaras ORDER BY name ASC`;
-    const kats = await sql`SELECT * FROM kategori_pelatihan ORDER BY name ASC`;
-    const mapels = await sql`SELECT * FROM mata_pelatihan ORDER BY name ASC`;
-    const lokasis = await sql`SELECT * FROM lokasi ORDER BY name ASC`;
-    const batches = await sql`SELECT * FROM batches ORDER BY start_date DESC`;
+    await connectToDatabase();
+    const wis = await Widyaiswara.find().sort({ name: 1 });
+    const kats = await KategoriPelatihan.find().sort({ name: 1 });
+    const mapels = await MataPelatihan.find().sort({ name: 1 });
+    const lokasis = await Lokasi.find().sort({ name: 1 });
+    const batches = await Pelatihan.find().sort({ start_date: -1 });
 
     return {
-      wis: wis.map(w => ({ id: w.id, name: w.name, gelar: w.gelar, email: w.email, nip: w.nip, jabatan: w.jabatan, level: Number(w.level), levelLabel: w.level_label })),
-      kats: kats.map(k => ({ id: k.id, name: k.name, minWeight: Number(k.min_weight) })),
-      mapels: mapels.map(m => ({ id: m.id, name: m.name, kategoriId: m.kategori_id, jpTotal: Number(m.jp_total) })),
-      lokasis: lokasis.map(l => ({ id: l.id, name: l.name })),
-      batches: batches.map(b => ({ id: b.id, name: b.name, kategoriId: b.kategori_id, pola: b.pola, startDate: b.start_date, endDate: b.end_date })),
+      wis: wis.map(w => ({ id: w._id, name: w.name, gelar: w.gelar, email: w.email, nip: w.nip, jabatan: w.jabatan, level: Number(w.level), levelLabel: w.level_label })),
+      kats: kats.map(k => ({ id: k._id, name: k.name, minWeight: Number(k.min_weight) })),
+      mapels: mapels.map(m => ({ id: m._id, name: m.name, kategoriId: m.kategori_id, jpTotal: Number(m.jp_total) })),
+      lokasis: lokasis.map(l => ({ id: l._id, name: l.name })),
+      batches: batches.map(b => ({ id: b._id, name: b.name, kategoriId: b.kategori_id, pola: b.pola, startDate: b.start_date, endDate: b.end_date })),
     };
   } catch (e) {
     console.error(e);

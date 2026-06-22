@@ -1,4 +1,8 @@
-import { sql } from '@/db';
+import { connectToDatabase } from '@/lib/mongodb';
+import JadwalSesi from '@/models/JadwalSesi';
+import Pelatihan from '@/models/Pelatihan';
+import MataPelatihan from '@/models/MataPelatihan';
+import Widyaiswara from '@/models/Widyaiswara';
 import { cookies } from 'next/headers';
 
 async function isAdmin() {
@@ -13,6 +17,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    await connectToDatabase();
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get('page') || '1');
     const pageSize = parseInt(url.searchParams.get('pageSize') || '10');
@@ -21,24 +26,46 @@ export async function GET(request: Request) {
     const search = url.searchParams.get('search') || '';
     const pola = url.searchParams.get('pola') || '';
 
-    // Fetch all sessions with joined details
-    const allSessionsRows = await sql`
-      SELECT 
-        s.id, s.batch_id as "batchId", s.mapel_id as "mapelId", s.wi_id as "wiId", 
-        s.date, s.start_time as "startTime", s.end_time as "endTime", s.format, 
-        s.lokasi_id as "lokasiId", s.jp_ke as "jpKe", s.jp_count as "jpCount",
-        b.name as "batchName", b.pola,
-        m.name as "mapelName",
-        w.name as "wiName", w.email as "wiEmail"
-      FROM sessions s
-      JOIN batches b ON s.batch_id = b.id
-      JOIN mata_pelatihan m ON s.mapel_id = m.id
-      JOIN widyaswaras w ON s.wi_id = w.id
-      ORDER BY s.date DESC, s.start_time ASC
-    `;
+    // Fetch all sessions, batches, mapels, and wis to perform the join in-memory
+    const [sessions, batches, mapels, wis] = await Promise.all([
+      JadwalSesi.find(),
+      Pelatihan.find(),
+      MataPelatihan.find(),
+      Widyaiswara.find()
+    ]);
 
-    // Filter in-memory to support flexible search and dynamic parameters easily
-    let filtered = allSessionsRows;
+    const batchMap = new Map(batches.map(b => [b._id, b]));
+    const mapelMap = new Map(mapels.map(m => [m._id, m]));
+    const wiMap = new Map(wis.map(w => [w._id, w]));
+
+    // Join details
+    const joinedSessions = sessions.map(s => {
+      const batch = batchMap.get(s.batch_id);
+      const mapel = mapelMap.get(s.mapel_id);
+      const wi = wiMap.get(s.wi_id);
+
+      return {
+        id: s._id,
+        batchId: s.batch_id,
+        mapelId: s.mapel_id,
+        wiId: s.wi_id,
+        date: s.date,
+        startTime: s.start_time,
+        endTime: s.end_time,
+        format: s.format,
+        lokasiId: s.lokasi_id,
+        jpKe: s.jp_ke,
+        jpCount: s.jp_count,
+        batchName: batch ? batch.name : 'Unknown Batch',
+        pola: batch ? batch.pola : 'APBD',
+        mapelName: mapel ? mapel.name : 'Unknown Subject',
+        wiName: wi ? wi.name : 'Unknown WI',
+        wiEmail: wi ? wi.email : ''
+      };
+    });
+
+    // Filter
+    let filtered = joinedSessions;
 
     if (startDate) {
       filtered = filtered.filter(s => s.date >= startDate);
@@ -56,6 +83,12 @@ export async function GET(request: Request) {
         s.wiEmail.toLowerCase().includes(searchLower)
       );
     }
+
+    // Sort by date DESC, start_time ASC
+    filtered.sort((a, b) => {
+      if (a.date !== b.date) return b.date.localeCompare(a.date);
+      return a.startTime.localeCompare(b.startTime);
+    });
 
     const totalCount = filtered.length;
     const paginatedSessions = filtered.slice((page - 1) * pageSize, page * pageSize);

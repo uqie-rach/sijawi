@@ -1,5 +1,8 @@
 import React from 'react';
-import { sql } from '@/db';
+import { connectToDatabase } from '@/lib/mongodb';
+import Widyaiswara from '@/models/Widyaiswara';
+import JadwalSesi from '@/models/JadwalSesi';
+import Pelatihan from '@/models/Pelatihan';
 import { OverviewCharts } from '@/components/admin/overview-charts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -27,14 +30,15 @@ interface WidyaiswaraWithCalculation {
 
 async function getWidyaiswaraOverviewData(): Promise<WidyaiswaraWithCalculation[]> {
   try {
-    const wis = await sql`SELECT * FROM widyaswaras ORDER BY name ASC`;
-    const sessions = await sql`
-      SELECT s.*, b.pola FROM sessions s 
-      JOIN batches b ON s.batch_id = b.id
-    `;
+    await connectToDatabase();
+    const wis = await Widyaiswara.find().sort({ name: 1 });
+    const sessions = await JadwalSesi.find();
+    const batches = await Pelatihan.find();
+
+    const batchMap = new Map(batches.map(b => [b._id, b]));
 
     return wis.map((wi) => {
-      const wiSessions = sessions.filter((s) => s.wi_id === wi.id);
+      const wiSessions = sessions.filter((s) => s.wi_id === wi._id);
       const jpCurrentMonth = wiSessions.reduce((sum, s) => sum + Number(s.jp_count), 0);
 
       let apbd = 0;
@@ -42,13 +46,15 @@ async function getWidyaiswaraOverviewData(): Promise<WidyaiswaraWithCalculation[
       let kemitraan = 0;
 
       wiSessions.forEach((s) => {
-        if (s.pola === 'APBD') apbd += Number(s.jp_count);
-        else if (s.pola === 'Kontribusi') kontribusi += Number(s.jp_count);
-        else if (s.pola === 'Kemitraan') kemitraan += Number(s.jp_count);
+        const batch = batchMap.get(s.batch_id);
+        const pola = batch ? batch.pola : 'APBD';
+        if (pola === 'APBD') apbd += Number(s.jp_count);
+        else if (pola === 'Kontribusi') kontribusi += Number(s.jp_count);
+        else if (pola === 'Kemitraan') kemitraan += Number(s.jp_count);
       });
 
       return {
-        id: wi.id,
+        id: wi._id,
         name: wi.name,
         gelar: wi.gelar || '',
         email: wi.email,

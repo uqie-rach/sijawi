@@ -1,12 +1,18 @@
-import { sql } from '@/db';
+import { connectToDatabase } from '@/lib/mongodb';
+import Widyaiswara from '@/models/Widyaiswara';
+import JadwalSesi from '@/models/JadwalSesi';
+import Pelatihan from '@/models/Pelatihan';
+import MataPelatihan from '@/models/MataPelatihan';
+import Lokasi from '@/models/Lokasi';
 import type { IEvent, IUser } from "@/calendar/interfaces";
 import type { TEventColor } from "@/calendar/types";
 
 export const getUsers = async (): Promise<IUser[]> => {
   try {
-    const rows = await sql`SELECT id, name, gelar FROM widyaswaras ORDER BY name ASC`;
+    await connectToDatabase();
+    const rows = await Widyaiswara.find().sort({ name: 1 });
     return rows.map(r => ({
-      id: r.id,
+      id: r._id,
       name: r.gelar ? `${r.name}, ${r.gelar}` : r.name,
       picturePath: null
     }));
@@ -18,24 +24,23 @@ export const getUsers = async (): Promise<IUser[]> => {
 
 export const getEvents = async (): Promise<IEvent[]> => {
   try {
-    const sessionsRows = await sql`
-      SELECT 
-        s.id, s.batch_id, s.mapel_id, s.wi_id, 
-        s.date, s.start_time, s.end_time, s.format, 
-        s.lokasi_id, s.jp_ke, s.jp_count,
-        b.name as batch_name,
-        m.name as mapel_name,
-        w.name as wi_name, w.gelar as wi_gelar,
-        l.name as lokasi_name
-      FROM sessions s
-      JOIN batches b ON s.batch_id = b.id
-      JOIN mata_pelatihan m ON s.mapel_id = m.id
-      JOIN widyaswaras w ON s.wi_id = w.id
-      LEFT JOIN lokasi l ON s.lokasi_id = l.id
-      ORDER BY s.date ASC, s.start_time ASC
-    `;
+    await connectToDatabase();
+    const [sessionsRows, batches, mapels, lokasis] = await Promise.all([
+      JadwalSesi.find(),
+      Pelatihan.find(),
+      MataPelatihan.find(),
+      Lokasi.find()
+    ]);
+
+    const batchMap = new Map(batches.map(b => [b._id, b]));
+    const mapelMap = new Map(mapels.map(m => [m._id, m]));
+    const lokasiMap = new Map(lokasis.map(l => [l._id, l]));
 
     return sessionsRows.map(s => {
+      const batch = batchMap.get(s.batch_id);
+      const mapel = mapelMap.get(s.mapel_id);
+      const lok = lokasiMap.get(s.lokasi_id || '');
+
       // Map format to calendar colors
       let color: TEventColor = 'blue';
       if (s.format === 'Virtual') {
@@ -45,20 +50,19 @@ export const getEvents = async (): Promise<IEvent[]> => {
       }
 
       // Format dates to ISO strings
-      // s.date is YYYY-MM-DD, s.start_time is HH:MM
       const startDate = new Date(`${s.date}T${s.start_time}`).toISOString();
       const endDate = new Date(`${s.date}T${s.end_time}`).toISOString();
 
       return {
-        id: s.id,
+        id: s._id,
         startDate,
         endDate,
-        title: `${s.mapel_name} (${s.batch_name})`,
+        title: `${mapel ? mapel.name : 'Subject'} (${batch ? batch.name : 'Batch'})`,
         color,
-        description: `Format: ${s.format} | JP Ke: ${s.jp_ke} (${s.jp_count} JP) | Venue: ${s.lokasi_name || 'N/A'}`,
+        description: `Format: ${s.format} | JP Ke: ${s.jp_ke} (${s.jp_count} JP) | Venue: ${lok ? lok.name : 'N/A'}`,
         user: {
           id: s.wi_id,
-          name: s.wi_gelar ? `${s.wi_name}, ${s.wi_gelar}` : s.wi_name,
+          name: 'Widyaiswara',
           picturePath: null
         }
       };

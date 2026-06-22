@@ -1,6 +1,12 @@
 import React from 'react';
 import Link from 'next/link';
-import { sql } from '@/db';
+import { connectToDatabase } from '@/lib/mongodb';
+import Pelatihan from '@/models/Pelatihan';
+import KategoriPelatihan from '@/models/KategoriPelatihan';
+import MataPelatihan from '@/models/MataPelatihan';
+import Widyaiswara from '@/models/Widyaiswara';
+import Lokasi from '@/models/Lokasi';
+import JadwalSesi from '@/models/JadwalSesi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -24,42 +30,41 @@ interface BatchListItem {
 
 async function getSchedulingIndexData() {
   try {
-    const batches = await sql`
-      SELECT b.*, k.name as "categoryName" 
-      FROM batches b
-      JOIN kategori_pelatihan k ON b.kategori_id = k.id
-      ORDER BY b.start_date DESC
-    `;
+    await connectToDatabase();
+    const batches = await Pelatihan.find().sort({ start_date: -1 });
+    const categories = await KategoriPelatihan.find();
+    const sessions = await JadwalSesi.find();
+    const mapels = await MataPelatihan.find();
+    const wis = await Widyaiswara.find().sort({ name: 1 });
+    const lokasis = await Lokasi.find().sort({ name: 1 });
 
-    const sessions = await sql`
-      SELECT s.*, l.name as "locationName"
-      FROM sessions s
-      LEFT JOIN lokasi l ON s.lokasi_id = l.id
-    `;
-
-    const mapels = await sql`SELECT * FROM mata_pelatihan`;
-    const wis = await sql`SELECT * FROM widyaswaras ORDER BY name ASC`;
-    const lokasis = await sql`SELECT * FROM lokasi ORDER BY name ASC`;
+    const categoryMap = new Map(categories.map(c => [c._id, c]));
+    const lokasiMap = new Map(lokasis.map(l => [l._id, l]));
 
     const formattedBatches: BatchListItem[] = batches.map((b) => {
       const relevantMapels = mapels.filter((m) => m.kategori_id === b.kategori_id);
       const totalJpRequired = relevantMapels.reduce((sum, m) => sum + Number(m.jp_total), 0);
 
-      const batchSessions = sessions.filter((s) => s.batch_id === b.id);
+      const batchSessions = sessions.filter((s) => s.batch_id === b._id);
       const totalJpScheduled = batchSessions.reduce((sum, s) => sum + Number(s.jp_count), 0);
 
       const locations = Array.from(
         new Set(
           batchSessions
-            .map((s) => s.locationName || (s.format !== 'Klasikal' ? s.format : ''))
+            .map((s) => {
+              const lok = lokasiMap.get(s.lokasi_id || '');
+              return lok ? lok.name : (s.format !== 'Klasikal' ? s.format : '');
+            })
             .filter(Boolean)
         )
       );
 
+      const cat = categoryMap.get(b.kategori_id);
+
       return {
-        id: b.id,
+        id: b._id,
         name: b.name,
-        categoryName: b.categoryName,
+        categoryName: cat ? cat.name : 'Unknown Category',
         pola: b.pola,
         startDate: b.start_date,
         endDate: b.end_date,
@@ -71,11 +76,11 @@ async function getSchedulingIndexData() {
 
     return {
       batchesList: formattedBatches,
-      mapels: mapels.map(m => ({ id: m.id, name: m.name, kategoriId: m.kategori_id, jpTotal: Number(m.jp_total) })),
-      wis: wis.map(w => ({ id: w.id, name: w.name, gelar: w.gelar, email: w.email, nip: w.nip, jabatan: w.jabatan, level: Number(w.level), levelLabel: w.level_label })),
-      lokasis: lokasis.map(l => ({ id: l.id, name: l.name })),
+      mapels: mapels.map(m => ({ id: m._id, name: m.name, kategoriId: m.kategori_id, jpTotal: Number(m.jp_total) })),
+      wis: wis.map(w => ({ id: w._id, name: w.name, gelar: w.gelar, email: w.email, nip: w.nip, jabatan: w.jabatan, level: Number(w.level), levelLabel: w.level_label })),
+      lokasis: lokasis.map(l => ({ id: l._id, name: l.name })),
       sessions: sessions.map(s => ({
-        id: s.id,
+        id: s._id,
         batchId: s.batch_id,
         mapelId: s.mapel_id,
         wiId: s.wi_id,
@@ -87,7 +92,7 @@ async function getSchedulingIndexData() {
         jpKe: s.jp_ke,
         jpCount: Number(s.jp_count)
       })),
-      allBatches: batches.map(b => ({ id: b.id, name: b.name, startDate: b.start_date, endDate: b.end_date }))
+      allBatches: batches.map(b => ({ id: b._id, name: b.name, startDate: b.start_date, endDate: b.end_date }))
     };
   } catch (e) {
     console.error(e);

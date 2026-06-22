@@ -1,10 +1,13 @@
-import { sql } from '@/db';
+import { connectToDatabase } from '@/lib/mongodb';
+import Lokasi from '@/models/Lokasi';
+import Widyaiswara from '@/models/Widyaiswara';
 import { cookies } from 'next/headers';
 
 async function isAdmin() {
   try {
-    const countResult = await sql`SELECT COUNT(*)::int as count FROM widyaswaras`;
-    if (countResult[0].count === 0) {
+    await connectToDatabase();
+    const count = await Widyaiswara.countDocuments();
+    if (count === 0) {
       return true;
     }
   } catch (e) {}
@@ -15,9 +18,10 @@ async function isAdmin() {
 
 export async function GET() {
   try {
-    const rows = await sql`SELECT * FROM lokasi ORDER BY name ASC`;
+    await connectToDatabase();
+    const rows = await Lokasi.find().sort({ name: 1 });
     const lokasi = rows.map(r => ({
-      id: r.id,
+      id: r._id,
       name: r.name
     }));
     return Response.json(lokasi);
@@ -31,12 +35,16 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    await connectToDatabase();
     const body = await request.json();
     const { id, name } = body;
-    await sql`
-      INSERT INTO lokasi (id, name)
-      VALUES (${id}, ${name})
-    `;
+    
+    const newLok = new Lokasi({
+      _id: id,
+      name
+    });
+
+    await newLok.save();
     return Response.json({ success: true });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -48,13 +56,13 @@ export async function PUT(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    await connectToDatabase();
     const body = await request.json();
     const { id, name } = body;
-    await sql`
-      UPDATE lokasi
-      SET name = ${name}
-      WHERE id = ${id}
-    `;
+    
+    await Lokasi.findByIdAndUpdate(id, {
+      name
+    });
     return Response.json({ success: true });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -66,10 +74,12 @@ export async function DELETE(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    await connectToDatabase();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return Response.json({ error: 'ID is required' }, { status: 400 });
-    await sql`DELETE FROM lokasi WHERE id = ${id}`;
+    
+    await Lokasi.findByIdAndDelete(id);
     return Response.json({ success: true });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });

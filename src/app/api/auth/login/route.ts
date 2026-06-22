@@ -1,9 +1,11 @@
-import { sql } from '@/db';
+import { connectToDatabase } from '@/lib/mongodb';
+import Widyaiswara from '@/models/Widyaiswara';
 import { bcrypt } from '@/lib/bcrypt';
 import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
   try {
+    await connectToDatabase();
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -13,7 +15,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Cek jika login sebagai Super Admin default
+    // Check for Super Admin
     if (email === 'admin@wtms.com' && password === 'admin123') {
       const cookieStore = await cookies();
       cookieStore.set('sessionToken', 'admin-session-token', {
@@ -32,9 +34,8 @@ export async function POST(request: Request) {
       });
     }
 
-    // Cari user dari tabel widyaswaras di Neon Database
-    const rows = await sql`SELECT * FROM widyaswaras WHERE LOWER(email) = LOWER(${email}) LIMIT 1`;
-    const user = rows[0];
+    // Find user in MongoDB
+    const user = await Widyaiswara.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
 
     if (!user) {
       return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
@@ -43,8 +44,6 @@ export async function POST(request: Request) {
       });
     }
 
-    // Jika password_hash ada di database, verifikasi dengan bcrypt. 
-    // Jika tidak ada (atau untuk kemudahan demo menggunakan password default 'wi123'), kita izinkan login.
     let passwordMatch = true;
     if (user.password_hash) {
       passwordMatch = await bcrypt.compare(password, user.password_hash);
@@ -69,7 +68,7 @@ export async function POST(request: Request) {
     });
 
     const userMetadata = {
-      id: user.id,
+      id: user._id,
       name: user.name,
       gelar: user.gelar,
       email: user.email,
