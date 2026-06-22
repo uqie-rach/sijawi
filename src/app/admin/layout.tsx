@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/admin/sidebar';
 import { sql } from '@/db';
+import { BRANDING } from '@/lib/config';
 
 async function checkAdminAuth() {
   const cookieStore = await cookies();
@@ -35,23 +36,23 @@ export default async function AdminLayout({
       <div className="flex-1 flex flex-col min-w-0">
         <header className="bg-white border-b border-slate-200 px-8 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">WTMS Administration</h1>
-            <p className="text-sm text-slate-500">Monitor and manage Widyaswara training schedules & load balancing.</p>
+            <h1 className="text-2xl font-black text-blue-900">{BRANDING.name} Administration</h1>
+            <p className="text-sm text-slate-500">{BRANDING.fullName} - {BRANDING.tagline}</p>
           </div>
 
           <div className="flex items-center gap-4 bg-blue-50 border border-blue-100 px-4 py-2 rounded-lg">
-            <div className="bg-blue-500 p-1.5 rounded-md text-white">
-              <span className="text-xs font-bold">JP</span>
+            <div className="bg-amber-500 p-1.5 rounded-md text-blue-950">
+              <span className="text-xs font-black">JP</span>
             </div>
             <div>
-              <p className="text-xs text-blue-600 font-medium">Total Scheduled JP</p>
-              <p className="text-lg font-bold text-blue-900">
+              <p className="text-xs text-blue-900 font-bold">Total Scheduled JP</p>
+              <p className="text-lg font-black text-blue-900">
                 {totalJp} JP <span className="text-xs font-normal text-slate-500">({totalJp * 45} Mins)</span>
               </p>
             </div>
           </div>
         </header>
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main className="flex-1 p-8 overflow-y-auto bg-white">
           {children}
         </main>
       </div>

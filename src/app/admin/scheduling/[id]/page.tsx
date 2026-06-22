@@ -4,6 +4,7 @@ import { sql } from '@/db';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from 'lucide-react';
 import { SchedulingWorkspaceClient } from '@/components/admin/scheduling-workspace-client';
+import { BRANDING } from '@/lib/config';
 
 async function getBatchWorkspaceDetails(id: string) {
   try {
@@ -59,11 +60,11 @@ export default async function BatchWorkspacePage({
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Workspace: {data.batch.name}</h2>
-          <p className="text-sm text-slate-500">Formulate precise operational timelines, prevent clashes and lock rooms.</p>
+          <h2 className="text-xl font-bold text-blue-900">Workspace: {data.batch.name}</h2>
+          <p className="text-sm text-slate-500">Formulate precise operational timelines, prevent clashes and lock rooms in {BRANDING.name}.</p>
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 flex items-center gap-2 text-blue-900 text-sm font-semibold shrink-0">
-          <Calendar className="h-4 w-4 text-blue-600" />
+          <Calendar className="h-4 w-4 text-blue-900" />
           Periode: {data.batch.startDate} s/d {data.batch.endDate}
         </div>
       </div>

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { BRANDING } from "@/lib/config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,15 +17,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Widyaswara Training Management System (WTMS)",
-  description: "Highly functional web dashboard for managing Widyaswara training schedules, load balancing, and compliance.",
+  title: `${BRANDING.name} - ${BRANDING.fullName}`,
+  description: `${BRANDING.fullName} - ${BRANDING.tagline}`,
 };
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
 };
-  
 
 export default function RootLayout({
   children,
@@ -34,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-slate-900 min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-slate-700 min-h-screen`}
       >
         <WTMSProvider>
           {children}

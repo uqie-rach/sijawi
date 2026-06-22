@@ -1,6 +1,7 @@
 import React from 'react';
 import { sql } from '@/db';
 import { MasterTabs } from '@/components/admin/master-tabs';
+import { BRANDING } from '@/lib/config';
 
 async function getMasterData() {
   try {
@@ -29,8 +30,8 @@ export default async function MasterPage() {
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <h2 className="text-xl font-bold text-slate-900 mb-2">Master Data Control Panel</h2>
-        <p className="text-sm text-slate-500">Manage instructors, training categories, curricula subjects, and classroom availability constraints.</p>
+        <h2 className="text-xl font-bold text-blue-900">Master Data Control Panel</h2>
+        <p className="text-sm text-slate-500">Manage instructors, training categories, curricula subjects, and classroom availability constraints for {BRANDING.name}.</p>
       </div>
 
       <MasterTabs

@@ -82,7 +82,7 @@ export function ReportsClient({ initialWis }: ReportsClientProps) {
     <div className="space-y-8 animate-in fade-in duration-200">
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="pb-4">
-          <CardTitle className="text-base font-bold">Advanced Filtering & Search</CardTitle>
+          <CardTitle className="text-base font-bold text-blue-900">Advanced Filtering & Search</CardTitle>
           <CardDescription>Filter the monthly recap table dynamically by ranges, patterns, and instructor parameters.</CardDescription>
         </CardHeader>
         <CardContent className="grid sm:grid-cols-5 gap-4 items-end">
@@ -122,17 +122,17 @@ export function ReportsClient({ initialWis }: ReportsClientProps) {
             <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
           </div>
 
-          <Button onClick={handleSearch} className="bg-blue-600 hover:bg-blue-500 text-white w-full">Apply Filters</Button>
+          <Button onClick={handleSearch} className="bg-blue-900 hover:bg-blue-800 text-white w-full">Apply Filters</Button>
         </CardContent>
       </Card>
 
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <CardTitle className="text-lg font-bold">Monthly Recap Table</CardTitle>
+            <CardTitle className="text-lg font-bold text-blue-900">Monthly Recap Table</CardTitle>
             <CardDescription>Detailed breakdown of teaching hours per Widyaiswara.</CardDescription>
           </div>
-          <Button onClick={handleExportGlobal} className="bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
+          <Button onClick={handleExportGlobal} className="bg-blue-900 hover:bg-blue-800 text-white flex items-center gap-2">
             <Download className="h-4 w-4" /> Export Global Recap
           </Button>
         </CardHeader>
@@ -156,12 +156,12 @@ export function ReportsClient({ initialWis }: ReportsClientProps) {
                   <TableCell className="font-mono text-xs pl-6">{wi.nip}</TableCell>
                   <TableCell className="font-semibold text-slate-900">{wi.name}, {wi.gelar}</TableCell>
                   <TableCell className="text-slate-600 text-xs font-medium">{wi.jabatan}</TableCell>
-                  <TableCell className="text-center font-medium text-blue-600">{wi.apbd} JP</TableCell>
+                  <TableCell className="text-center font-medium text-blue-900">{wi.apbd} JP</TableCell>
                   <TableCell className="text-center font-medium text-emerald-600">{wi.kontribusi} JP</TableCell>
                   <TableCell className="text-center font-medium text-amber-600">{wi.kemitraan} JP</TableCell>
                   <TableCell className="text-center font-bold text-slate-900">{wi.grandTotal} JP</TableCell>
                   <TableCell className="pr-6 text-right">
-                    <Button size="sm" variant="outline" onClick={() => handleExportIndividual(wi)} className="border-blue-200 text-blue-700 hover:bg-blue-50 ml-auto flex items-center gap-1.5">
+                    <Button size="sm" variant="outline" onClick={() => handleExportIndividual(wi)} className="border-blue-200 text-blue-900 hover:bg-blue-50 ml-auto flex items-center gap-1.5">
                       <Download className="h-3.5 w-3.5" /> Export Report
                     </Button>
                   </TableCell>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { BRANDING } from '@/lib/config';
 
 interface WidyaiswaraWithCalculation {
   id: string;
@@ -85,9 +86,9 @@ export default async function OverviewPage() {
   });
 
   const pieChartData = [
-    { name: 'APBD', value: totalApbd, color: '#3b82f6' },
+    { name: 'APBD', value: totalApbd, color: '#1E3A8A' },
     { name: 'Kontribusi', value: totalKontribusi, color: '#10b981' },
-    { name: 'Kemitraan', value: totalKemitraan, color: '#f59e0b' },
+    { name: 'Kemitraan', value: totalKemitraan, color: '#C8A14A' },
   ].filter((item) => item.value > 0);
 
   return (
@@ -98,10 +99,10 @@ export default async function OverviewPage() {
         <CardHeader className="border-b border-slate-100 bg-slate-50/50">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <CardTitle className="text-lg font-bold text-slate-900">Widyaiswara Load Balancing & JP Tracking</CardTitle>
+              <CardTitle className="text-lg font-bold text-blue-900">Widyaiswara Load Balancing & JP Tracking</CardTitle>
               <CardDescription>Real-time monitoring of teaching hours with breakdown by funding pattern (Pola).</CardDescription>
             </div>
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-semibold">
+            <Badge variant="outline" className="bg-blue-50 text-blue-900 border-blue-200 font-semibold">
               1 JP = 45 Minutes
             </Badge>
           </div>
@@ -137,12 +138,12 @@ export default async function OverviewPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className="bg-blue-100 text-blue-800 border-blue-200 font-semibold">
+                      <Badge className="bg-blue-100 text-blue-900 border-blue-200 font-semibold">
                         Level {wi.level} - {wi.levelLabel}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center font-medium text-slate-500">{wi.jpLastMonth} JP</TableCell>
-                    <TableCell className="text-center font-bold text-blue-700 bg-blue-50/20">
+                    <TableCell className="text-center font-bold text-blue-900 bg-blue-50/20">
                       <div className="flex flex-col items-center justify-center">
                         <span>{wi.jpCurrentMonth} JP</span>
                         <Progress value={Math.min((wi.jpCurrentMonth / 40) * 100, 100)} className="h-1.5 w-16 mt-1 bg-slate-100" />
@@ -161,7 +162,7 @@ export default async function OverviewPage() {
                         <div className="flex h-2 w-full rounded-full overflow-hidden bg-slate-100">
                           <div 
                             style={{ width: `${wi.jpCurrentMonth ? (wi.breakdown.apbd / wi.jpCurrentMonth) * 100 : 0}%` }} 
-                            className="bg-blue-500"
+                            className="bg-blue-900"
                           />
                           <div 
                             style={{ width: `${wi.jpCurrentMonth ? (wi.breakdown.kontribusi / wi.jpCurrentMonth) * 100 : 0}%` }} 

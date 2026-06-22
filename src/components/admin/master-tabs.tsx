@@ -189,7 +189,7 @@ export function MasterTabs({
 
         <Dialog open={isWiDialogOpen} onOpenChange={setIsWiDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => { setEditingWiId(null); setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' }); }} className="bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
+            <Button onClick={() => { setEditingWiId(null); setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' }); }} className="bg-blue-900 hover:bg-blue-800 text-white flex items-center gap-2">
               <Plus className="h-4 w-4" /> Add Widyaiswara
             </Button>
           </DialogTrigger>
@@ -246,7 +246,7 @@ export function MasterTabs({
                   </Select>
                 </div>
               </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white mt-4">Save Widyaiswara</Button>
+              <Button type="submit" className="w-full bg-blue-900 hover:bg-blue-800 text-white mt-4">Save Widyaiswara</Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -272,7 +272,7 @@ export function MasterTabs({
                     <TableCell className="text-slate-600 font-mono text-xs">{wi.nip}</TableCell>
                     <TableCell className="text-slate-600 text-xs font-medium">{wi.jabatan}</TableCell>
                     <TableCell>
-                      <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                      <Badge className="bg-blue-100 text-blue-900 border-blue-200">
                         Level {wi.level} - {wi.levelLabel}
                       </Badge>
                     </TableCell>
@@ -281,7 +281,7 @@ export function MasterTabs({
                         setEditingWiId(wi.id);
                         setWiForm({ name: wi.name, gelar: wi.gelar, email: wi.email, nip: wi.nip, jabatan: wi.jabatan, level: String(wi.level) });
                         setIsWiDialogOpen(true);
-                      }} className="text-blue-600 hover:text-blue-800">
+                      }} className="text-blue-900 hover:text-blue-800">
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => {
@@ -324,7 +324,7 @@ export function MasterTabs({
                         </Badge>
                       </TableCell>
                       <TableCell className="pr-6 text-right space-x-2">
-                        <Button size="sm" variant="ghost" onClick={() => { setEditingKatId(k.id); setKatForm({ name: k.name, minWeight: String(k.minWeight) }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="ghost" onClick={() => { setEditingKatId(k.id); setKatForm({ name: k.name, minWeight: String(k.minWeight) }); }} className="text-blue-900"><Edit className="h-4 w-4" /></Button>
                         <Button size="sm" variant="ghost" onClick={() => {
                           triggerConfirmation(
                             "Delete Category",
@@ -341,7 +341,7 @@ export function MasterTabs({
           </Card>
 
           <Card className="shadow-sm border-slate-200 bg-white p-6">
-            <CardTitle className="text-base font-bold mb-4">{editingKatId ? 'Edit Category' : 'Add Category'}</CardTitle>
+            <CardTitle className="text-base font-bold mb-4 text-blue-900">{editingKatId ? 'Edit Category' : 'Add Category'}</CardTitle>
             <form onSubmit={(e) => {
               e.preventDefault();
               const performSave = () => {
@@ -377,7 +377,7 @@ export function MasterTabs({
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full bg-blue-600 text-white">Save Category</Button>
+              <Button type="submit" className="w-full bg-blue-900 text-white">Save Category</Button>
             </form>
           </Card>
         </div>
@@ -407,7 +407,7 @@ export function MasterTabs({
                           <Badge variant="outline">{m.jpTotal} JP</Badge>
                         </TableCell>
                         <TableCell className="pr-6 text-right space-x-2">
-                          <Button size="sm" variant="ghost" onClick={() => { setEditingMapelId(m.id); setMapelForm({ name: m.name, kategoriId: m.kategoriId, jpTotal: String(m.jpTotal) }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setEditingMapelId(m.id); setMapelForm({ name: m.name, kategoriId: m.kategoriId, jpTotal: String(m.jpTotal) }); }} className="text-blue-900"><Edit className="h-4 w-4" /></Button>
                           <Button size="sm" variant="ghost" onClick={() => {
                             triggerConfirmation(
                               "Delete Subject",
@@ -425,7 +425,7 @@ export function MasterTabs({
           </Card>
 
           <Card className="shadow-sm border-slate-200 bg-white p-6">
-            <CardTitle className="text-base font-bold mb-4">{editingMapelId ? 'Edit Subject' : 'Add Subject'}</CardTitle>
+            <CardTitle className="text-base font-bold mb-4 text-blue-900">{editingMapelId ? 'Edit Subject' : 'Add Subject'}</CardTitle>
             <form onSubmit={(e) => {
               e.preventDefault();
               const performSave = () => {
@@ -472,7 +472,7 @@ export function MasterTabs({
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full bg-blue-600 text-white">Save Subject</Button>
+              <Button type="submit" className="w-full bg-blue-900 text-white">Save Subject</Button>
             </form>
           </Card>
         </div>
@@ -497,7 +497,7 @@ export function MasterTabs({
                         {l.name}
                       </TableCell>
                       <TableCell className="pr-6 text-right space-x-2">
-                        <Button size="sm" variant="ghost" onClick={() => { setEditingLokId(l.id); setLokForm({ name: l.name }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="ghost" onClick={() => { setEditingLokId(l.id); setLokForm({ name: l.name }); }} className="text-blue-900"><Edit className="h-4 w-4" /></Button>
                         <Button size="sm" variant="ghost" onClick={() => {
                           triggerConfirmation(
                             "Delete Location",
@@ -514,7 +514,7 @@ export function MasterTabs({
           </Card>
 
           <Card className="shadow-sm border-slate-200 bg-white p-6">
-            <CardTitle className="text-base font-bold mb-4">{editingLokId ? 'Edit Location' : 'Add Location'}</CardTitle>
+            <CardTitle className="text-base font-bold mb-4 text-blue-900">{editingLokId ? 'Edit Location' : 'Add Location'}</CardTitle>
             <form onSubmit={(e) => {
               e.preventDefault();
               const performSave = () => {
@@ -537,7 +537,7 @@ export function MasterTabs({
                 <Label>Location Name</Label>
                 <Input value={lokForm.name} onChange={e => updateLokForm({ name: e.target.value })} required />
               </div>
-              <Button type="submit" className="w-full bg-blue-600 text-white">Save Location</Button>
+              <Button type="submit" className="w-full bg-blue-900 text-white">Save Location</Button>
             </form>
           </Card>
         </div>
@@ -569,7 +569,7 @@ export function MasterTabs({
                         </TableCell>
                         <TableCell className="text-xs text-slate-500">{b.startDate} to {b.endDate}</TableCell>
                         <TableCell className="pr-6 text-right space-x-2">
-                          <Button size="sm" variant="ghost" onClick={() => { setEditingBatchId(b.id); setBatchForm({ name: b.name, kategoriId: b.kategoriId, pola: b.pola, startDate: b.startDate, endDate: b.endDate }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setEditingBatchId(b.id); setBatchForm({ name: b.name, kategoriId: b.kategoriId, pola: b.pola, startDate: b.startDate, endDate: b.endDate }); }} className="text-blue-900"><Edit className="h-4 w-4" /></Button>
                           <Button size="sm" variant="ghost" onClick={() => {
                             triggerConfirmation(
                               "Delete Batch",
@@ -587,7 +587,7 @@ export function MasterTabs({
           </Card>
 
           <Card className="shadow-sm border-slate-200 bg-white p-6">
-            <CardTitle className="text-base font-bold mb-4">{editingBatchId ? 'Edit Batch' : 'Create Batch'}</CardTitle>
+            <CardTitle className="text-base font-bold mb-4 text-blue-900">{editingBatchId ? 'Edit Batch' : 'Create Batch'}</CardTitle>
             <form onSubmit={(e) => {
               e.preventDefault();
               const performSave = () => {
@@ -642,7 +642,7 @@ export function MasterTabs({
                   <Input type="date" value={batchForm.endDate} onChange={e => updateBatchForm({ endDate: e.target.value })} required />
                 </div>
               </div>
-              <Button type="submit" className="w-full bg-blue-600 text-white">Save Batch</Button>
+              <Button type="submit" className="w-full bg-blue-900 text-white">Save Batch</Button>
             </form>
           </Card>
         </div>
@@ -656,7 +656,7 @@ export function MasterTabs({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-slate-200 text-slate-700 hover:bg-slate-50">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDialog.onConfirm} className="bg-blue-600 hover:bg-blue-500 text-white">Confirm Action</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDialog.onConfirm} className="bg-blue-900 hover:bg-blue-800 text-white">Confirm Action</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

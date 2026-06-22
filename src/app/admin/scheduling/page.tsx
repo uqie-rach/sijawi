@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Calendar, Layers, MapPin, ArrowUpRight } from 'lucide-react';
 import { SchedulingWorkspaceClient } from '@/components/admin/scheduling-workspace-client';
+import { BRANDING } from '@/lib/config';
 
 interface BatchListItem {
   id: string;
@@ -41,7 +42,6 @@ async function getSchedulingIndexData() {
     const lokasis = await sql`SELECT * FROM lokasi ORDER BY name ASC`;
 
     const formattedBatches: BatchListItem[] = batches.map((b) => {
-      // Find all relevant mapels for this batch category to find required sum of JP
       const relevantMapels = mapels.filter((m) => m.kategori_id === b.kategori_id);
       const totalJpRequired = relevantMapels.reduce((sum, m) => sum + Number(m.jp_total), 0);
 
@@ -63,7 +63,7 @@ async function getSchedulingIndexData() {
         pola: b.pola,
         startDate: b.start_date,
         endDate: b.end_date,
-        totalJpRequired: totalJpRequired || 20, // Fallback threshold
+        totalJpRequired: totalJpRequired || 20,
         totalJpScheduled,
         distinctLocations: locations,
       };
@@ -103,7 +103,7 @@ export default async function SchedulingIndexPage() {
       {/* Batch Listing Panel */}
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-          <CardTitle className="text-lg font-bold">Select Batch to Schedule</CardTitle>
+          <CardTitle className="text-lg font-bold text-blue-900">Select Batch to Schedule</CardTitle>
           <CardDescription>View current scheduling progress and enter specific batch timeline workspaces.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -133,7 +133,7 @@ export default async function SchedulingIndexPage() {
                       <div className="space-y-1">
                         <p className="text-xs text-slate-600 font-medium">{b.categoryName}</p>
                         <Badge className={`font-semibold text-[10px] ${
-                          b.pola === 'APBD' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          b.pola === 'APBD' ? 'bg-blue-50 text-blue-900 border-blue-200' :
                           b.pola === 'Kontribusi' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                           'bg-amber-50 text-amber-700 border-amber-200'
                         }`}>
@@ -164,7 +164,7 @@ export default async function SchedulingIndexPage() {
                     <TableCell className="w-[200px]">
                       <div className="space-y-1.5">
                         <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-blue-700">{b.totalJpScheduled} / {b.totalJpRequired} JP</span>
+                          <span className="text-blue-900">{b.totalJpScheduled} / {b.totalJpRequired} JP</span>
                           <span className="text-slate-500">{Math.round(percentage)}%</span>
                         </div>
                         <Progress value={percentage} className="h-1.5 bg-slate-100" />
@@ -172,7 +172,7 @@ export default async function SchedulingIndexPage() {
                     </TableCell>
                     <TableCell className="pr-6 text-right">
                       <Link href={`/admin/scheduling/${b.id}`} passHref>
-                        <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800 gap-1.5">
+                        <Button size="sm" variant="outline" className="border-blue-200 text-blue-900 hover:bg-blue-50 hover:text-blue-900 gap-1.5">
                           Manage Schedule
                           <ArrowUpRight className="h-3.5 w-3.5" />
                         </Button>
@@ -189,7 +189,7 @@ export default async function SchedulingIndexPage() {
       {/* Global Month/Day/Table Calendar Timeline Preview */}
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-          <CardTitle className="text-lg font-bold">Global Schedules Control Engine</CardTitle>
+          <CardTitle className="text-lg font-bold text-blue-900">{BRANDING.name} Schedules Control Engine</CardTitle>
           <CardDescription>
             Examine and preview all scheduled slots across all batch timelines simultaneously.
           </CardDescription>

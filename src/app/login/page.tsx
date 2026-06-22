@@ -3,13 +3,14 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWTMS } from '@/context/wtms-context';
-import { GraduationCap, Lock, Mail, AlertCircle } from 'lucide-react';
+import { GraduationCap, Lock, Mail, AlertCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import { BRANDING } from "@/lib/config";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,7 +25,6 @@ export default function LoginPage() {
 
     // 1. Check for Super Admin
     if (email === 'admin@wtms.com' && password === 'admin123') {
-      // Set sessionToken cookie for API authorization
       document.cookie = "sessionToken=admin-session-token; path=/; max-age=86400; SameSite=Lax";
       
       setIsAuthenticated(true);
@@ -38,7 +38,6 @@ export default function LoginPage() {
     // 2. Check for Widyaswara
     const matchedWi = widyaswaras.find(w => w.email.toLowerCase() === email.toLowerCase());
     if (matchedWi && password === 'wi123') {
-      // Set sessionToken cookie for API authorization
       document.cookie = "sessionToken=wi-session-token; path=/; max-age=86400; SameSite=Lax";
 
       setIsAuthenticated(true);
@@ -54,25 +53,34 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-gradient-to-b from-slate-900 via-slate-800 to-slate-950 text-white">
-      <header className="container mx-auto px-6 py-6 flex justify-between items-center border-b border-slate-800">
+    <div className="min-h-screen flex flex-col justify-between bg-gradient-to-b from-blue-900 via-slate-900 to-blue-950 text-white">
+      <header className="container mx-auto px-6 py-6 flex justify-between items-center border-b border-blue-800/40">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <GraduationCap className="h-6 w-6 text-white" />
+          <div className="bg-amber-500 p-2 rounded-lg shadow-md shadow-amber-500/20">
+            <GraduationCap className="h-6 w-6 text-blue-950" />
           </div>
           <div>
-            <h1 className="font-bold text-xl tracking-tight">WTMS</h1>
-            <p className="text-xs text-slate-400">Widyaiswara Training Management</p>
+            <h1 className="font-black text-2xl tracking-tight text-white">{BRANDING.name}</h1>
+            <p className="text-xs text-amber-400 font-medium">{BRANDING.fullName}</p>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <Card className="w-full max-w-md bg-slate-900/80 border-slate-800 text-white shadow-2xl">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+        <div className="text-center max-w-xl mb-8">
+          <div className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full text-xs font-bold text-amber-400 mb-3">
+            <Sparkles className="h-3.5 w-3.5" />
+            {BRANDING.tagline}
+          </div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">Selamat Datang di {BRANDING.name}</h2>
+          <p className="text-sm text-slate-300">Silakan masuk untuk mengakses jadwal mengajar dan manajemen widyaiswara.</p>
+        </div>
+
+        <Card className="w-full max-w-md bg-slate-900/90 border-slate-800 text-white shadow-2xl">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold tracking-tight">Sign In to WTMS</CardTitle>
+            <CardTitle className="text-xl font-bold tracking-tight">Sign In Portal</CardTitle>
             <CardDescription className="text-slate-400">
-              Enter your credentials to access your personalized portal.
+              Masukkan email dan kata sandi Anda untuk melanjutkan.
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleLogin}>
@@ -91,10 +99,10 @@ export default function LoginPage() {
                   <Input 
                     id="email" 
                     type="email" 
-                    placeholder="admin@wtms.com or wi email" 
+                    placeholder="admin@wtms.com atau email WI" 
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="pl-10 bg-slate-950 border-slate-800 text-white focus:ring-blue-500"
+                    className="pl-10 bg-slate-950 border-slate-800 text-white focus:ring-amber-500 focus:border-amber-500"
                     required 
                   />
                 </div>
@@ -107,31 +115,31 @@ export default function LoginPage() {
                   <Input 
                     id="password" 
                     type="password" 
-                    placeholder="admin123 or wi123" 
+                    placeholder="admin123 atau wi123" 
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="pl-10 bg-slate-950 border-slate-800 text-white focus:ring-blue-500"
+                    className="pl-10 bg-slate-950 border-slate-800 text-white focus:ring-amber-500 focus:border-amber-500"
                     required 
                   />
                 </div>
               </div>
 
               <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800/60 text-[11px] text-slate-400 space-y-1">
-                <p className="font-semibold text-slate-300">💡 Quick Demo Credentials:</p>
+                <p className="font-semibold text-amber-400">💡 Quick Demo Credentials:</p>
                 <p>• Admin: <span className="font-mono text-blue-400">admin@wtms.com</span> / <span className="font-mono text-blue-400">admin123</span></p>
                 <p>• Widyaiswara: <span className="font-mono text-indigo-400">wtms+wi.uqie@gmail.com</span> / <span className="font-mono text-indigo-400">wi123</span></p>
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-6 text-base shadow-lg shadow-blue-600/20">
-                Sign In
+              <Button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-blue-950 font-bold py-6 text-base shadow-lg shadow-amber-500/20">
+                Masuk Portal
               </Button>
             </CardFooter>
           </form>
         </Card>
       </main>
 
-      <footer className="border-t border-slate-800/60 bg-slate-950/80">
+      <footer className="border-t border-blue-900/40 bg-slate-950/80">
         <MadeWithDyad />
       </footer>
     </div>
