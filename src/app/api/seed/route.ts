@@ -10,13 +10,17 @@ export async function POST() {
   try {
     await connectToDatabase();
 
-    // Check if data already exists
-    const count = await Widyaiswara.countDocuments();
-    if (count > 0) {
-      return Response.json({ success: true, message: 'Already seeded' });
-    }
+    // Clear old state completely
+    await Promise.all([
+      Widyaiswara.deleteMany({}),
+      KategoriPelatihan.deleteMany({}),
+      MataPelatihan.deleteMany({}),
+      Lokasi.deleteMany({}),
+      Pelatihan.deleteMany({}),
+      JadwalSesi.deleteMany({})
+    ]);
 
-    // Seed Kategori Pelatihan
+    // 1. Seed Kategori Pelatihan
     const kategori = [
       { _id: 'kat-pkn', name: 'PKN (Pelatihan Kepemimpinan Nasional)', min_weight: 5 },
       { _id: 'kat-pka', name: 'PKA (Pelatihan Kepemimpinan Administrator)', min_weight: 4 },
@@ -24,85 +28,198 @@ export async function POST() {
       { _id: 'kat-latsar', name: 'Latsar (Pelatihan Dasar CPNS)', min_weight: 2 },
       { _id: 'kat-pppk', name: 'PPPK (Pelatihan PPPK)', min_weight: 1 },
     ];
-
     for (const k of kategori) {
-      await KategoriPelatihan.findByIdAndUpdate(k._id, k, { upsert: true });
+      await KategoriPelatihan.create(k);
     }
 
-    // Seed Widyaswaras
+    // 2. Seed Widyaiswara (Master Records)
     const widyaswaras = [
-      { _id: 'wi-1', name: 'Uqie Rachmadie', gelar: 'M.Pd.', email: 'wtms+wi.uqie@gmail.com', nip: '197508122001121002', jabatan: 'WI Ahli Utama', level: 5, level_label: 'PKN', jp_last_month: 32 },
-      { _id: 'wi-2', name: 'Americo Block', gelar: 'S.T.', email: 'wtms+wi.americo@gmail.com', nip: '198803152010121001', jabatan: 'WI Ahli Muda', level: 2, level_label: 'Latsar', jp_last_month: 24 },
-      { _id: 'wi-3', name: 'Dr. H. Ahmad Yani', gelar: 'M.Si.', email: 'wtms+wi.yani@gmail.com', nip: '197001011995031001', jabatan: 'WI Ahli Madya', level: 4, level_label: 'PKA', jp_last_month: 28 },
-      { _id: 'wi-4', name: 'Rina Wijaya', gelar: 'M.Si.', email: 'wtms+wi.rina@gmail.com', nip: '198211202006042003', jabatan: 'WI Ahli Madya', level: 3, level_label: 'PKP', jp_last_month: 18 },
-      { _id: 'wi-5', name: 'Budi Santoso', gelar: 'S.Kom.', email: 'wtms+wi.budi@gmail.com', nip: '199205102018011002', jabatan: 'WI Ahli Pertama', level: 1, level_label: 'PPPK', jp_last_month: 12 },
+      { _id: 'wi-qurrota', name: 'Qurrota A’yun', gelar: 'S.E., M.Si', email: 'wtms+wi.qurrota@gmail.com', nip: '198205122009032001', jabatan: 'WI Ahli Madya', level: 3, level_label: 'PKP', jp_last_month: 28 },
+      { _id: 'wi-anung', name: 'Mohammad Anung Edy Nugroho', gelar: 'M.SM', email: 'wtms+wi.anung@gmail.com', nip: '198511042010121002', jabatan: 'WI Ahli Madya', level: 3, level_label: 'PKP', jp_last_month: 24 },
+      { _id: 'wi-farid', name: 'Drs. Akhmad Farid Gaftan', gelar: 'M.Si', email: 'wtms+wi.farid@gmail.com', nip: '197604152003121001', jabatan: 'WI Ahli Madya', level: 4, level_label: 'PKA', jp_last_month: 30 },
+      { _id: 'wi-mahariska', name: 'Mahariska Devi P.', gelar: 'S.T., M.PSDM', email: 'wtms+wi.mahariska@gmail.com', nip: '199008242015032002', jabatan: 'WI Ahli Muda', level: 3, level_label: 'PKP', jp_last_month: 16 },
+      { _id: 'wi-randy', name: 'Randy Febriano Ruhyana', gelar: 'S.T., M.MT', email: 'wtms+wi.randy@gmail.com', nip: '199102142018011003', jabatan: 'WI Ahli Muda', level: 3, level_label: 'PKP', jp_last_month: 20 },
+      { _id: 'wi-bpsdm-institutional', name: 'Kepala Badan/Sekretaris/Kabid', gelar: 'BPSDM Prov. Jatim', email: 'wtms+wi.bpsdm@gmail.com', nip: '197001011990031001', jabatan: 'WI Ahli Utama', level: 5, level_label: 'PKN', jp_last_month: 10 }
     ];
-
     for (const w of widyaswaras) {
-      await Widyaiswara.findByIdAndUpdate(w._id, w, { upsert: true });
+      await Widyaiswara.create(w);
     }
 
-    // Seed Mata Pelatihan
-    const mapel = [
-      { _id: 'mapel-1', name: 'Kepemimpinan Pancasila & Nasionalisme', kategori_id: 'kat-pka', jp_total: 4 },
-      { _id: 'mapel-2', name: 'Manajemen Perubahan Sektor Publik', kategori_id: 'kat-pka', jp_total: 6 },
-      { _id: 'mapel-3', name: 'Etika dan Integritas Kepemimpinan', kategori_id: 'kat-pka', jp_total: 3 },
-      { _id: 'mapel-4', name: 'Agenda Bela Negara', kategori_id: 'kat-latsar', jp_total: 2 },
-      { _id: 'mapel-5', name: 'Nilai-Nilai Dasar PNS (BerAKHLAK)', kategori_id: 'kat-latsar', jp_total: 6 },
-      { _id: 'mapel-6', name: 'Manajemen Strategis Nasional', kategori_id: 'kat-pkn', jp_total: 6 },
-      { _id: 'mapel-7', name: 'Inovasi Pelayanan Publik', kategori_id: 'kat-pkp', jp_total: 4 },
+    // 3. Seed Mata Pelatihan
+    const mapels = [
+      { _id: 'mapel-pembukaan', name: 'Kebijakan Pengembangan SDA', kategori_id: 'kat-latsar', jp_total: 2 },
+      { _id: 'mapel-dinamika', name: 'Dinamika Kelompok', kategori_id: 'kat-latsar', jp_total: 3 },
+      { _id: 'mapel-sikap-bela-negara', name: 'SYNC: Sikap Perilaku Bela Negara (Agenda 1)', kategori_id: 'kat-latsar', jp_total: 10 },
+      { _id: 'mapel-pembekalan-mentor', name: 'Pembekalan Mentor', kategori_id: 'kat-latsar', jp_total: 2 },
+      { _id: 'mapel-async-tugas', name: 'ASYNC: Tugas Individu / Kelompok', kategori_id: 'kat-latsar', jp_total: 20 },
+      { _id: 'mapel-nilai-dasar', name: 'SYNC: Nilai-Nilai Dasar PNS (Agenda 2)', kategori_id: 'kat-latsar', jp_total: 10 },
+      { _id: 'mapel-kedudukan-pns', name: 'SYNC: Kedudukan & Peran PNS (Agenda 3)', kategori_id: 'kat-latsar', jp_total: 5 },
+      { _id: 'mapel-rancangan-aktualisasi', name: 'SYNC: Pembimbingan Rancangan Aktualisasi', kategori_id: 'kat-latsar', jp_total: 10 }
     ];
-
-    for (const m of mapel) {
-      await MataPelatihan.findByIdAndUpdate(m._id, m, { upsert: true });
+    for (const m of mapels) {
+      await MataPelatihan.create(m);
     }
 
-    // Seed Lokasi
+    // 4. Seed Lokasi
     const lokasi = [
-      { _id: 'lok-1', name: 'Aula Utama' },
-      { _id: 'lok-2', name: 'Lab Komputer' },
-      { _id: 'lok-3', name: 'Ruang Kelas A' },
-      { _id: 'lok-4', name: 'Ruang Kelas B' },
+      { _id: 'lok-bpsdm-surabaya', name: 'BPSDM Surabaya (Virtual Classroom)' },
+      { _id: 'lok-aula', name: 'Aula Utama Jatim' },
+      { _id: 'lok-kelas-a', name: 'Ruang Kelas A' }
     ];
-
     for (const l of lokasi) {
-      await Lokasi.findByIdAndUpdate(l._id, l, { upsert: true });
+      await Lokasi.create(l);
     }
 
-    // Seed Batches
-    const batches = [
-      { _id: 'batch-1', name: 'PKA Angkatan I', kategori_id: 'kat-pka', pola: 'APBD', start_date: '2026-03-01', end_date: '2026-03-15' },
-      { _id: 'batch-2', name: 'Latsar CPNS 2026', kategori_id: 'kat-latsar', pola: 'Kontribusi', start_date: '2026-03-10', end_date: '2026-03-25' },
-      { _id: 'batch-3', name: 'PKN Kepemimpinan Nasional', kategori_id: 'kat-pkn', pola: 'Kemitraan', start_date: '2026-03-05', end_date: '2026-03-20' },
-      { _id: 'batch-4', name: 'PKA Angkatan II (April)', kategori_id: 'kat-pka', pola: 'APBD', start_date: '2026-04-01', end_date: '2026-04-15' },
-      { _id: 'batch-5', name: 'PKP Angkatan I (April)', kategori_id: 'kat-pkp', pola: 'Kontribusi', start_date: '2026-04-05', end_date: '2026-04-20' },
-    ];
+    // 5. Seed Batch
+    const batch = {
+      _id: 'batch-latsar-2026',
+      name: 'Pelatihan Dasar CPNS Golongan II Angkatan II Tahun 2026',
+      kategori_id: 'kat-latsar',
+      pola: 'Kontribusi' as const,
+      start_date: '2026-01-31',
+      end_date: '2026-04-11'
+    };
+    await Pelatihan.create(batch);
 
-    for (const b of batches) {
-      await Pelatihan.findByIdAndUpdate(b._id, b, { upsert: true });
-    }
-
-    // Seed Sessions
+    // 6. Seed Jadwal Sesi (Multi-WI samples included!)
     const sessions = [
-      { _id: 'sess-1', batch_id: 'batch-1', mapel_id: 'mapel-1', wi_id: 'wi-3', date: '2026-03-02', start_time: '08:00', end_time: '09:30', format: 'Klasikal', lokasi_id: 'lok-3', jp_ke: '1-2', jp_count: 2 },
-      { _id: 'sess-2', batch_id: 'batch-1', mapel_id: 'mapel-2', wi_id: 'wi-1', date: '2026-03-03', start_time: '10:00', end_time: '12:15', format: 'Klasikal', lokasi_id: 'lok-1', jp_ke: '3-5', jp_count: 3 },
-      { _id: 'sess-3', batch_id: 'batch-2', mapel_id: 'mapel-4', wi_id: 'wi-2', date: '2026-03-11', start_time: '08:00', end_time: '09:30', format: 'Klasikal', lokasi_id: 'lok-2', jp_ke: '1-2', jp_count: 2 },
-      { _id: 'sess-4', batch_id: 'batch-3', mapel_id: 'mapel-6', wi_id: 'wi-1', date: '2026-03-06', start_time: '08:00', end_time: '10:15', format: 'Klasikal', lokasi_id: 'lok-1', jp_ke: '1-3', jp_count: 3 },
-      { _id: 'sess-5', batch_id: 'batch-3', mapel_id: 'mapel-6', wi_id: 'wi-3', date: '2026-03-07', start_time: '13:00', end_time: '15:15', format: 'Virtual', lokasi_id: null, jp_ke: '4-6', jp_count: 3 },
-      { _id: 'sess-6', batch_id: 'batch-2', mapel_id: 'mapel-5', wi_id: 'wi-4', date: '2026-03-12', start_time: '08:00', end_time: '10:15', format: 'Klasikal', lokasi_id: 'lok-3', jp_ke: '1-3', jp_count: 3 },
-      { _id: 'sess-7', batch_id: 'batch-2', mapel_id: 'mapel-5', wi_id: 'wi-2', date: '2026-03-13', start_time: '13:00', end_time: '15:15', format: 'Virtual', lokasi_id: null, jp_ke: '4-6', jp_count: 3 },
-      { _id: 'sess-8', batch_id: 'batch-4', mapel_id: 'mapel-1', wi_id: 'wi-3', date: '2026-04-02', start_time: '08:00', end_time: '09:30', format: 'Klasikal', lokasi_id: 'lok-3', jp_ke: '1-2', jp_count: 2 },
-      { _id: 'sess-9', batch_id: 'batch-4', mapel_id: 'mapel-2', wi_id: 'wi-1', date: '2026-04-03', start_time: '10:00', end_time: '12:15', format: 'Klasikal', lokasi_id: 'lok-1', jp_ke: '3-5', jp_count: 3 },
-      { _id: 'sess-10', batch_id: 'batch-5', mapel_id: 'mapel-7', wi_id: 'wi-4', date: '2026-04-06', start_time: '08:00', end_time: '10:15', format: 'Klasikal', lokasi_id: 'lok-4', jp_ke: '1-3', jp_count: 3 },
-      { _id: 'sess-11', batch_id: 'batch-5', mapel_id: 'mapel-7', wi_id: 'wi-3', date: '2026-04-07', start_time: '13:00', end_time: '13:45', format: 'Virtual', lokasi_id: null, jp_ke: '4', jp_count: 1 },
-      { _id: 'sess-12', batch_id: 'batch-4', mapel_id: 'mapel-3', wi_id: 'wi-4', date: '2026-04-08', start_time: '08:00', end_time: '10:15', format: 'Klasikal', lokasi_id: 'lok-3', jp_ke: '1-3', jp_count: 3 }
+      {
+        _id: 'sess-1',
+        batch_id: 'batch-latsar-2026',
+        mapel_id: 'mapel-pembukaan',
+        wi_ids: ['wi-bpsdm-institutional'],
+        date: '2026-01-31',
+        start_time: '09:00',
+        end_time: '11:00',
+        format: 'Klasikal' as const,
+        lokasi_id: 'lok-bpsdm-surabaya',
+        jp_ke: '1-2',
+        jp_count: 2
+      },
+      {
+        _id: 'sess-2',
+        batch_id: 'batch-latsar-2026',
+        mapel_id: 'mapel-dinamika',
+        wi_ids: ['wi-qurrota'],
+        date: '2026-01-31',
+        start_time: '14:45',
+        end_time: '17:00',
+        format: 'Klasikal' as const,
+        lokasi_id: 'lok-bpsdm-surabaya',
+        jp_ke: '3-5',
+        jp_count: 3
+      },
+      {
+        _id: 'sess-3',
+        batch_id: 'batch-latsar-2026',
+        mapel_id: 'mapel-sikap-bela-negara',
+        wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
+        date: '2026-02-02',
+        start_time: '08:00',
+        end_time: '09:30',
+        format: 'Virtual' as const,
+        lokasi_id: null,
+        jp_ke: '1-2',
+        jp_count: 2
+      },
+      {
+        _id: 'sess-4',
+        batch_id: 'batch-latsar-2026',
+        mapel_id: 'mapel-pembekalan-mentor',
+        wi_ids: ['wi-farid'],
+        date: '2026-02-02',
+        start_time: '09:30',
+        end_time: '11:00',
+        format: 'Klasikal' as const,
+        lokasi_id: 'lok-bpsdm-surabaya',
+        jp_ke: '3-4',
+        jp_count: 2
+      },
+      {
+        _id: 'sess-5',
+        batch_id: 'batch-latsar-2026',
+        mapel_id: 'mapel-async-tugas',
+        wi_ids: ['wi-farid'],
+        date: '2026-02-02',
+        start_time: '12:00',
+        end_time: '17:15',
+        format: 'Asinkron' as const,
+        lokasi_id: null,
+        jp_ke: '5-11',
+        jp_count: 7
+      },
+      {
+        _id: 'sess-6',
+        batch_id: 'batch-latsar-2026',
+        mapel_id: 'mapel-sikap-bela-negara',
+        wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
+        date: '2026-02-04',
+        start_time: '13:00',
+        end_time: '15:15',
+        format: 'Virtual' as const,
+        lokasi_id: null,
+        jp_ke: '1-3',
+        jp_count: 3
+      },
+      {
+        _id: 'sess-7',
+        batch_id: 'batch-latsar-2026',
+        mapel_id: 'mapel-nilai-dasar',
+        wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
+        date: '2026-02-05',
+        start_time: '08:00',
+        end_time: '09:30',
+        format: 'Virtual' as const,
+        lokasi_id: null,
+        jp_ke: '1-2',
+        jp_count: 2
+      },
+      {
+        _id: 'sess-8',
+        batch_id: 'batch-latsar-2026',
+        mapel_id: 'mapel-nilai-dasar',
+        wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
+        date: '2026-02-10',
+        start_time: '13:00',
+        end_time: '15:15',
+        format: 'Virtual' as const,
+        lokasi_id: null,
+        jp_ke: '1-3',
+        jp_count: 3
+      },
+      {
+        _id: 'sess-9',
+        batch_id: 'batch-latsar-2026',
+        mapel_id: 'mapel-kedudukan-pns',
+        wi_ids: ['wi-randy'],
+        date: '2026-02-13',
+        start_time: '08:00',
+        end_time: '11:45',
+        format: 'Virtual' as const,
+        lokasi_id: null,
+        jp_ke: '1-5',
+        jp_count: 5
+      },
+      {
+        _id: 'sess-10',
+        batch_id: 'batch-latsar-2026',
+        mapel_id: 'mapel-rancangan-aktualisasi',
+        wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
+        date: '2026-02-13',
+        start_time: '15:30',
+        end_time: '17:00',
+        format: 'Virtual' as const,
+        lokasi_id: null,
+        jp_ke: '6-7',
+        jp_count: 2
+      }
     ];
 
     for (const s of sessions) {
-      await JadwalSesi.findByIdAndUpdate(s._id, s, { upsert: true });
+      await JadwalSesi.create(s);
     }
 
-    return Response.json({ success: true, message: 'Seeding completed successfully' });
+    return Response.json({ success: true, message: 'Re-seeding completed with Latsar CPNS 2026 schedule dataset!' });
   } catch (error: any) {
     console.error('Seeding error:', error);
     return Response.json({ error: error.message }, { status: 500 });

@@ -38,7 +38,9 @@ async function getWidyaiswaraOverviewData(): Promise<WidyaiswaraWithCalculation[
     const batchMap = new Map(batches.map(b => [b._id, b]));
 
     return wis.map((wi) => {
-      const wiSessions = sessions.filter((s) => s.wi_id === wi._id);
+      const wiSessions = sessions.filter((s) => {
+        return (s.wi_id === wi._id) || (s.wi_ids && Array.isArray(s.wi_ids) && s.wi_ids.includes(wi._id));
+      });
       const jpCurrentMonth = wiSessions.reduce((sum, s) => sum + Number(s.jp_count), 0);
 
       let apbd = 0;

@@ -26,7 +26,6 @@ export async function GET(request: Request) {
     const search = url.searchParams.get('search') || '';
     const pola = url.searchParams.get('pola') || '';
 
-    // Fetch all sessions, batches, mapels, and wis to perform the join in-memory
     const [sessions, batches, mapels, wis] = await Promise.all([
       JadwalSesi.find(),
       Pelatihan.find(),
@@ -38,17 +37,20 @@ export async function GET(request: Request) {
     const mapelMap = new Map(mapels.map(m => [m._id, m]));
     const wiMap = new Map(wis.map(w => [w._id, w]));
 
-    // Join details
+    // Join details (Multi-WI format supported!)
     const joinedSessions = sessions.map(s => {
       const batch = batchMap.get(s.batch_id);
       const mapel = mapelMap.get(s.mapel_id);
-      const wi = wiMap.get(s.wi_id);
+      
+      const resolvedWis = (s.wi_ids || []).map(id => wiMap.get(id)).filter(Boolean);
+      const wiNames = resolvedWis.map(w => `${w.name}, ${w.gelar}`).join(', ');
+      const wiEmails = resolvedWis.map(w => w.email).join(', ');
 
       return {
         id: s._id,
         batchId: s.batch_id,
         mapelId: s.mapel_id,
-        wiId: s.wi_id,
+        wiIds: s.wi_ids,
         date: s.date,
         startTime: s.start_time,
         endTime: s.end_time,
@@ -59,8 +61,8 @@ export async function GET(request: Request) {
         batchName: batch ? batch.name : 'Unknown Batch',
         pola: batch ? batch.pola : 'APBD',
         mapelName: mapel ? mapel.name : 'Unknown Subject',
-        wiName: wi ? wi.name : 'Unknown WI',
-        wiEmail: wi ? wi.email : ''
+        wiName: wiNames || 'Unknown WI',
+        wiEmail: wiEmails || ''
       };
     });
 
@@ -84,7 +86,6 @@ export async function GET(request: Request) {
       );
     }
 
-    // Sort by date DESC, start_time ASC
     filtered.sort((a, b) => {
       if (a.date !== b.date) return b.date.localeCompare(a.date);
       return a.startTime.localeCompare(b.startTime);
@@ -93,20 +94,17 @@ export async function GET(request: Request) {
     const totalCount = filtered.length;
     const paginatedSessions = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-    // Calculate format breakdown
     const formatBreakdown: Record<string, number> = {};
     filtered.forEach(s => {
       formatBreakdown[s.format] = (formatBreakdown[s.format] || 0) + s.jpCount;
     });
 
-    // Calculate pola breakdown
     const polaBreakdown: Record<string, number> = {};
     filtered.forEach(s => {
       polaBreakdown[s.pola] = (polaBreakdown[s.pola] || 0) + s.jpCount;
     });
 
-    // Get distinct WI names
-    const wiNames = Array.from(new Set(filtered.map(s => s.wiName))).map(name => ({ name }));
+    const wiNames = Array.from(new Set(filtered.flatMap(s => (s.wiName ? s.wiName.split(', ') : [])))).map(name => ({ name }));
 
     return Response.json({
       sessions: paginatedSessions,

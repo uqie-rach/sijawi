@@ -1,15 +1,13 @@
 "use client";
 
-import { useWTMS, Widyaiswara, Batch, Session, Mapel } from '@/context/wtms-context';
+import { useWTMS } from '@/context/wtms-context';
 
-// 1. useWidyaswaras(): Fetches Widyaiswara data with current calculations
 export function useWidyaswaras() {
   const { widyaswaras, sessions, batches, addWidyaswara } = useWTMS();
 
-  // Calculate current month JP for each Widyaiswara
   const widyaswarasWithCalculations = widyaswaras.map(wi => {
-    // Filter sessions for this Widyaiswara
-    const wiSessions = sessions.filter(s => s.wiId === wi.id);
+    // Filter sessions where this instructor is assigned in the wiIds array
+    const wiSessions = sessions.filter(s => s.wiIds && s.wiIds.includes(wi.id));
     
     // Calculate total JP
     const jpCurrentMonth = wiSessions.reduce((sum, s) => sum + s.jpCount, 0);
@@ -45,7 +43,6 @@ export function useWidyaswaras() {
   };
 }
 
-// 2. usePelatihan(): Manages Batch creations and data tracking
 export function usePelatihan() {
   const { batches, kategoriList, sessions, addBatch } = useWTMS();
 
@@ -68,7 +65,6 @@ export function usePelatihan() {
   };
 }
 
-// 3. useScheduling(batchId): Core engine for adding, deleting, and validating sessions
 export function useScheduling(batchId?: string) {
   const { 
     sessions, 
@@ -80,30 +76,31 @@ export function useScheduling(batchId?: string) {
     deleteSession 
   } = useWTMS();
 
-  // Filter sessions for this specific batch
   const batchSessions = batchId ? sessions.filter(s => s.batchId === batchId) : sessions;
 
   const sessionsWithDetails = batchSessions.map(session => {
     const mapel = mapelList.find(m => m.id === session.mapelId);
-    const wi = widyaswaras.find(w => w.id === session.wiId);
+    
+    // Unpack multiple Widyaiswara details
+    const resolvedWis = (session.wiIds || []).map(id => widyaswaras.find(w => w.id === id)).filter(Boolean);
+    const wiName = resolvedWis.map(w => `${w.name}, ${w.gelar}`).join(', ');
+
     const lokasi = lokasiList.find(l => l.id === session.lokasiId);
     const batch = batches.find(b => b.id === session.batchId);
 
     return {
       ...session,
       mapelName: mapel ? mapel.name : 'Unknown Subject',
-      wiName: wi ? `${wi.name}, ${wi.gelar}` : 'Unknown Widyaiswara',
+      wiName: wiName || 'Unknown Widyaiswara',
       lokasiName: lokasi ? lokasi.name : (session.format === 'Klasikal' ? 'Unknown Location' : session.format),
       batchName: batch ? batch.name : 'Unknown Batch'
     };
   });
 
-  // Calculate remaining JP for each Mapel in this batch
   const getMapelStatus = (targetBatchId: string) => {
     const batch = batches.find(b => b.id === targetBatchId);
     if (!batch) return [];
 
-    // Filter mapels belonging to this batch's category
     const relevantMapels = mapelList.filter(m => m.kategoriId === batch.kategoriId);
 
     return relevantMapels.map(mapel => {
@@ -128,11 +125,9 @@ export function useScheduling(batchId?: string) {
   };
 }
 
-// 4. useReports(month, year): Aggregates runtime calculations
 export function useReports(month?: number, year?: number) {
   const { sessions, widyaswaras, batches } = useWTMS();
 
-  // Filter sessions by month and year if provided
   const filteredSessions = sessions.filter(s => {
     if (!s.date) return false;
     const dateObj = new Date(s.date);
@@ -144,15 +139,12 @@ export function useReports(month?: number, year?: number) {
     return matchMonth && matchYear;
   });
 
-  // Aggregate total JP scheduled
   const totalJp = filteredSessions.reduce((sum, s) => sum + s.jpCount, 0);
 
-  // Aggregate by Format
   let klasikalJp = 0;
   let virtualJp = 0;
   let asinkronJp = 0;
 
-  // Aggregate by Pola
   let apbdJp = 0;
   let kontribusiJp = 0;
   let kemitraanJp = 0;
@@ -173,7 +165,9 @@ export function useReports(month?: number, year?: number) {
   // Top Widyaiswaras by JP
   const wiJpMap: Record<string, number> = {};
   filteredSessions.forEach(s => {
-    wiJpMap[s.wiId] = (wiJpMap[s.wiId] || 0) + s.jpCount;
+    (s.wiIds || []).forEach(wiId => {
+      wiJpMap[wiId] = (wiJpMap[wiId] || 0) + s.jpCount;
+    });
   });
 
   const topWidyaswaras = Object.entries(wiJpMap)

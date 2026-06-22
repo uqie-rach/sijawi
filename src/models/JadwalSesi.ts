@@ -4,7 +4,7 @@ export interface IJadwalSesi extends Document {
   id: string;
   batch_id: string; // pelatihan_id / batch_id
   mapel_id: string; // mata_pelatihan_id / mapel_id
-  wi_id: string; // widyaiswara_id / wi_id
+  wi_ids: string[]; // array of widyaiswara_ids
   date: string; // YYYY-MM-DD
   start_time: string; // waktu_mulai / start_time
   end_time: string; // waktu_selesai / end_time
@@ -20,7 +20,7 @@ const JadwalSesiSchema: Schema = new Schema(
     _id: { type: String, required: true }, // Keep string IDs to match existing seed/frontend
     batch_id: { type: String, required: true }, // pelatihan_id / batch_id
     mapel_id: { type: String, required: true }, // mata_pelatihan_id / mapel_id
-    wi_id: { type: String, required: true }, // widyaiswara_id / wi_id
+    wi_ids: { type: [String], required: true }, // array of widyaiswara_ids
     date: { type: String, required: true }, // YYYY-MM-DD
     start_time: { type: String, required: true }, // waktu_mulai / start_time
     end_time: { type: String, required: true }, // waktu_selesai / end_time

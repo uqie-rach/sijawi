@@ -48,31 +48,27 @@ export function SchedulingWorkspaceClient({
     deleteSession,
   } = useWTMS();
 
-  // Default to standard 'table' view mode for standard scheduling workflow
   const [viewMode, setViewMode] = useState<'calendar' | 'day' | 'table'>('table');
 
   const activeBatch = batchId ? (batches.find(b => b.id === batchId) || initialBatch) : null;
-  const batchStartDate = activeBatch ? new Date(activeBatch.startDate) : new Date(2026, 2, 1);
-  const [selectedDayDate, setSelectedDayDate] = useState<string>(activeBatch?.startDate || '2026-03-02');
+  const batchStartDate = activeBatch ? new Date(activeBatch.startDate) : new Date(2026, 0, 31);
+  const [selectedDayDate, setSelectedDayDate] = useState<string>(activeBatch?.startDate || '2026-01-31');
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date(batchStartDate.getFullYear(), batchStartDate.getMonth(), 1));
 
-  // Sync contextual active lists
   const activeMapels = mapelList.length ? mapelList : initialMapels;
   const activeWis = widyaswaras.length ? widyaswaras : initialWis;
   const activeLokasis = lokasiList.length ? lokasiList : initialLokasis;
   const activeSessions = sessions.length ? sessions : initialSessions;
 
-  // Filter sessions by selected batch
   const batchSessions = batchId 
     ? activeSessions.filter(s => s.batchId === batchId)
     : activeSessions;
 
-  // States for session Form
   const [sessionForm, setSessionForm] = useState({
     batchId: batchId || '',
     mapelId: '',
-    wiId: '',
-    date: activeBatch?.startDate || '2026-03-02',
+    wiIds: [] as string[], // array of selected WI IDs
+    date: activeBatch?.startDate || '2026-01-31',
     startTime: '08:00',
     endTime: '09:30',
     format: 'Klasikal' as 'Klasikal' | 'Virtual' | 'Asinkron',
@@ -84,7 +80,6 @@ export function SchedulingWorkspaceClient({
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Destructive Confirmation Guard States
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     title: string;
@@ -97,7 +92,6 @@ export function SchedulingWorkspaceClient({
     onConfirm: () => {}
   });
 
-  // Draft Restore logic
   useEffect(() => {
     if (typeof window !== 'undefined' && !editingSessionId) {
       const draft = localStorage.getItem('draft_sessionForm');
@@ -115,7 +109,6 @@ export function SchedulingWorkspaceClient({
     }
   };
 
-  // Automated End-Time Calculation: 1 JP = 45 Minutes
   useEffect(() => {
     if (sessionForm.startTime && sessionForm.jpCount) {
       const [h, m] = sessionForm.startTime.split(':').map(Number);
@@ -129,22 +122,18 @@ export function SchedulingWorkspaceClient({
     }
   }, [sessionForm.startTime, sessionForm.jpCount]);
 
-  // Selected Batch Context
   const currentBatchSelectionId = batchId || sessionForm.batchId;
   const currentBatchObj = batches.find(b => b.id === currentBatchSelectionId) || (currentBatchSelectionId === initialBatch?.id ? initialBatch : null);
   const currentCategory = currentBatchObj ? kategoriList.find(k => k.id === currentBatchObj.kategoriId) : null;
 
-  // Dynamic Filtering: Subjects belonging to selected batch's category
   const filteredMapels = currentBatchObj
     ? activeMapels.filter(m => m.kategoriId === currentBatchObj.kategoriId)
     : activeMapels;
 
-  // Dynamic Filtering: Widyaiswaras level_weight >= selected batch category minWeight
   const filteredWisList = currentCategory
     ? activeWis.filter(wi => wi.level >= currentCategory.minWeight)
     : activeWis;
 
-  // Mapel status tracking adjacent widget calculation
   const trackingMapelStatus = filteredMapels.map(mapel => {
     const scheduledSessions = activeSessions.filter(s => s.batchId === currentBatchSelectionId && s.mapelId === mapel.id);
     const scheduledJp = scheduledSessions.reduce((sum, s) => sum + Number(s.jpCount), 0);
@@ -169,39 +158,38 @@ export function SchedulingWorkspaceClient({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const targetBatchId = currentBatchSelectionId;
-    if (!targetBatchId || !sessionForm.mapelId || !sessionForm.wiId) return;
+    if (!targetBatchId || !sessionForm.mapelId || sessionForm.wiIds.length === 0) {
+      return;
+    }
 
     const performSave = () => {
+      // Loop through all selected WIs for database operations
+      // Wait, let's serialize them correctly or run validations for each.
+      // Since the server DB requires 'wiId' in the payload, but our rule says we change the model to 'wi_id: String' or 'wiIds'.
+      // Our Mongoose JadwalSesi schema was written to take 'wi_id: String' to map with single string for seed, but also we can save as wi_id. Let's make sure the client saves 'wiId: sessionForm.wiIds[0]' or maps them. Wait, since the user explicitly asked to change the model to contain 'widyaiswara_id' and we support multi-WI, let's pass 'wiIds: sessionForm.wiIds' to our API payload, and also fallback to `wiId: sessionForm.wiIds[0]` to keep backward compatible if needed!
+      
+      const payload = {
+        batchId: targetBatchId,
+        mapelId: sessionForm.mapelId,
+        wiIds: sessionForm.wiIds, // multi-select pengajar
+        wiId: sessionForm.wiIds[0], // fallback
+        date: sessionForm.date,
+        startTime: sessionForm.startTime,
+        endTime: sessionForm.endTime,
+        format: sessionForm.format,
+        lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
+        jpKe: sessionForm.jpKe,
+        jpCount: parseInt(sessionForm.jpCount)
+      };
+
       if (editingSessionId) {
-        const res = updateSession(editingSessionId, {
-          batchId: targetBatchId,
-          mapelId: sessionForm.mapelId,
-          wiId: sessionForm.wiId,
-          date: sessionForm.date,
-          startTime: sessionForm.startTime,
-          endTime: sessionForm.endTime,
-          format: sessionForm.format,
-          lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
-          jpKe: sessionForm.jpKe,
-          jpCount: parseInt(sessionForm.jpCount)
-        });
+        const res = updateSession(editingSessionId, payload as any);
         if (res.success) {
           setIsDialogOpen(false);
           setEditingSessionId(null);
         }
       } else {
-        const res = addSession({
-          batchId: targetBatchId,
-          mapelId: sessionForm.mapelId,
-          wiId: sessionForm.wiId,
-          date: sessionForm.date,
-          startTime: sessionForm.startTime,
-          endTime: sessionForm.endTime,
-          format: sessionForm.format,
-          lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
-          jpKe: sessionForm.jpKe,
-          jpCount: parseInt(sessionForm.jpCount)
-        });
+        const res = addSession(payload as any);
         if (res.success) {
           localStorage.removeItem('draft_sessionForm');
           setIsDialogOpen(false);
@@ -225,7 +213,7 @@ export function SchedulingWorkspaceClient({
     setSessionForm({
       batchId: session.batchId,
       mapelId: session.mapelId,
-      wiId: session.wiId,
+      wiIds: session.wiIds || [session.wiId].filter(Boolean),
       date: session.date,
       startTime: session.startTime,
       endTime: session.endTime,
@@ -237,7 +225,6 @@ export function SchedulingWorkspaceClient({
     setIsDialogOpen(true);
   };
 
-  // Helper to determine if a Lokasi has a time clash on the chosen date & hours
   const isLocationClashed = (lokId: string) => {
     if (sessionForm.format !== 'Klasikal' || !sessionForm.date || !sessionForm.startTime || !sessionForm.endTime) return false;
     return activeSessions.some(s => 
@@ -253,7 +240,6 @@ export function SchedulingWorkspaceClient({
     );
   };
 
-  // Build Options with disabling state rules
   const mapelOptions = filteredMapels.map(m => {
     const statusObj = trackingMapelStatus.find(status => status.id === m.id);
     const isExceeded = statusObj ? statusObj.isFullyScheduled : false;
@@ -263,11 +249,6 @@ export function SchedulingWorkspaceClient({
       disabled: isExceeded
     };
   });
-
-  const wiOptions = filteredWisList.map(wi => ({
-    value: wi.id,
-    label: `${wi.name}, ${wi.gelar} (Lvl ${wi.level} - ${wi.jabatan})`
-  }));
 
   const lokasiOptions = activeLokasis.map(l => {
     const clashed = isLocationClashed(l.id);
@@ -283,7 +264,6 @@ export function SchedulingWorkspaceClient({
     label: b.name
   }));
 
-  // Calendar render helpers
   const year = calendarMonth.getFullYear();
   const month = calendarMonth.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -417,8 +397,8 @@ export function SchedulingWorkspaceClient({
                 setSessionForm({
                   batchId: batchId || '',
                   mapelId: '',
-                  wiId: '',
-                  date: activeBatch?.startDate || '2026-03-02',
+                  wiIds: [],
+                  date: activeBatch?.startDate || '2026-01-31',
                   startTime: '08:00',
                   endTime: '09:30',
                   format: 'Klasikal',
@@ -448,15 +428,48 @@ export function SchedulingWorkspaceClient({
                     </div>
                   )}
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <Label>Mata Pelatihan (Mapel)</Label>
-                      <Combobox options={mapelOptions} value={sessionForm.mapelId} onValueChange={val => updateForm({ mapelId: val })} placeholder="Cari mata pelajaran..." />
+                  <div className="space-y-1">
+                    <Label>Mata Pelatihan (Mapel)</Label>
+                    <Combobox options={mapelOptions} value={sessionForm.mapelId} onValueChange={val => updateForm({ mapelId: val })} placeholder="Cari mata pelajaran..." />
+                  </div>
+
+                  {/* Multi-WI Search check badging element implemented! */}
+                  <div className="space-y-2 border border-slate-100 p-3.5 rounded-xl bg-slate-50/50">
+                    <Label className="text-xs font-bold text-blue-900 block mb-1">Daftar Pengajar (Multi-Select Widyaiswara)</Label>
+                    <div className="grid grid-cols-2 gap-2 max-h-[140px] overflow-y-auto">
+                      {filteredWisList.map(wi => {
+                        const isChecked = sessionForm.wiIds.includes(wi.id);
+                        return (
+                          <label key={wi.id} className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer hover:bg-slate-100 p-1.5 rounded transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                const newVal = isChecked
+                                  ? sessionForm.wiIds.filter(id => id !== wi.id)
+                                  : [...sessionForm.wiIds, wi.id];
+                                updateForm({ wiIds: newVal });
+                              }}
+                              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
+                            />
+                            <span className="truncate">{wi.name}, {wi.gelar}</span>
+                          </label>
+                        );
+                      })}
                     </div>
-                    <div className="space-y-1">
-                      <Label>Widyaiswara</Label>
-                      <Combobox options={wiOptions} value={sessionForm.wiId} onValueChange={val => updateForm({ wiId: val })} placeholder="Cari widyaiswara..." />
-                    </div>
+                    {sessionForm.wiIds.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1.5 border-t border-slate-200">
+                        {sessionForm.wiIds.map(val => {
+                          const opt = activeWis.find(o => o.id === val);
+                          if (!opt) return null;
+                          return (
+                            <Badge key={val} variant="secondary" className="bg-blue-50 text-blue-800 border-blue-100 hover:bg-blue-100 flex items-center gap-1 text-[10px] font-bold rounded-lg shadow-sm">
+                              <span>{opt.name}</span>
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
@@ -644,7 +657,11 @@ export function SchedulingWorkspaceClient({
                 <div className="space-y-4">
                   {batchSessions.filter(s => s.date === selectedDayDate).map(session => {
                     const mapel = activeMapels.find(m => m.id === session.mapelId);
-                    const wi = activeWis.find(w => w.id === session.wiId);
+                    
+                    // Unpack multi-WI names
+                    const resolvedWis = (session.wiIds || []).map(id => activeWis.find(w => w.id === id)).filter(Boolean);
+                    const wiNames = resolvedWis.map(w => `${w.name}, ${w.gelar}`).join(', ');
+
                     const lok = activeLokasis.find(l => l.id === session.lokasiId);
 
                     return (
@@ -665,9 +682,9 @@ export function SchedulingWorkspaceClient({
                           </div>
                           <h4 className="text-sm font-bold text-slate-900">{mapel?.name}</h4>
                           <div className="flex items-center gap-4 text-xs text-slate-500">
-                            <span className="flex items-center gap-1">
-                              <UserCheck className="h-3.5 w-3.5 text-slate-400" />
-                              Widyaiswara: <strong>{wi ? `${wi.name}, ${wi.gelar}` : 'Tidak Diketahui'}</strong>
+                            <span className="flex items-start gap-1">
+                              <UserCheck className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
+                              <span>Widyaiswara: <strong>{wiName || 'Tidak Diketahui'}</strong></span>
                             </span>
                             <span className="flex items-center gap-1">
                               <MapPin className="h-3.5 w-3.5 text-slate-400" />
@@ -727,14 +744,20 @@ export function SchedulingWorkspaceClient({
                   <TableBody>
                     {batchSessions.map(session => {
                       const mapel = activeMapels.find(m => m.id === session.mapelId);
-                      const wi = activeWis.find(w => w.id === session.wiId);
+                      
+                      // Unpack multiple Widyaiswaras with titles
+                      const resolvedWis = (session.wiIds || []).map(id => activeWis.find(w => w.id === id)).filter(Boolean);
+                      const wiNames = resolvedWis.map(w => `${w.name}, ${w.gelar}`).join(', ');
+
                       const lok = activeLokasis.find(l => l.id === session.lokasiId);
 
                       return (
                         <TableRow key={session.id} className="hover:bg-slate-50/30 transition-colors">
                           <TableCell className="pl-6 font-semibold text-slate-900 text-xs">{session.date}</TableCell>
                           <TableCell className="font-semibold text-slate-900 text-xs">{mapel?.name}</TableCell>
-                          <TableCell className="text-xs text-slate-600 font-medium">{wi ? `${wi.name}, ${wi.gelar}` : 'Tidak Diketahui'}</TableCell>
+                          <TableCell className="text-xs text-slate-600 font-medium max-w-[200px] truncate" title={wiNames}>
+                            {wiName}
+                          </TableCell>
                           <TableCell>
                             <div className="space-y-1">
                               <Badge className={`text-[9px] font-bold ${

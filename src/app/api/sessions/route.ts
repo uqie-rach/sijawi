@@ -24,7 +24,7 @@ export async function GET() {
       id: r._id,
       batchId: r.batch_id,
       mapelId: r.mapel_id,
-      wiId: r.wi_id,
+      wiIds: r.wi_ids || [], // array of strings
       date: r.date,
       startTime: r.start_time,
       endTime: r.end_time,
@@ -46,13 +46,13 @@ export async function POST(request: Request) {
   try {
     await connectToDatabase();
     const body = await request.json();
-    const { id, batchId, mapelId, wiId, date, startTime, endTime, format, lokasiId, jpKe, jpCount } = body;
+    const { id, batchId, mapelId, wiIds, date, startTime, endTime, format, lokasiId, jpKe, jpCount } = body;
     
     const newSession = new JadwalSesi({
       _id: id,
       batch_id: batchId,
       mapel_id: mapelId,
-      wi_id: wiId,
+      wi_ids: wiIds || [],
       date,
       start_time: startTime,
       end_time: endTime,
@@ -76,12 +76,12 @@ export async function PUT(request: Request) {
   try {
     await connectToDatabase();
     const body = await request.json();
-    const { id, batchId, mapelId, wiId, date, startTime, endTime, format, lokasiId, jpKe, jpCount } = body;
+    const { id, batchId, mapelId, wiIds, date, startTime, endTime, format, lokasiId, jpKe, jpCount } = body;
     
     await JadwalSesi.findByIdAndUpdate(id, {
       batch_id: batchId,
       mapel_id: mapelId,
-      wi_id: wiId,
+      wi_ids: wiIds || [],
       date,
       start_time: startTime,
       end_time: endTime,

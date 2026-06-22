@@ -21,7 +21,13 @@ async function getWidyaswaraReportsData(filters: {
 
     return wis.map((wi) => {
       const wiSessions = sessions.filter((s) => {
-        if (s.wi_id !== wi._id) return false;
+        // Safe check: s.wi_id (old) OR s.wi_ids array (new)
+        const hasMatch = (s.wi_id === wi._id) || (s.wi_ids && s.wi_ids.includes(wi._id)) || (s.wi_id === undefined && s.wi_id === wi._id);
+        
+        // Let's check both for safety
+        const isWiAssigned = (s.wi_id === wi._id) || (s.wi_ids && Array.isArray(s.wi_ids) && s.wi_ids.includes(wi._id)) || (s.wi_id === wi._id);
+        
+        if (!isWiAssigned) return false;
         if (filters.start && s.date < filters.start) return false;
         if (filters.end && s.date > filters.end) return false;
         

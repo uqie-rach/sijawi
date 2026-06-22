@@ -12,10 +12,10 @@ export interface Widyaiswara {
   jabatan: 'WI Ahli Pertama' | 'WI Ahli Muda' | 'WI Ahli Madya' | 'WI Ahli Utama';
   level: number; // 1 to 5
   levelLabel: string; // PPPK, Latsar, PKP, PKA, PKN
-  jpLastMonth: number; // Static historical data
+  jpLastMonth: number;
 }
 
-export interface Kategori {
+export interface KategoriPelatihan {
   id: string;
   name: string;
   minWeight: number;
@@ -46,7 +46,7 @@ export interface Session {
   id: string;
   batchId: string;
   mapelId: string;
-  wiId: string;
+  wiIds: string[]; // Support multi-WI!
   date: string; // YYYY-MM-DD
   startTime: string; // HH:MM
   endTime: string; // HH:MM
@@ -58,7 +58,7 @@ export interface Session {
 
 interface WTMSContextType {
   widyaswaras: Widyaiswara[];
-  kategoriList: Kategori[];
+  kategoriList: KategoriPelatihan[];
   mapelList: Mapel[];
   lokasiList: Lokasi[];
   batches: Batch[];
@@ -78,8 +78,8 @@ interface WTMSContextType {
   deleteWidyaswara: (id: string) => void;
   
   // Kategori CRUD
-  addKategori: (kat: Omit<Kategori, 'id'>) => void;
-  updateKategori: (id: string, kat: Omit<Kategori, 'id'>) => void;
+  addKategori: (kat: Omit<KategoriPelatihan, 'id'>) => void;
+  updateKategori: (id: string, kat: Omit<KategoriPelatihan, 'id'>) => void;
   deleteKategori: (id: string) => void;
   
   // Mapel CRUD
@@ -105,7 +105,6 @@ interface WTMSContextType {
 
 const WTMSContext = createContext<WTMSContextType | undefined>(undefined);
 
-// Helper to parse JP range
 function parseJpRange(jpKe: string): number[] {
   const clean = jpKe.replace(/\s+/g, '');
   const parts = clean.split('-');
@@ -120,7 +119,6 @@ function parseJpRange(jpKe: string): number[] {
   return [];
 }
 
-// Helper to check if two JP ranges overlap
 function isJpOverlapping(range1: number[], range2: number[]): boolean {
   if (range1.length !== 2 || range2.length !== 2) return false;
   return Math.max(range1[0], range2[0]) <= Math.min(range1[1], range2[1]);
@@ -128,7 +126,7 @@ function isJpOverlapping(range1: number[], range2: number[]): boolean {
 
 export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [widyaswaras, setWidyaswaras] = useState<Widyaiswara[]>([]);
-  const [kategoriList, setKategoriList] = useState<Kategori[]>([]);
+  const [kategoriList, setKategoriList] = useState<KategoriPelatihan[]>([]);
   const [mapelList, setMapelList] = useState<Mapel[]>([]);
   const [lokasiList, setLokasiList] = useState<Lokasi[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -211,33 +209,27 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
 
-    const newWi: Widyaiswara = {
+    const newWi = {
       ...wi,
       id: `wi-${Date.now()}`,
-      jpLastMonth: Math.floor(Math.random() * 20) + 10
+      jpLastMonth: 0
     };
     
     setWidyaswaras(prev => [...prev, newWi]);
-    
+
     fetch('/api/widyaswara', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newWi)
     }).catch(err => console.error(err));
 
-    toast.success(`Widyaiswara ${wi.name} successfully added!`);
+    toast.success("Widyaiswara successfully added!");
     return true;
   };
 
   const updateWidyaswara = (id: string, wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>): boolean => {
-    const nipExists = widyaswaras.some(w => w.nip === wi.nip && w.id !== id);
-    if (nipExists) {
-      toast.error(`Validation Error: Widyaiswara with NIP ${wi.nip} already exists!`);
-      return false;
-    }
-
-    const updatedWi = { ...wi, id };
-    setWidyaswaras(prev => prev.map(w => w.id === id ? { ...w, ...wi } : w));
+    const updatedWi = { ...wi, id, jpLastMonth: 0 };
+    setWidyaswaras(prev => prev.map(w => w.id === id ? updatedWi : w));
 
     fetch('/api/widyaswara', {
       method: 'PUT',
@@ -245,225 +237,145 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       body: JSON.stringify(updatedWi)
     }).catch(err => console.error(err));
 
-    toast.success(`Widyaiswara ${wi.name} successfully updated!`);
+    toast.success("Widyaiswara successfully updated!");
     return true;
   };
 
   const deleteWidyaswara = (id: string) => {
     setWidyaswaras(prev => prev.filter(w => w.id !== id));
-
-    fetch(`/api/widyaswara?id=${id}`, {
-      method: 'DELETE'
-    }).catch(err => console.error(err));
-
-    toast.success("Widyaiswara successfully deleted.");
+    fetch(`/api/widyaswara?id=${id}`, { method: 'DELETE' }).catch(err => console.error(err));
+    toast.success("Widyaiswara successfully removed.");
   };
 
   // Kategori CRUD
-  const addKategori = (kat: Omit<Kategori, 'id'>) => {
-    const newKat: Kategori = {
-      ...kat,
-      id: `kat-${Date.now()}`
-    };
+  const addKategori = (kat: Omit<KategoriPelatihan, 'id'>) => {
+    const newKat = { ...kat, id: `kat-${Date.now()}` };
     setKategoriList(prev => [...prev, newKat]);
-
-    fetch('/api/kategori-pelatihan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newKat)
-    }).catch(err => console.error(err));
-
-    toast.success(`Category ${kat.name} successfully added!`);
+    fetch('/api/kategori-pelatihan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newKat) }).catch(err => console.error(err));
   };
 
-  const updateKategori = (id: string, kat: Omit<Kategori, 'id'>) => {
+  const updateKategori = (id: string, kat: Omit<KategoriPelatihan, 'id'>) => {
     const updatedKat = { ...kat, id };
-    setKategoriList(prev => prev.map(k => k.id === id ? { ...k, ...kat } : k));
-
-    fetch('/api/kategori-pelatihan', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedKat)
-    }).catch(err => console.error(err));
-
-    toast.success(`Category ${kat.name} successfully updated!`);
+    setKategoriList(prev => prev.map(k => k.id === id ? updatedKat : k));
+    fetch('/api/kategori-pelatihan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedKat) }).catch(err => console.error(err));
   };
 
   const deleteKategori = (id: string) => {
     setKategoriList(prev => prev.filter(k => k.id !== id));
-
-    fetch(`/api/kategori-pelatihan?id=${id}`, {
-      method: 'DELETE'
-    }).catch(err => console.error(err));
-
-    toast.success("Category successfully deleted.");
+    fetch(`/api/kategori-pelatihan?id=${id}`, { method: 'DELETE' }).catch(err => console.error(err));
   };
 
   // Mapel CRUD
   const addMapel = (mapel: Omit<Mapel, 'id'>) => {
-    const newMapel: Mapel = {
-      ...mapel,
-      id: `mapel-${Date.now()}`
-    };
+    const newMapel = { ...mapel, id: `mapel-${Date.now()}` };
     setMapelList(prev => [...prev, newMapel]);
-
-    fetch('/api/mata-pelatihan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newMapel)
-    }).catch(err => console.error(err));
-
-    toast.success(`Subject ${mapel.name} successfully added!`);
+    fetch('/api/mata-pelatihan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newMapel) }).catch(err => console.error(err));
   };
 
   const updateMapel = (id: string, mapel: Omit<Mapel, 'id'>) => {
     const updatedMapel = { ...mapel, id };
-    setMapelList(prev => prev.map(m => m.id === id ? { ...m, ...mapel } : m));
-
-    fetch('/api/mata-pelatihan', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedMapel)
-    }).catch(err => console.error(err));
-
-    toast.success(`Subject ${mapel.name} successfully updated!`);
+    setMapelList(prev => prev.map(m => m.id === id ? updatedMapel : m));
+    fetch('/api/mata-pelatihan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedMapel) }).catch(err => console.error(err));
   };
 
   const deleteMapel = (id: string) => {
     setMapelList(prev => prev.filter(m => m.id !== id));
-
-    fetch(`/api/mata-pelatihan?id=${id}`, {
-      method: 'DELETE'
-    }).catch(err => console.error(err));
-
-    toast.success("Subject successfully deleted.");
+    fetch(`/api/mata-pelatihan?id=${id}`, { method: 'DELETE' }).catch(err => console.error(err));
   };
 
   // Lokasi CRUD
   const addLokasi = (lok: Omit<Lokasi, 'id'>) => {
-    const newLok: Lokasi = {
-      ...lok,
-      id: `lok-${Date.now()}`
-    };
+    const newLok = { ...lok, id: `lok-${Date.now()}` };
     setLokasiList(prev => [...prev, newLok]);
-
-    fetch('/api/lokasi', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newLok)
-    }).catch(err => console.error(err));
-
-    toast.success(`Location ${lok.name} successfully added!`);
+    fetch('/api/lokasi', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newLok) }).catch(err => console.error(err));
   };
 
   const updateLokasi = (id: string, lok: Omit<Lokasi, 'id'>) => {
     const updatedLok = { ...lok, id };
-    setLokasiList(prev => prev.map(l => l.id === id ? { ...l, ...lok } : l));
-
-    fetch('/api/lokasi', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedLok)
-    }).catch(err => console.error(err));
-
-    toast.success(`Location ${lok.name} successfully updated!`);
+    setLokasiList(prev => prev.map(l => l.id === id ? updatedLok : l));
+    fetch('/api/lokasi', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedLok) }).catch(err => console.error(err));
   };
 
   const deleteLokasi = (id: string) => {
     setLokasiList(prev => prev.filter(l => l.id !== id));
-
-    fetch(`/api/lokasi?id=${id}`, {
-      method: 'DELETE'
-    }).catch(err => console.error(err));
-
-    toast.success("Location successfully deleted.");
+    fetch(`/api/lokasi?id=${id}`, { method: 'DELETE' }).catch(err => console.error(err));
   };
 
   // Batch CRUD
   const addBatch = (batch: Omit<Batch, 'id'>) => {
-    const newBatch: Batch = {
-      ...batch,
-      id: `batch-${Date.now()}`
-    };
+    const newBatch = { ...batch, id: `batch-${Date.now()}` };
     setBatches(prev => [...prev, newBatch]);
-
-    fetch('/api/batches', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newBatch)
-    }).catch(err => console.error(err));
-
-    toast.success(`Batch ${batch.name} successfully created!`);
+    fetch('/api/batches', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newBatch) }).catch(err => console.error(err));
   };
 
   const updateBatch = (id: string, batch: Omit<Batch, 'id'>) => {
     const updatedBatch = { ...batch, id };
-    setBatches(prev => prev.map(b => b.id === id ? { ...b, ...batch } : b));
-
-    fetch('/api/batches', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedBatch)
-    }).catch(err => console.error(err));
-
-    toast.success(`Batch ${batch.name} successfully updated!`);
+    setBatches(prev => prev.map(b => b.id === id ? updatedBatch : b));
+    fetch('/api/batches', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedBatch) }).catch(err => console.error(err));
   };
 
   const deleteBatch = (id: string) => {
     setBatches(prev => prev.filter(b => b.id !== id));
-
-    fetch(`/api/batches?id=${id}`, {
-      method: 'DELETE'
-    }).catch(err => console.error(err));
-
-    toast.success("Batch successfully deleted.");
+    fetch(`/api/batches?id=${id}`, { method: 'DELETE' }).catch(err => console.error(err));
   };
 
-  // Session CRUD
+  // Session CRUD (Refactored for Multi-WI Assignment & Verification loop)
   const addSession = (sessionData: Omit<Session, 'id'>) => {
-    const wi = widyaswaras.find(w => w.id === sessionData.wiId);
     const batch = batches.find(b => b.id === sessionData.batchId);
     const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
 
-    if (!wi || !batch || !category) {
+    if (!batch || !category) {
       return { success: false, error: "Invalid selection parameters." };
     }
 
-    if (wi.level < category.minWeight) {
-      const errorMsg = `Hierarchy Restriction: ${wi.name} (Level ${wi.level}) does not have sufficient competency level for ${category.name} (Requires Level ${category.minWeight}).`;
+    if (!sessionData.wiIds || sessionData.wiIds.length === 0) {
+      const errorMsg = "Pilih setidaknya satu Widyaiswara pengajar untuk sesi ini.";
       toast.error(errorMsg);
       return { success: false, error: errorMsg };
     }
 
+    // 1. Hierarchy validation check for each selected instructor
+    const wis = widyaswaras.filter(w => sessionData.wiIds.includes(w.id));
+    for (const wi of wis) {
+      if (wi.level < category.minWeight) {
+        const errorMsg = `Hierarki Kompetensi Terbatas: ${wi.name} (Level ${wi.level}) tidak memiliki level kompetensi yang cukup untuk kategori ${category.name} (Memerlukan minimal Level ${category.minWeight}).`;
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+    }
+
+    // 2. Operational Hours check (08:00 - 17:00 for Klasikal)
     if (sessionData.format === 'Klasikal') {
       const startHour = parseInt(sessionData.startTime.split(':')[0]);
       const endHour = parseInt(sessionData.endTime.split(':')[0]);
       const endMin = parseInt(sessionData.endTime.split(':')[1]);
       
       if (startHour < 8 || endHour > 17 || (endHour === 17 && endMin > 0)) {
-        const errorMsg = "Operational Hours Restriction: Klasikal sessions must be scheduled between 08:00 and 17:00.";
+        const errorMsg = "Jam Operasional Terbatas: Format Klasikal hanya dapat dijadwalkan antara pukul 08:00 dan 17:00.";
         toast.error(errorMsg);
         return { success: false, error: errorMsg };
       }
 
       if (!sessionData.lokasiId) {
-        const errorMsg = "Location is required for Klasikal format.";
+        const errorMsg = "Lokasi kelas wajib dipilih untuk format Klasikal.";
         toast.error(errorMsg);
         return { success: false, error: errorMsg };
       }
     }
 
+    // 3. Subject JP maximum allocation check
     const existingMapelSessions = sessions.filter(s => s.batchId === sessionData.batchId && s.mapelId === sessionData.mapelId);
     const currentJpSum = existingMapelSessions.reduce((sum, s) => sum + s.jpCount, 0);
     const mapel = mapelList.find(m => m.id === sessionData.mapelId);
     const maxJp = mapel ? mapel.jpTotal : 6;
 
     if (currentJpSum + sessionData.jpCount > maxJp) {
-      const errorMsg = `Mapel Constraint: Total JP for ${mapel?.name || 'this subject'} cannot exceed ${maxJp} JP. Currently scheduled: ${currentJpSum} JP. Attempted to add: ${sessionData.jpCount} JP.`;
+      const errorMsg = `Maksimum JP Terlampaui: Total JP untuk ${mapel?.name || 'mata pelajaran ini'} tidak boleh melebihi ${maxJp} JP. Alokasi saat ini: ${currentJpSum} JP. Sesi baru: ${sessionData.jpCount} JP.`;
       toast.error(errorMsg);
       return { success: false, error: errorMsg };
     }
 
+    // 4. Overlapping JP Slot check
     const newJpRange = parseJpRange(sessionData.jpKe);
     if (newJpRange.length === 2) {
       const jpCollision = sessions.find(s => 
@@ -473,14 +385,15 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
 
       if (jpCollision) {
-        const errorMsg = `❌ Slot JP tersebut sudah terisi pada tanggal ini! (Collision with existing JP ${jpCollision.jpKe})`;
+        const errorMsg = `Bentrok JP: Slot JP ke-${sessionData.jpKe} sudah terisi untuk angkatan ini pada tanggal terpilih!`;
         toast.error(errorMsg);
         return { success: false, error: errorMsg };
       }
     }
 
+    // 5. Collision checks: Loops over ALL assigned Widyaiswara IDs to detect overlaps
     const wiCollision = sessions.find(s => 
-      s.wiId === sessionData.wiId && 
+      s.wiIds.some(id => sessionData.wiIds.includes(id)) && 
       s.date === sessionData.date && 
       (
         (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
@@ -491,11 +404,17 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (wiCollision) {
       const collidingBatch = batches.find(b => b.id === wiCollision.batchId);
-      const errorMsg = `Widyaiswara Collision: ${wi.name} is already scheduled to teach in batch "${collidingBatch?.name || 'Another Batch'}" from ${wiCollision.startTime} to ${wiCollision.endTime} on this day.`;
+      const clashedWiNames = wis
+        .filter(w => wiCollision.wiIds.includes(w.id))
+        .map(w => w.name)
+        .join(', ');
+      
+      const errorMsg = `Bentrok Jadwal Pengajar: Instruktur (${clashedWiNames}) sudah teralokasikan untuk mengajar di angkatan "${collidingBatch?.name || 'Angkatan Lain'}" pada pukul ${wiCollision.startTime} - ${wiCollision.endTime} di hari yang sama.`;
       toast.error(errorMsg);
       return { success: false, error: errorMsg };
     }
 
+    // 6. Classroom venue clash check
     if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
       const locationClash = sessions.find(s => 
         s.format === 'Klasikal' &&
@@ -510,8 +429,8 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (locationClash) {
         const collidingBatch = batches.find(b => b.id === locationClash.batchId);
-        const locName = lokasiList.find(l => l.id === sessionData.lokasiId)?.name || 'this location';
-        const errorMsg = `Location Clash: ${locName} is already booked for batch "${collidingBatch?.name || 'Another Batch'}" from ${locationClash.startTime} to ${locationClash.endTime} on this day.`;
+        const locName = lokasiList.find(l => l.id === sessionData.lokasiId)?.name || 'ruangan ini';
+        const errorMsg = `Bentrok Penggunaan Ruangan: ${locName} sedang digunakan oleh angkatan "${collidingBatch?.name || 'Angkatan Lain'}" dari pukul ${locationClash.startTime} s/d ${locationClash.endTime}.`;
         toast.error(errorMsg);
         return { success: false, error: errorMsg };
       }
@@ -529,54 +448,66 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       body: JSON.stringify(newSession)
     }).catch(err => console.error(err));
 
-    toast.success("Session successfully scheduled!");
+    toast.success("Sesi pelatihan berhasil dialokasikan!");
     return { success: true };
   };
 
   const updateSession = (id: string, sessionData: Omit<Session, 'id'>) => {
-    const wi = widyaswaras.find(w => w.id === sessionData.wiId);
     const batch = batches.find(b => b.id === sessionData.batchId);
     const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
 
-    if (!wi || !batch || !category) {
+    if (!batch || !category) {
       return { success: false, error: "Invalid selection parameters." };
     }
 
-    if (wi.level < category.minWeight) {
-      const errorMsg = `Hierarchy Restriction: ${wi.name} (Level ${wi.level}) does not have sufficient competency level for ${category.name} (Requires Level ${category.minWeight}).`;
+    if (!sessionData.wiIds || sessionData.wiIds.length === 0) {
+      const errorMsg = "Pilih setidaknya satu Widyaiswara pengajar untuk sesi ini.";
       toast.error(errorMsg);
       return { success: false, error: errorMsg };
     }
 
+    // 1. Hierarchy check
+    const wis = widyaswaras.filter(w => sessionData.wiIds.includes(w.id));
+    for (const wi of wis) {
+      if (wi.level < category.minWeight) {
+        const errorMsg = `Hierarki Kompetensi Terbatas: ${wi.name} (Level ${wi.level}) tidak memiliki level kompetensi yang cukup untuk kategori ${category.name} (Memerlukan minimal Level ${category.minWeight}).`;
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+    }
+
+    // 2. Operational Hours check
     if (sessionData.format === 'Klasikal') {
       const startHour = parseInt(sessionData.startTime.split(':')[0]);
       const endHour = parseInt(sessionData.endTime.split(':')[0]);
       const endMin = parseInt(sessionData.endTime.split(':')[1]);
       
       if (startHour < 8 || endHour > 17 || (endHour === 17 && endMin > 0)) {
-        const errorMsg = "Operational Hours Restriction: Klasikal sessions must be scheduled between 08:00 and 17:00.";
+        const errorMsg = "Jam Operasional Terbatas: Format Klasikal hanya dapat dijadwalkan antara pukul 08:00 dan 17:00.";
         toast.error(errorMsg);
         return { success: false, error: errorMsg };
       }
 
       if (!sessionData.lokasiId) {
-        const errorMsg = "Location is required for Klasikal format.";
+        const errorMsg = "Lokasi kelas wajib dipilih untuk format Klasikal.";
         toast.error(errorMsg);
         return { success: false, error: errorMsg };
       }
     }
 
+    // 3. Max JP Check
     const existingMapelSessions = sessions.filter(s => s.id !== id && s.batchId === sessionData.batchId && s.mapelId === sessionData.mapelId);
     const currentJpSum = existingMapelSessions.reduce((sum, s) => sum + s.jpCount, 0);
     const mapel = mapelList.find(m => m.id === sessionData.mapelId);
     const maxJp = mapel ? mapel.jpTotal : 6;
 
     if (currentJpSum + sessionData.jpCount > maxJp) {
-      const errorMsg = `Mapel Constraint: Total JP for ${mapel?.name || 'this subject'} cannot exceed ${maxJp} JP. Currently scheduled: ${currentJpSum} JP. Attempted to add: ${sessionData.jpCount} JP.`;
+      const errorMsg = `Maksimum JP Terlampaui: Total JP untuk ${mapel?.name || 'mata pelajaran ini'} tidak boleh melebihi ${maxJp} JP. Alokasi saat ini: ${currentJpSum} JP. Sesi baru: ${sessionData.jpCount} JP.`;
       toast.error(errorMsg);
       return { success: false, error: errorMsg };
     }
 
+    // 4. Overlapping JP range check
     const newJpRange = parseJpRange(sessionData.jpKe);
     if (newJpRange.length === 2) {
       const jpCollision = sessions.find(s => 
@@ -587,15 +518,16 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
 
       if (jpCollision) {
-        const errorMsg = `❌ Slot JP tersebut sudah terisi pada tanggal ini! (Collision with existing JP ${jpCollision.jpKe})`;
+        const errorMsg = `Bentrok JP: Slot JP ke-${sessionData.jpKe} sudah terisi untuk angkatan ini pada tanggal terpilih!`;
         toast.error(errorMsg);
         return { success: false, error: errorMsg };
       }
     }
 
+    // 5. Collision checks: Loops over ALL assigned Widyaiswara IDs to detect overlaps
     const wiCollision = sessions.find(s => 
       s.id !== id &&
-      s.wiId === sessionData.wiId && 
+      s.wiIds.some(id => sessionData.wiIds.includes(id)) && 
       s.date === sessionData.date && 
       (
         (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
@@ -606,11 +538,17 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (wiCollision) {
       const collidingBatch = batches.find(b => b.id === wiCollision.batchId);
-      const errorMsg = `Widyaiswara Collision: ${wi.name} is already scheduled to teach in batch "${collidingBatch?.name || 'Another Batch'}" from ${wiCollision.startTime} to ${wiCollision.endTime} on this day.`;
+      const clashedWiNames = wis
+        .filter(w => wiCollision.wiIds.includes(w.id))
+        .map(w => w.name)
+        .join(', ');
+      
+      const errorMsg = `Bentrok Jadwal Pengajar: Instruktur (${clashedWiNames}) sudah teralokasikan untuk mengajar di angkatan "${collidingBatch?.name || 'Angkatan Lain'}" pada pukul ${wiCollision.startTime} - ${wiCollision.endTime} di hari yang sama.`;
       toast.error(errorMsg);
       return { success: false, error: errorMsg };
     }
 
+    // 6. Classroom venue clash check
     if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
       const locationClash = sessions.find(s => 
         s.id !== id &&
@@ -626,15 +564,15 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (locationClash) {
         const collidingBatch = batches.find(b => b.id === locationClash.batchId);
-        const locName = lokasiList.find(l => l.id === sessionData.lokasiId)?.name || 'this location';
-        const errorMsg = `Location Clash: ${locName} is already booked for batch "${collidingBatch?.name || 'Another Batch'}" from ${locationClash.startTime} to ${locationClash.endTime} on this day.`;
+        const locName = lokasiList.find(l => l.id === sessionData.lokasiId)?.name || 'ruangan ini';
+        const errorMsg = `Bentrok Penggunaan Ruangan: ${locName} sedang digunakan oleh angkatan "${collidingBatch?.name || 'Angkatan Lain'}" dari pukul ${locationClash.startTime} s/d ${locationClash.endTime}.`;
         toast.error(errorMsg);
         return { success: false, error: errorMsg };
       }
     }
 
     const updatedSession = { ...sessionData, id };
-    setSessions(prev => prev.map(s => s.id === id ? { ...s, ...sessionData } : s));
+    setSessions(prev => prev.map(s => s.id === id ? updatedSession : s));
 
     fetch('/api/sessions', {
       method: 'PUT',
@@ -642,18 +580,14 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       body: JSON.stringify(updatedSession)
     }).catch(err => console.error(err));
 
-    toast.success("Session successfully updated!");
+    toast.success("Sesi pelatihan berhasil diperbarui!");
     return { success: true };
   };
 
   const deleteSession = (sessionId: string) => {
     setSessions(prev => prev.filter(s => s.id !== sessionId));
-
-    fetch(`/api/sessions?id=${sessionId}`, {
-      method: 'DELETE'
-    }).catch(err => console.error(err));
-
-    toast.success("Session successfully removed.");
+    fetch(`/api/sessions?id=${sessionId}`, { method: 'DELETE' }).catch(err => console.error(err));
+    toast.success("Sesi pelatihan berhasil dihapus.");
   };
 
   return (

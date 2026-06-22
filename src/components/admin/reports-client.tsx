@@ -12,6 +12,7 @@ import { Search, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { Badge } from '../ui/badge';
 
 interface ReportsClientProps {
   initialWis: any[];
@@ -377,8 +378,8 @@ export function ReportsClient({ initialWis }: ReportsClientProps) {
             <Label className="text-xs font-bold text-slate-500 uppercase">Cari Widyaiswara</Label>
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-              <Input 
-                placeholder="Cari nama atau NIP..." 
+              <Input
+                placeholder="Cari nama atau NIP..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10 bg-slate-50 border-slate-200 text-slate-800 focus:ring-blue-500 focus:border-blue-500 rounded-xl"

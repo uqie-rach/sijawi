@@ -25,23 +25,28 @@ export const getUsers = async (): Promise<IUser[]> => {
 export const getEvents = async (): Promise<IEvent[]> => {
   try {
     await connectToDatabase();
-    const [sessionsRows, batches, mapels, lokasis] = await Promise.all([
+    const [sessionsRows, batches, mapels, lokasis, wis] = await Promise.all([
       JadwalSesi.find(),
       Pelatihan.find(),
       MataPelatihan.find(),
-      Lokasi.find()
+      Lokasi.find(),
+      Widyaiswara.find()
     ]);
 
     const batchMap = new Map(batches.map(b => [b._id, b]));
     const mapelMap = new Map(mapels.map(m => [m._id, m]));
     const lokasiMap = new Map(lokasis.map(l => [l._id, l]));
+    const wiMap = new Map(wis.map(w => [w._id, w]));
 
     return sessionsRows.map(s => {
       const batch = batchMap.get(s.batch_id);
       const mapel = mapelMap.get(s.mapel_id);
       const lok = lokasiMap.get(s.lokasi_id || '');
 
-      // Map format to calendar colors
+      // Resolve multiple instructor names
+      const resolvedWis = (s.wi_ids || []).map(id => wiMap.get(id)).filter(Boolean);
+      const wiNames = resolvedWis.map(w => `${w.name}, ${w.gelar}`).join(', ');
+
       let color: TEventColor = 'blue';
       if (s.format === 'Virtual') {
         color = 'purple';
@@ -49,7 +54,6 @@ export const getEvents = async (): Promise<IEvent[]> => {
         color = 'orange';
       }
 
-      // Format dates to ISO strings
       const startDate = new Date(`${s.date}T${s.start_time}`).toISOString();
       const endDate = new Date(`${s.date}T${s.end_time}`).toISOString();
 
@@ -59,10 +63,10 @@ export const getEvents = async (): Promise<IEvent[]> => {
         endDate,
         title: `${mapel ? mapel.name : 'Subject'} (${batch ? batch.name : 'Batch'})`,
         color,
-        description: `Format: ${s.format} | JP Ke: ${s.jp_ke} (${s.jp_count} JP) | Venue: ${lok ? lok.name : 'N/A'}`,
+        description: `Format: ${s.format} | Pengajar: ${wiNames || 'N/A'} | JP Ke: ${s.jp_ke} (${s.jp_count} JP) | Venue: ${lok ? lok.name : 'N/A'}`,
         user: {
-          id: s.wi_id,
-          name: 'Widyaiswara',
+          id: s.wi_ids && s.wi_ids.length > 0 ? s.wi_ids[0] : 'wi-1',
+          name: wiNames || 'Widyaiswara',
           picturePath: null
         }
       };
