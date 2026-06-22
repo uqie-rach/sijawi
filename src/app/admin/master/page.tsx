@@ -36,8 +36,8 @@ export default async function MasterPage() {
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <h2 className="text-xl font-bold text-blue-900">Master Data Control Panel</h2>
-        <p className="text-sm text-slate-500">Manage instructors, training categories, curricula subjects, and classroom availability constraints for {BRANDING.name}.</p>
+        <h2 className="text-xl font-bold text-blue-900">Panel Kontrol Data Master</h2>
+        <p className="text-sm text-slate-500">Kelola profil widyaiswara, kategori pelatihan, mata pelatihan kurikulum, dan batasan ketersediaan ruangan untuk {BRANDING.name}.</p>
       </div>
 
       <MasterTabs

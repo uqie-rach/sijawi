@@ -211,8 +211,8 @@ export function SchedulingWorkspaceClient({
 
     if (editingSessionId) {
       triggerConfirmation(
-        "Confirm Schedule Modification",
-        "Are you sure you want to update this allocated session?",
+        "Konfirmasi Perubahan Jadwal",
+        "Apakah Anda yakin ingin memperbarui alokasi sesi ini?",
         performSave
       );
     } else {
@@ -259,7 +259,7 @@ export function SchedulingWorkspaceClient({
     const isExceeded = statusObj ? statusObj.isFullyScheduled : false;
     return {
       value: m.id,
-      label: `${m.name} (${m.jpTotal} JP) ${isExceeded ? ' - [Capacity Exceeded]' : ''}`,
+      label: `${m.name} (${m.jpTotal} JP) ${isExceeded ? ' - [Kapasitas Terpenuhi]' : ''}`,
       disabled: isExceeded
     };
   });
@@ -273,7 +273,7 @@ export function SchedulingWorkspaceClient({
     const clashed = isLocationClashed(l.id);
     return {
       value: l.id,
-      label: `${l.name} ${clashed ? ' - [Clash Detected]' : ''}`,
+      label: `${l.name} ${clashed ? ' - [Bentrok Terdeteksi]' : ''}`,
       disabled: clashed
     };
   });
@@ -306,8 +306,8 @@ export function SchedulingWorkspaceClient({
 
   const getMonthName = (monthIdx: number) => {
     return [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     ][monthIdx];
   };
 
@@ -320,7 +320,7 @@ export function SchedulingWorkspaceClient({
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-3">
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
                 <Layers className="h-4 w-4 text-blue-600" />
-                Navigate Batches
+                Navigasi Angkatan
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3">
@@ -348,12 +348,12 @@ export function SchedulingWorkspaceClient({
         {currentBatchSelectionId && (
           <Card className="shadow-sm border-slate-200 bg-white">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-3">
-              <CardTitle className="text-sm font-bold text-blue-600">JP Allocation Tracker</CardTitle>
-              <CardDescription className="text-xs">Capacity balances for selected category.</CardDescription>
+              <CardTitle className="text-sm font-bold text-blue-600">Pelacak Alokasi JP</CardTitle>
+              <CardDescription>Sisa kapasitas untuk kategori terpilih.</CardDescription>
             </CardHeader>
             <CardContent className="p-4 space-y-3 max-h-[300px] overflow-y-auto">
               {trackingMapelStatus.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-4">No registered subjects.</p>
+                <p className="text-xs text-slate-500 text-center py-4">Tidak ada mata pelajaran terdaftar.</p>
               ) : (
                 trackingMapelStatus.map(m => (
                   <div key={m.id} className="space-y-1">
@@ -364,9 +364,9 @@ export function SchedulingWorkspaceClient({
                     <div className="flex items-center gap-2">
                       <Progress value={(m.scheduledJp / m.jpTotal) * 100} className="h-1.5 flex-1 bg-slate-100" />
                       {m.isFullyScheduled ? (
-                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[9px] font-bold">Done</Badge>
+                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[9px] font-bold">Selesai</Badge>
                       ) : (
-                        <span className="text-[9px] font-bold text-slate-500">{m.remainingJp} left</span>
+                        <span className="text-[9px] font-bold text-slate-500">sisa {m.remainingJp}</span>
                       )}
                     </div>
                   </div>
@@ -388,7 +388,7 @@ export function SchedulingWorkspaceClient({
               }`}
             >
               <TableProperties className="h-3.5 w-3.5" />
-              Table Matrix
+              Matriks Tabel
             </button>
             <button
               onClick={() => setViewMode('calendar')}
@@ -397,7 +397,7 @@ export function SchedulingWorkspaceClient({
               }`}
             >
               <CalendarDays className="h-3.5 w-3.5" />
-              Calendar View
+              Tampilan Kalender
             </button>
             <button
               onClick={() => setViewMode('day')}
@@ -406,7 +406,7 @@ export function SchedulingWorkspaceClient({
               }`}
             >
               <Clock className="h-3.5 w-3.5" />
-              Day Timeline
+              Lini Masa Hari
             </button>
           </div>
 
@@ -427,15 +427,15 @@ export function SchedulingWorkspaceClient({
                   jpCount: '2'
                 });
               }} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 text-xs font-semibold py-5 px-4 shadow-md shadow-blue-100">
-                <Plus className="h-4 w-4" /> Assign Slot Session
+                <Plus className="h-4 w-4" /> Alokasikan Sesi Jadwal
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-white max-w-4xl p-0 overflow-hidden">
               <DialogHeader className="p-6 pb-0">
                 <DialogTitle className="text-xl font-bold text-blue-600">
-                  {editingSessionId ? 'Edit Session Allocation' : 'Assign New Session Allocation'}
+                  {editingSessionId ? 'Edit Alokasi Sesi' : 'Alokasikan Sesi Baru'}
                 </DialogTitle>
-                <DialogDescription>Setup instructor mapping, classroom availability restrictions, and operational parameters.</DialogDescription>
+                <DialogDescription>Atur pemetaan instruktur, batasan ketersediaan ruang kelas, dan parameter operasional.</DialogDescription>
               </DialogHeader>
               
               <div className="grid md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-slate-100 p-6 gap-6">
@@ -443,38 +443,38 @@ export function SchedulingWorkspaceClient({
                 <form onSubmit={handleSubmit} className="md:col-span-3 space-y-4">
                   {!batchId && (
                     <div className="space-y-1">
-                      <Label>Batch Pelatihan</Label>
-                      <Combobox options={batchOptions} value={sessionForm.batchId} onValueChange={val => updateForm({ batchId: val })} placeholder="Select batch..." />
+                      <Label>Angkatan Pelatihan</Label>
+                      <Combobox options={batchOptions} value={sessionForm.batchId} onValueChange={val => updateForm({ batchId: val })} placeholder="Pilih angkatan..." />
                     </div>
                   )}
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label>Mata Pelatihan (Mapel)</Label>
-                      <Combobox options={mapelOptions} value={sessionForm.mapelId} onValueChange={val => updateForm({ mapelId: val })} placeholder="Search subject..." />
+                      <Combobox options={mapelOptions} value={sessionForm.mapelId} onValueChange={val => updateForm({ mapelId: val })} placeholder="Cari mata pelajaran..." />
                     </div>
                     <div className="space-y-1">
                       <Label>Widyaiswara</Label>
-                      <Combobox options={wiOptions} value={sessionForm.wiId} onValueChange={val => updateForm({ wiId: val })} placeholder="Search instructor..." />
+                      <Combobox options={wiOptions} value={sessionForm.wiId} onValueChange={val => updateForm({ wiId: val })} placeholder="Cari widyaiswara..." />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1 relative">
-                      <Label>Date</Label>
+                      <Label>Tanggal</Label>
                       <div className="flex gap-1">
                         <Input type="date" min={activeBatch?.startDate} max={activeBatch?.endDate} value={sessionForm.date} onChange={e => updateForm({ date: e.target.value })} required className="pr-1 text-xs" />
-                        <Button type="button" variant="outline" size="icon" onClick={() => updateForm({ date: new Date().toISOString().split('T')[0] })} title="Smart Today Shortcut" className="h-9 w-9 shrink-0 border-blue-200 hover:bg-blue-50 text-blue-600">
+                        <Button type="button" variant="outline" size="icon" onClick={() => updateForm({ date: new Date().toISOString().split('T')[0] })} title="Pintasan Hari Ini" className="h-9 w-9 shrink-0 border-blue-200 hover:bg-blue-50 text-blue-600">
                           <Zap className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <Label>Start Time</Label>
+                      <Label>Waktu Mulai</Label>
                       <Input type="time" value={sessionForm.startTime} onChange={e => updateForm({ startTime: e.target.value })} required />
                     </div>
                     <div className="space-y-1">
-                      <Label>End Time</Label>
+                      <Label>Waktu Selesai</Label>
                       <Input type="time" value={sessionForm.endTime} disabled className="bg-slate-100/80 text-slate-500 font-mono" />
                     </div>
                   </div>
@@ -496,7 +496,7 @@ export function SchedulingWorkspaceClient({
                       <Input placeholder="1-2" value={sessionForm.jpKe} onChange={e => updateForm({ jpKe: e.target.value })} required />
                     </div>
                     <div className="space-y-1">
-                      <Label>JP Count</Label>
+                      <Label>Jumlah JP</Label>
                       <Select value={sessionForm.jpCount} onValueChange={val => updateForm({ jpCount: val })}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent className="bg-white">
@@ -513,21 +513,21 @@ export function SchedulingWorkspaceClient({
 
                   {sessionForm.format === 'Klasikal' && (
                     <div className="space-y-1">
-                      <Label>Location / Room</Label>
-                      <Combobox options={lokasiOptions} value={sessionForm.lokasiId} onValueChange={val => updateForm({ lokasiId: val })} placeholder="Search location..." />
+                      <Label>Lokasi / Ruangan</Label>
+                      <Combobox options={lokasiOptions} value={sessionForm.lokasiId} onValueChange={val => updateForm({ lokasiId: val })} placeholder="Cari lokasi..." />
                     </div>
                   )}
 
                   <DialogFooter className="pt-2">
                     <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white w-full py-5 text-sm font-semibold">
-                      Save Allocation
+                      Simpan Alokasi Sesi
                     </Button>
                   </DialogFooter>
                 </form>
 
                 {/* Real-time JP Tracking Widget (2 Cols) */}
                 <div className="md:col-span-2 pl-4 space-y-4">
-                  <h4 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Unallocated Balances Widget</h4>
+                  <h4 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Sisa Kapasitas Belum Dialokasikan</h4>
                   <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1">
                     {trackingMapelStatus.map(status => (
                       <div key={status.id} className="text-xs space-y-1">
@@ -551,7 +551,7 @@ export function SchedulingWorkspaceClient({
             <CardHeader className="border-b border-slate-100 flex flex-row justify-between items-center bg-slate-50/50 px-6 py-4">
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
                 <CalendarDays className="h-4.5 w-4.5 text-blue-600" />
-                Active Calendar Month View {batchId ? `(Batch: ${activeBatch?.name})` : '(All Batches)'}
+                Tampilan Kalender Bulanan Aktif {batchId ? `(Angkatan: ${activeBatch?.name})` : '(Semua Angkatan)'}
               </CardTitle>
               <div className="flex items-center gap-3">
                 <button onClick={() => setCalendarMonth(new Date(year, month - 1, 1))} className="p-1 rounded border border-slate-200 hover:bg-slate-50">
@@ -567,7 +567,7 @@ export function SchedulingWorkspaceClient({
             </CardHeader>
             <CardContent className="p-4">
               <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase mb-2">
-                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
               </div>
               <div className="grid grid-cols-7 gap-1.5 min-h-[300px]">
                 {calendarDaysList.map((day, index) => {
@@ -604,9 +604,9 @@ export function SchedulingWorkspaceClient({
                                 ev.format === 'Virtual' ? 'bg-purple-50 text-purple-800 border-purple-100' :
                                 'bg-amber-50 text-amber-800 border-amber-100'
                               }`}
-                              title={`${mapel?.name || 'Subject'} (${ev.startTime} - ${ev.endTime})`}
+                              title={`${mapel?.name || 'Mata Pelajaran'} (${ev.startTime} - ${ev.endTime})`}
                             >
-                              {mapel?.name || 'Subject'}
+                              {mapel?.name || 'Mata Pelajaran'}
                             </div>
                           );
                         })}
@@ -625,12 +625,12 @@ export function SchedulingWorkspaceClient({
               <div>
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
                   <Clock className="h-4 w-4 text-blue-600" />
-                  Granular Hourly Timeline View
+                  Tampilan Lini Masa Jam Detail
                 </CardTitle>
-                <CardDescription className="text-xs">Examine operational hourly allocations stacking rules side-by-side.</CardDescription>
+                <CardDescription className="text-xs">Periksa alokasi jam operasional secara berdampingan.</CardDescription>
               </div>
               <div className="flex items-center gap-2">
-                <Label className="text-xs font-bold text-slate-500 whitespace-nowrap">Active Date Selector:</Label>
+                <Label className="text-xs font-bold text-slate-500 whitespace-nowrap">Pilih Tanggal:</Label>
                 <Input type="date" min={activeBatch?.startDate} max={activeBatch?.endDate} value={selectedDayDate} onChange={e => setSelectedDayDate(e.target.value)} className="h-8 py-0 px-2 text-xs w-[140px]" />
               </div>
             </CardHeader>
@@ -638,7 +638,7 @@ export function SchedulingWorkspaceClient({
               {batchSessions.filter(s => s.date === selectedDayDate).length === 0 ? (
                 <div className="text-center py-12 text-slate-400">
                   <Calendar className="h-10 w-10 mx-auto text-slate-300 mb-2" />
-                  <p className="text-xs font-semibold">No assigned sessions on {selectedDayDate}.</p>
+                  <p className="text-xs font-semibold">Tidak ada sesi yang dijadwalkan pada {selectedDayDate}.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -667,11 +667,11 @@ export function SchedulingWorkspaceClient({
                           <div className="flex items-center gap-4 text-xs text-slate-500">
                             <span className="flex items-center gap-1">
                               <UserCheck className="h-3.5 w-3.5 text-slate-400" />
-                              Widyaiswara: <strong>{wi ? `${wi.name}, ${wi.gelar}` : 'Unknown'}</strong>
+                              Widyaiswara: <strong>{wi ? `${wi.name}, ${wi.gelar}` : 'Tidak Diketahui'}</strong>
                             </span>
                             <span className="flex items-center gap-1">
                               <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                              Room: <strong>{session.format === 'Klasikal' ? (lok?.name || 'Venue') : session.format}</strong>
+                              Ruangan: <strong>{session.format === 'Klasikal' ? (lok?.name || 'Ruangan') : session.format}</strong>
                             </span>
                           </div>
                         </div>
@@ -681,8 +681,8 @@ export function SchedulingWorkspaceClient({
                           </Button>
                           <Button size="icon" variant="ghost" onClick={() => {
                             triggerConfirmation(
-                              "Delete Allocated Session",
-                              "Are you sure you want to permanently delete this allocated session?",
+                              "Hapus Sesi Terjadwal",
+                              "Apakah Anda yakin ingin menghapus sesi terjadwal ini secara permanen?",
                               () => deleteSession(session.id)
                             );
                           }} className="text-red-500">
@@ -703,25 +703,25 @@ export function SchedulingWorkspaceClient({
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
                 <TableProperties className="h-4.5 w-4.5 text-blue-600" />
-                Schedules Table Grid Matrix
+                Matriks Tabel Jadwal Sesi
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {batchSessions.length === 0 ? (
                 <div className="text-center py-12 text-slate-400">
                   <Calendar className="h-10 w-10 mx-auto text-slate-300 mb-2" />
-                  <p className="text-xs font-semibold">No assigned sessions yet.</p>
+                  <p className="text-xs font-semibold">Belum ada sesi yang dialokasikan.</p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-slate-50/40">
-                      <TableHead className="pl-6 text-xs font-bold uppercase text-slate-500">Date</TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-slate-500">Subject (Mapel)</TableHead>
+                      <TableHead className="pl-6 text-xs font-bold uppercase text-slate-500">Tanggal</TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-slate-500">Mata Pelajaran (Mapel)</TableHead>
                       <TableHead className="text-xs font-bold uppercase text-slate-500">Widyaiswara</TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-slate-500">Format & Room</TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-slate-500">JP Ke & Count</TableHead>
-                      <TableHead className="pr-6 text-right text-xs font-bold uppercase text-slate-500">Actions</TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-slate-500">Format & Ruangan</TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-slate-500">JP Ke & Jumlah JP</TableHead>
+                      <TableHead className="pr-6 text-right text-xs font-bold uppercase text-slate-500">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -734,7 +734,7 @@ export function SchedulingWorkspaceClient({
                         <TableRow key={session.id} className="hover:bg-slate-50/30 transition-colors">
                           <TableCell className="pl-6 font-semibold text-slate-900 text-xs">{session.date}</TableCell>
                           <TableCell className="font-semibold text-slate-900 text-xs">{mapel?.name}</TableCell>
-                          <TableCell className="text-xs text-slate-600 font-medium">{wi ? `${wi.name}, ${wi.gelar}` : 'Unknown'}</TableCell>
+                          <TableCell className="text-xs text-slate-600 font-medium">{wi ? `${wi.name}, ${wi.gelar}` : 'Tidak Diketahui'}</TableCell>
                           <TableCell>
                             <div className="space-y-1">
                               <Badge className={`text-[9px] font-bold ${
@@ -742,7 +742,7 @@ export function SchedulingWorkspaceClient({
                                 session.format === 'Virtual' ? 'bg-purple-100 text-purple-800' :
                                 'bg-amber-100 text-amber-800'
                               }`}>{session.format}</Badge>
-                              {session.format === 'Klasikal' && <p className="text-[10px] text-slate-500 font-medium">{lok?.name || 'Classroom'}</p>}
+                              {session.format === 'Klasikal' && <p className="text-[10px] text-slate-500 font-medium">{lok?.name || 'Ruangan'}</p>}
                             </div>
                           </TableCell>
                           <TableCell className="text-xs">
@@ -754,8 +754,8 @@ export function SchedulingWorkspaceClient({
                               <Button size="icon" variant="ghost" onClick={() => triggerEdit(session)} className="text-blue-600 h-8 w-8"><Edit className="h-4 w-4" /></Button>
                               <Button size="icon" variant="ghost" onClick={() => {
                                 triggerConfirmation(
-                                  "Delete Allocated Session",
-                                  "Are you sure you want to permanently delete this allocated session?",
+                                  "Hapus Sesi Terjadwal",
+                                  "Apakah Anda yakin ingin menghapus sesi terjadwal ini secara permanen?",
                                   () => deleteSession(session.id)
                                 );
                               }} className="text-red-500 h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
@@ -779,8 +779,8 @@ export function SchedulingWorkspaceClient({
             <AlertDialogDescription className="text-slate-500 text-sm">{confirmDialog.description}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-slate-200 text-slate-700 hover:bg-slate-50">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDialog.onConfirm} className="bg-blue-600 hover:bg-blue-700 text-white">Confirm</AlertDialogAction>
+            <AlertDialogCancel className="border-slate-200 text-slate-700 hover:bg-slate-50">Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDialog.onConfirm} className="bg-blue-600 hover:bg-blue-700 text-white">Konfirmasi</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

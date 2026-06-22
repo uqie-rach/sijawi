@@ -45,7 +45,7 @@ export default async function AdminLayout({
       <div className="flex-1 flex flex-col min-w-0">
         <header className="bg-white border-b border-slate-200 px-8 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
           <div>
-            <h1 className="text-2xl font-black text-blue-900">{BRANDING.name} Administration</h1>
+            <h1 className="text-2xl font-black text-blue-900">Administrasi {BRANDING.name}</h1>
             <p className="text-sm text-slate-500">{BRANDING.fullName} - {BRANDING.tagline}</p>
           </div>
 
@@ -54,9 +54,9 @@ export default async function AdminLayout({
               <span className="text-xs font-black">JP</span>
             </div>
             <div>
-              <p className="text-xs text-blue-900 font-bold">Total Scheduled JP</p>
+              <p className="text-xs text-blue-900 font-bold">Total JP Terjadwal</p>
               <p className="text-lg font-black text-blue-900">
-                {totalJp} JP <span className="text-xs font-normal text-slate-500">({totalJp * 45} Mins)</span>
+                {totalJp} JP <span className="text-xs font-normal text-slate-500">({totalJp * 45} Menit)</span>
               </p>
             </div>
           </div>

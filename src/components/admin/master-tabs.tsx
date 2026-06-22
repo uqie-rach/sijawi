@@ -159,7 +159,7 @@ export function MasterTabs({
       if (editingWiId) {
         updateWidyaswara(editingWiId, { ...wiForm, level: lvl, levelLabel, jabatan: wiForm.jabatan as any });
       } else {
-        addWidyaswara({ ...wiForm, level: lvl, levelLabel, jabatan: wiForm.wiForm?.jabatan as any || 'WI Ahli Madya' });
+        addWidyaswara({ ...wiForm, level: lvl, levelLabel, jabatan: wiForm.jabatan as any || 'WI Ahli Madya' });
         localStorage.removeItem('draft_wiForm');
       }
       setIsWiDialogOpen(false);
@@ -167,8 +167,8 @@ export function MasterTabs({
 
     if (editingWiId) {
       triggerConfirmation(
-        "Confirm Widyaiswara Update",
-        `Are you sure you want to save modifications for Widyaiswara ${wiForm.name}?`,
+        "Konfirmasi Pembaruan Widyaiswara",
+        `Apakah Anda yakin ingin menyimpan perubahan untuk Widyaiswara ${wiForm.name}?`,
         performSave
       );
     } else {
@@ -184,24 +184,24 @@ export function MasterTabs({
           <TabsTrigger value="kategori">Kategori</TabsTrigger>
           <TabsTrigger value="mapel">Mata Pelajaran</TabsTrigger>
           <TabsTrigger value="lokasi">Lokasi / Ruangan</TabsTrigger>
-          <TabsTrigger value="batches">Pelatihan (Batches)</TabsTrigger>
+          <TabsTrigger value="batches">Angkatan Pelatihan</TabsTrigger>
         </TabsList>
 
         <Dialog open={isWiDialogOpen} onOpenChange={setIsWiDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => { setEditingWiId(null); setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' }); }} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
-              <Plus className="h-4 w-4" /> Add Widyaiswara
+              <Plus className="h-4 w-4" /> Tambah Widyaiswara
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-white">
             <DialogHeader>
-              <DialogTitle>{editingWiId ? 'Edit Widyaiswara' : 'Add New Widyaiswara'}</DialogTitle>
-              <DialogDescription>Setup instructor profile details and competency level.</DialogDescription>
+              <DialogTitle>{editingWiId ? 'Edit Widyaiswara' : 'Tambah Widyaiswara Baru'}</DialogTitle>
+              <DialogDescription>Atur detail profil instruktur dan tingkat kompetensi mengajar.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleWiSubmit} className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label>Name</Label>
+                  <Label>Nama Lengkap</Label>
                   <Input value={wiForm.name} onChange={e => updateWiForm({ name: e.target.value })} required />
                 </div>
                 <div className="space-y-1">
@@ -233,7 +233,7 @@ export function MasterTabs({
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label>Level</Label>
+                  <Label>Tingkat Kompetensi</Label>
                   <Select value={wiForm.level} onValueChange={val => updateWiForm({ level: val })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-white">
@@ -246,7 +246,7 @@ export function MasterTabs({
                   </Select>
                 </div>
               </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4">Save Widyaiswara</Button>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4">Simpan Widyaiswara</Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -258,11 +258,11 @@ export function MasterTabs({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="pl-6">Name</TableHead>
+                  <TableHead className="pl-6">Nama</TableHead>
                   <TableHead>NIP</TableHead>
                   <TableHead>Jabatan</TableHead>
-                  <TableHead>Competency Level</TableHead>
-                  <TableHead className="pr-6 text-right">Actions</TableHead>
+                  <TableHead>Tingkat Kompetensi</TableHead>
+                  <TableHead className="pr-6 text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -286,8 +286,8 @@ export function MasterTabs({
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => {
                         triggerConfirmation(
-                          "Delete Widyaiswara Profile",
-                          `Are you sure you want to permanently remove Widyaiswara ${wi.name}?`,
+                          "Hapus Profil Widyaiswara",
+                          `Apakah Anda yakin ingin menghapus profil Widyaiswara ${wi.name} secara permanen?`,
                           () => deleteWidyaswara(wi.id)
                         );
                       }} className="text-red-600 hover:text-red-800">
@@ -309,9 +309,9 @@ export function MasterTabs({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="pl-6">Category Name</TableHead>
-                    <TableHead>Min. Competency Weight</TableHead>
-                    <TableHead className="pr-6 text-right">Actions</TableHead>
+                    <TableHead className="pl-6">Nama Kategori</TableHead>
+                    <TableHead>Min. Bobot Kompetensi</TableHead>
+                    <TableHead className="pr-6 text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -320,15 +320,15 @@ export function MasterTabs({
                       <TableCell className="font-semibold pl-6">{k.name}</TableCell>
                       <TableCell>
                         <Badge className="bg-amber-100 text-amber-800 border-amber-200">
-                          Level {k.minWeight} or higher
+                          Level {k.minWeight} atau lebih tinggi
                         </Badge>
                       </TableCell>
                       <TableCell className="pr-6 text-right space-x-2">
-                        <Button size="sm" variant="ghost" onClick={() => { setEditingKatId(k.id); setKatForm({ name: k.name, minWeight: String(k.minWeight) }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="ghost" onClick={() => { setEditingKatId(k.id); setKatForm({ name: k.name, minWeight: String(k.min_weight) }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
                         <Button size="sm" variant="ghost" onClick={() => {
                           triggerConfirmation(
-                            "Delete Category",
-                            `Are you sure you want to permanently remove category ${k.name}?`,
+                            "Hapus Kategori",
+                            `Apakah Anda yakin ingin menghapus kategori ${k.name} secara permanen?`,
                             () => deleteKategori(k.id)
                           );
                         }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
@@ -341,7 +341,7 @@ export function MasterTabs({
           </Card>
 
           <Card className="shadow-sm border-slate-200 bg-white p-6">
-            <CardTitle className="text-base font-bold mb-4 text-blue-900">{editingKatId ? 'Edit Category' : 'Add Category'}</CardTitle>
+            <CardTitle className="text-base font-bold mb-4 text-blue-900">{editingKatId ? 'Edit Kategori' : 'Tambah Kategori'}</CardTitle>
             <form onSubmit={(e) => {
               e.preventDefault();
               const performSave = () => {
@@ -355,17 +355,17 @@ export function MasterTabs({
               };
 
               if (editingKatId) {
-                triggerConfirmation("Confirm Category Update", "Save changes to this training category?", performSave);
+                triggerConfirmation("Konfirmasi Pembaruan Kategori", "Simpan perubahan pada kategori pelatihan ini?", performSave);
               } else {
                 performSave();
               }
             }} className="space-y-4">
               <div className="space-y-1">
-                <Label>Category Name</Label>
+                <Label>Nama Kategori</Label>
                 <Input value={katForm.name} onChange={e => updateKatForm({ name: e.target.value })} required />
               </div>
               <div className="space-y-1">
-                <Label>Minimum Competency Weight</Label>
+                <Label>Bobot Kompetensi Minimum</Label>
                 <Select value={katForm.minWeight} onValueChange={val => updateKatForm({ minWeight: val })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-white">
@@ -377,7 +377,7 @@ export function MasterTabs({
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">Save Category</Button>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">Simpan Kategori</Button>
             </form>
           </Card>
         </div>
@@ -390,10 +390,10 @@ export function MasterTabs({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="pl-6">Subject (Mapel)</TableHead>
-                    <TableHead>Category</TableHead>
+                    <TableHead className="pl-6">Mata Pelajaran (Mapel)</TableHead>
+                    <TableHead>Kategori</TableHead>
                     <TableHead>Total JP</TableHead>
-                    <TableHead className="pr-6 text-right">Actions</TableHead>
+                    <TableHead className="pr-6 text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -402,7 +402,7 @@ export function MasterTabs({
                     return (
                       <TableRow key={m.id}>
                         <TableCell className="font-semibold pl-6">{m.name}</TableCell>
-                        <TableCell>{cat ? cat.name.split(' ')[0] : 'Unknown'}</TableCell>
+                        <TableCell>{cat ? cat.name.split(' ')[0] : 'Tidak Diketahui'}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{m.jpTotal} JP</Badge>
                         </TableCell>
@@ -410,8 +410,8 @@ export function MasterTabs({
                           <Button size="sm" variant="ghost" onClick={() => { setEditingMapelId(m.id); setMapelForm({ name: m.name, kategoriId: m.kategoriId, jpTotal: String(m.jpTotal) }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
                           <Button size="sm" variant="ghost" onClick={() => {
                             triggerConfirmation(
-                              "Delete Subject",
-                              `Are you sure you want to delete subject ${m.name}?`,
+                              "Hapus Mata Pelajaran",
+                              `Apakah Anda yakin ingin menghapus mata pelajaran ${m.name}?`,
                               () => deleteMapel(m.id)
                             );
                           }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
@@ -425,7 +425,7 @@ export function MasterTabs({
           </Card>
 
           <Card className="shadow-sm border-slate-200 bg-white p-6">
-            <CardTitle className="text-base font-bold mb-4 text-blue-900">{editingMapelId ? 'Edit Subject' : 'Add Subject'}</CardTitle>
+            <CardTitle className="text-base font-bold mb-4 text-blue-900">{editingMapelId ? 'Edit Mata Pelajaran' : 'Tambah Mata Pelajaran'}</CardTitle>
             <form onSubmit={(e) => {
               e.preventDefault();
               const performSave = () => {
@@ -439,19 +439,19 @@ export function MasterTabs({
               };
 
               if (editingMapelId) {
-                triggerConfirmation("Confirm Subject Update", "Save alterations to this mata pelajaran?", performSave);
+                triggerConfirmation("Konfirmasi Pembaruan Mata Pelajaran", "Simpan perubahan pada mata pelajaran ini?", performSave);
               } else {
                 performSave();
               }
             }} className="space-y-4">
               <div className="space-y-1">
-                <Label>Subject Name</Label>
+                <Label>Nama Mata Pelajaran</Label>
                 <Input value={mapelForm.name} onChange={e => updateMapelForm({ name: e.target.value })} required />
               </div>
               <div className="space-y-1">
-                <Label>Training Category</Label>
+                <Label>Kategori Pelatihan</Label>
                 <Select value={mapelForm.kategoriId} onValueChange={val => updateMapelForm({ kategoriId: val })}>
-                  <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
                   <SelectContent className="bg-white">
                     {activeKats.map(k => (
                       <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
@@ -460,7 +460,7 @@ export function MasterTabs({
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Total JP Allocation (2-6 JP)</Label>
+                <Label>Alokasi Total JP (2-6 JP)</Label>
                 <Select value={mapelForm.jpTotal} onValueChange={val => updateMapelForm({ jpTotal: val })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-white">
@@ -472,7 +472,7 @@ export function MasterTabs({
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">Save Subject</Button>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">Save Mata Pelajaran</Button>
             </form>
           </Card>
         </div>
@@ -485,8 +485,8 @@ export function MasterTabs({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="pl-6">Location / Room Name</TableHead>
-                    <TableHead className="pr-6 text-right">Actions</TableHead>
+                    <TableHead className="pl-6">Nama Lokasi / Ruangan</TableHead>
+                    <TableHead className="pr-6 text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -500,8 +500,8 @@ export function MasterTabs({
                         <Button size="sm" variant="ghost" onClick={() => { setEditingLokId(l.id); setLokForm({ name: l.name }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
                         <Button size="sm" variant="ghost" onClick={() => {
                           triggerConfirmation(
-                            "Delete Location",
-                            `Remove location ${l.name}?`,
+                            "Hapus Lokasi",
+                            `Hapus lokasi ${l.name}?`,
                             () => deleteLokasi(l.id)
                           );
                         }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
@@ -514,7 +514,7 @@ export function MasterTabs({
           </Card>
 
           <Card className="shadow-sm border-slate-200 bg-white p-6">
-            <CardTitle className="text-base font-bold mb-4 text-blue-900">{editingLokId ? 'Edit Location' : 'Add Location'}</CardTitle>
+            <CardTitle className="text-base font-bold mb-4 text-blue-900">{editingLokId ? 'Edit Lokasi' : 'Tambah Lokasi'}</CardTitle>
             <form onSubmit={(e) => {
               e.preventDefault();
               const performSave = () => {
@@ -528,16 +528,16 @@ export function MasterTabs({
               };
 
               if (editingLokId) {
-                triggerConfirmation("Confirm Location Update", "Save modifications to this classroom location?", performSave);
+                triggerConfirmation("Konfirmasi Pembaruan Lokasi", "Simpan perubahan lokasi kelas ini?", performSave);
               } else {
                 performSave();
               }
             }} className="space-y-4">
               <div className="space-y-1">
-                <Label>Location Name</Label>
+                <Label>Nama Lokasi</Label>
                 <Input value={lokForm.name} onChange={e => updateLokForm({ name: e.target.value })} required />
               </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">Save Location</Button>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">Simpan Lokasi</Button>
             </form>
           </Card>
         </div>
@@ -550,11 +550,11 @@ export function MasterTabs({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="pl-6">Batch Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Funding Pola</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead className="pr-6 text-right">Actions</TableHead>
+                    <TableHead className="pl-6">Nama Angkatan</TableHead>
+                    <TableHead>Kategori</TableHead>
+                    <TableHead>Pola Pendanaan</TableHead>
+                    <TableHead>Periode</TableHead>
+                    <TableHead className="pr-6 text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -563,17 +563,17 @@ export function MasterTabs({
                     return (
                       <TableRow key={b.id}>
                         <TableCell className="font-semibold pl-6">{b.name}</TableCell>
-                        <TableCell>{cat ? cat.name.split(' ')[0] : 'Unknown'}</TableCell>
+                        <TableCell>{cat ? cat.name.split(' ')[0] : 'Tidak Diketahui'}</TableCell>
                         <TableCell>
                           <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">{b.pola}</Badge>
                         </TableCell>
-                        <TableCell className="text-xs text-slate-500">{b.startDate} to {b.endDate}</TableCell>
+                        <TableCell className="text-xs text-slate-500">{b.startDate} s/d {b.endDate}</TableCell>
                         <TableCell className="pr-6 text-right space-x-2">
                           <Button size="sm" variant="ghost" onClick={() => { setEditingBatchId(b.id); setBatchForm({ name: b.name, kategoriId: b.kategoriId, pola: b.pola, startDate: b.startDate, endDate: b.endDate }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
                           <Button size="sm" variant="ghost" onClick={() => {
                             triggerConfirmation(
-                              "Delete Batch",
-                              `Are you sure you want to delete batch ${b.name}?`,
+                              "Hapus Angkatan",
+                              `Apakah Anda yakin ingin menghapus angkatan ${b.name}?`,
                               () => deleteBatch(b.id)
                             );
                           }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
@@ -587,7 +587,7 @@ export function MasterTabs({
           </Card>
 
           <Card className="shadow-sm border-slate-200 bg-white p-6">
-            <CardTitle className="text-base font-bold mb-4 text-blue-900">{editingBatchId ? 'Edit Batch' : 'Create Batch'}</CardTitle>
+            <CardTitle className="text-base font-bold mb-4 text-blue-900">{editingBatchId ? 'Edit Angkatan' : 'Buat Angkatan'}</CardTitle>
             <form onSubmit={(e) => {
               e.preventDefault();
               const performSave = () => {
@@ -601,19 +601,19 @@ export function MasterTabs({
               };
 
               if (editingBatchId) {
-                triggerConfirmation("Confirm Batch Update", "Save edits to this training batch?", performSave);
+                triggerConfirmation("Konfirmasi Pembaruan Angkatan", "Simpan perubahan pada angkatan pelatihan ini?", performSave);
               } else {
                 performSave();
               }
             }} className="space-y-4">
               <div className="space-y-1">
-                <Label>Batch Name</Label>
+                <Label>Nama Angkatan</Label>
                 <Input value={batchForm.name} onChange={e => updateBatchForm({ name: e.target.value })} required />
               </div>
               <div className="space-y-1">
-                <Label>Training Category</Label>
+                <Label>Kategori Pelatihan</Label>
                 <Select value={batchForm.kategoriId} onValueChange={val => updateBatchForm({ kategoriId: val })}>
-                  <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
                   <SelectContent className="bg-white">
                     {activeKats.map(k => (
                       <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
@@ -622,7 +622,7 @@ export function MasterTabs({
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Funding Pattern (Pola)</Label>
+                <Label>Pola Pelaksanaan</Label>
                 <Select value={batchForm.pola} onValueChange={(val: any) => updateBatchForm({ pola: val })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-white">
@@ -634,15 +634,15 @@ export function MasterTabs({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label>Start Date</Label>
+                  <Label>Tanggal Mulai</Label>
                   <Input type="date" value={batchForm.startDate} onChange={e => updateBatchForm({ startDate: e.target.value })} required />
                 </div>
                 <div className="space-y-1">
-                  <Label>End Date</Label>
+                  <Label>Tanggal Selesai</Label>
                   <Input type="date" value={batchForm.endDate} onChange={e => updateBatchForm({ endDate: e.target.value })} required />
                 </div>
               </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">Save Batch</Button>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">Simpan Angkatan</Button>
             </form>
           </Card>
         </div>
@@ -655,8 +655,8 @@ export function MasterTabs({
             <AlertDialogDescription className="text-slate-500 text-sm">{confirmDialog.description}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-slate-200 text-slate-700 hover:bg-slate-50">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDialog.onConfirm} className="bg-blue-600 hover:bg-blue-700 text-white">Confirm Action</AlertDialogAction>
+            <AlertDialogCancel className="border-slate-200 text-slate-700 hover:bg-slate-50">Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDialog.onConfirm} className="bg-blue-600 hover:bg-blue-700 text-white">Konfirmasi Tindakan</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

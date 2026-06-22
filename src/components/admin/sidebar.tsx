@@ -22,18 +22,18 @@ export function Sidebar() {
   };
 
   const baseNavItems = [
-    { href: '/admin', label: 'Overview Dashboard', icon: LayoutDashboard },
-    { href: '/admin/master', label: 'Master Data', icon: Database },
-    { href: '/admin/scheduling', label: 'Batch Scheduling', icon: CalendarDays },
-    { href: '/admin/reports', label: 'Reports & Analytics', icon: BarChart3 },
+    { href: '/admin', label: 'Dasbor Ringkasan', icon: LayoutDashboard },
+    { href: '/admin/master', label: 'Data Master', icon: Database },
+    { href: '/admin/scheduling', label: 'Penjadwalan Pelatihan', icon: CalendarDays },
+    { href: '/admin/reports', label: 'Laporan & Analisis', icon: BarChart3 },
   ];
 
   const advancedNavItems = [
-    { href: '/admin/day-view', label: 'Day View', icon: List },
-    { href: '/admin/agenda-view', label: 'Agenda View', icon: CalendarRange },
-    { href: '/admin/month-view', label: 'Month View', icon: Grid2x2 },
-    { href: '/admin/week-view', label: 'Week View', icon: Columns },
-    { href: '/admin/year-view', label: 'Year View', icon: Grid3X3 },
+    { href: '/admin/day-view', label: 'Tampilan Hari', icon: List },
+    { href: '/admin/agenda-view', label: 'Tampilan Agenda', icon: CalendarRange },
+    { href: '/admin/month-view', label: 'Tampilan Bulan', icon: Grid2x2 },
+    { href: '/admin/week-view', label: 'Tampilan Minggu', icon: Columns },
+    { href: '/admin/year-view', label: 'Tampilan Tahun', icon: Grid3X3 },
   ];
 
   const navItems = ENABLE_ADVANCED_CALENDAR 
@@ -49,7 +49,7 @@ export function Sidebar() {
           </div>
           <div>
             <h2 className="font-black text-lg tracking-tight text-blue-900">{BRANDING.name}</h2>
-            <p className="text-[10px] text-amber-600 font-semibold">Super Admin Console</p>
+            <p className="text-[10px] text-amber-600 font-semibold">Konsol Super Admin</p>
           </div>
         </div>
 
@@ -76,7 +76,7 @@ export function Sidebar() {
 
       <div className="p-4 border-t border-slate-100 space-y-4">
         <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-          <p className="text-[10px] text-slate-500">Logged in as</p>
+          <p className="text-[10px] text-slate-500">Masuk sebagai</p>
           <p className="text-sm font-bold text-slate-800">Super Admin</p>
         </div>
         <Button
@@ -85,7 +85,7 @@ export function Sidebar() {
           className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"
         >
           <LogOut className="h-4 w-4" />
-          Exit Admin Mode
+          Keluar Mode Admin
         </Button>
       </div>
     </aside>

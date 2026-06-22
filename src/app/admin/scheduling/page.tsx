@@ -64,7 +64,7 @@ async function getSchedulingIndexData() {
       return {
         id: b._id,
         name: b.name,
-        categoryName: cat ? cat.name : 'Unknown Category',
+        categoryName: cat ? cat.name : 'Kategori Tidak Diketahui',
         pola: b.pola,
         startDate: b.start_date,
         endDate: b.end_date,
@@ -108,19 +108,19 @@ export default async function SchedulingIndexPage() {
       {/* Batch Listing Panel */}
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-          <CardTitle className="text-lg font-bold text-blue-900">Select Batch to Schedule</CardTitle>
-          <CardDescription>View current scheduling progress and enter specific batch timeline workspaces.</CardDescription>
+          <CardTitle className="text-lg font-bold text-blue-900">Pilih Angkatan Pelatihan untuk Dijadwalkan</CardTitle>
+          <CardDescription>Lihat kemajuan penjadwalan saat ini dan masuk ke ruang kerja lini masa angkatan tertentu.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50/40">
-                <TableHead className="pl-6 font-semibold">Nama Batch Pelatihan</TableHead>
+                <TableHead className="pl-6 font-semibold">Nama Angkatan Pelatihan</TableHead>
                 <TableHead className="font-semibold">Kategori & Pola</TableHead>
                 <TableHead className="font-semibold">Periode Pelaksanaan</TableHead>
                 <TableHead className="font-semibold">Lokasi Terkunci</TableHead>
-                <TableHead className="font-semibold">Progress Alokasi JP</TableHead>
-                <TableHead className="pr-6 text-right font-semibold">Workspace</TableHead>
+                <TableHead className="font-semibold">Progres Alokasi JP</TableHead>
+                <TableHead className="pr-6 text-right font-semibold">Ruang Kerja</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -162,7 +162,7 @@ export default async function SchedulingIndexPage() {
                             </Badge>
                           ))
                         ) : (
-                          <span className="text-xs text-slate-400 italic">None Locked</span>
+                          <span className="text-xs text-slate-400 italic">Belum Ada</span>
                         )}
                       </div>
                     </TableCell>
@@ -178,7 +178,7 @@ export default async function SchedulingIndexPage() {
                     <TableCell className="pr-6 text-right">
                       <Link href={`/admin/scheduling/${b.id}`} passHref>
                         <Button size="sm" variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-600 gap-1.5">
-                          Manage Schedule
+                          Kelola Jadwal
                           <ArrowUpRight className="h-3.5 w-3.5" />
                         </Button>
                       </Link>
@@ -194,9 +194,9 @@ export default async function SchedulingIndexPage() {
       {/* Global Month/Day/Table Calendar Timeline Preview */}
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-          <CardTitle className="text-lg font-bold text-blue-900">{BRANDING.name} Schedules Control Engine</CardTitle>
+          <CardTitle className="text-lg font-bold text-blue-900">Mesin Kontrol Jadwal {BRANDING.name}</CardTitle>
           <CardDescription>
-            Examine and preview all scheduled slots across all batch timelines simultaneously.
+            Periksa dan tinjau semua slot terjadwal di seluruh lini masa angkatan secara bersamaan.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6">

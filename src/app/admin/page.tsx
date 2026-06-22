@@ -105,11 +105,11 @@ export default async function OverviewPage() {
         <CardHeader className="border-b border-slate-100 bg-slate-50/50">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <CardTitle className="text-lg font-bold text-blue-900">Widyaiswara Load Balancing & JP Tracking</CardTitle>
-              <CardDescription>Real-time monitoring of teaching hours with breakdown by funding pattern (Pola).</CardDescription>
+              <CardTitle className="text-lg font-bold text-blue-900">Penyeimbangan Beban Mengajar & Pelacakan JP Widyaiswara</CardTitle>
+              <CardDescription>Pemantauan waktu mengajar secara real-time dengan rincian berdasarkan pola pelaksanaan anggaran.</CardDescription>
             </div>
             <Badge variant="outline" className="bg-blue-50 text-blue-900 border-blue-200 font-semibold">
-              1 JP = 45 Minutes
+              1 JP = 45 Menit
             </Badge>
           </div>
         </CardHeader>
@@ -119,11 +119,11 @@ export default async function OverviewPage() {
               <TableRow className="bg-slate-50/70">
                 <TableHead className="font-semibold text-slate-700 pl-6">Nama Widyaiswara</TableHead>
                 <TableHead className="font-semibold text-slate-700">NIP & Jabatan</TableHead>
-                <TableHead className="font-semibold text-slate-700">Competency Level</TableHead>
+                <TableHead className="font-semibold text-slate-700">Tingkat Kompetensi</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-center">JP Bulan Lalu</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-center bg-blue-50/30">JP Bulan Berjalan</TableHead>
-                <TableHead className="font-semibold text-slate-700 text-center">Total Hours</TableHead>
-                <TableHead className="font-semibold text-slate-700 pr-6">Breakdown (APBD | Kontribusi | Kemitraan)</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center">Total Jam</TableHead>
+                <TableHead className="font-semibold text-slate-700 pr-6">Rincian (APBD | Kontribusi | Kemitraan)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -156,7 +156,7 @@ export default async function OverviewPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center font-medium text-slate-700">
-                      {totalHours.toFixed(1)} hrs
+                      {totalHours.toFixed(1)} jam
                     </TableCell>
                     <TableCell className="pr-6">
                       <div className="space-y-2">
