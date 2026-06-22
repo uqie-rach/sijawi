@@ -56,11 +56,11 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 text-slate-800">
       <header className="container mx-auto px-6 py-6 flex justify-between items-center border-b border-slate-200/60">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
-          <div className="bg-[#D4A017] p-2 rounded-xl shadow-md shadow-[#D4A017]/20">
+          <div className="bg-amber-500 p-2 rounded-xl shadow-md shadow-amber-500/20">
             <GraduationCap className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="font-black text-2xl tracking-tight text-[#1D4ED8]">{BRANDING.name}</h1>
+            <h1 className="font-black text-2xl tracking-tight text-blue-600">{BRANDING.name}</h1>
             <p className="text-xs text-slate-500 font-medium">{BRANDING.fullName}</p>
           </div>
         </div>
@@ -68,7 +68,7 @@ export default function LoginPage() {
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         <div className="text-center max-w-xl mb-8">
-          <div className="inline-flex items-center gap-1.5 bg-[#E9EEFC] border border-[#C0CFF6] px-3 py-1 rounded-full text-xs font-bold text-[#1D4ED8] mb-3">
+          <div className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full text-xs font-bold text-blue-600 mb-3">
             <Sparkles className="h-3.5 w-3.5" />
             {BRANDING.tagline}
           </div>
@@ -102,7 +102,7 @@ export default function LoginPage() {
                     placeholder="admin@wtms.com atau email WI" 
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="pl-10 bg-slate-50 border-slate-200 text-slate-800 focus:ring-[#1D4ED8] focus:border-[#1D4ED8] rounded-xl"
+                    className="pl-10 bg-slate-50 border-slate-200 text-slate-800 focus:ring-blue-500 focus:border-blue-500 rounded-xl"
                     required 
                   />
                 </div>
@@ -118,20 +118,20 @@ export default function LoginPage() {
                     placeholder="admin123 atau wi123" 
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="pl-10 bg-slate-50 border-slate-200 text-slate-800 focus:ring-[#1D4ED8] focus:border-[#1D4ED8] rounded-xl"
+                    className="pl-10 bg-slate-50 border-slate-200 text-slate-800 focus:ring-blue-500 focus:border-blue-500 rounded-xl"
                     required 
                   />
                 </div>
               </div>
 
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
-                <p className="font-bold text-[#D4A017]">💡 Quick Demo Credentials:</p>
-                <p>• Admin: <span className="font-mono text-[#1D4ED8] font-semibold">admin@wtms.com</span> / <span className="font-mono text-[#1D4ED8] font-semibold">admin123</span></p>
-                <p>• Widyaiswara: <span className="font-mono text-[#1D4ED8] font-semibold">wtms+wi.uqie@gmail.com</span> / <span className="font-mono text-[#1D4ED8] font-semibold">wi123</span></p>
+                <p className="font-bold text-amber-600">💡 Quick Demo Credentials:</p>
+                <p>• Admin: <span className="font-mono text-blue-600 font-semibold">admin@wtms.com</span> / <span className="font-mono text-blue-600 font-semibold">admin123</span></p>
+                <p>• Widyaiswara: <span className="font-mono text-blue-600 font-semibold">wtms+wi.uqie@gmail.com</span> / <span className="font-mono text-blue-600 font-semibold">wi123</span></p>
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full bg-[#1D4ED8] hover:bg-[#1943B8] text-white font-bold py-6 text-base shadow-lg shadow-[#1D4ED8]/20 rounded-xl">
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 text-base shadow-lg shadow-blue-500/20 rounded-xl">
                 Masuk Portal
               </Button>
             </CardFooter>

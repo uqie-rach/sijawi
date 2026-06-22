@@ -172,7 +172,7 @@ export default async function SchedulingIndexPage() {
                     </TableCell>
                     <TableCell className="pr-6 text-right">
                       <Link href={`/admin/scheduling/${b.id}`} passHref>
-                        <Button size="sm" variant="outline" className="border-blue-200 text-blue-900 hover:bg-blue-50 hover:text-blue-900 gap-1.5">
+                        <Button size="sm" variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-600 gap-1.5">
                           Manage Schedule
                           <ArrowUpRight className="h-3.5 w-3.5" />
                         </Button>

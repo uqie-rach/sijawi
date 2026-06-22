@@ -86,7 +86,7 @@ export default async function OverviewPage() {
   });
 
   const pieChartData = [
-    { name: 'APBD', value: totalApbd, color: '#1E3A8A' },
+    { name: 'APBD', value: totalApbd, color: '#2563eb' },
     { name: 'Kontribusi', value: totalKontribusi, color: '#10b981' },
     { name: 'Kemitraan', value: totalKemitraan, color: '#C8A14A' },
   ].filter((item) => item.value > 0);
@@ -162,7 +162,7 @@ export default async function OverviewPage() {
                         <div className="flex h-2 w-full rounded-full overflow-hidden bg-slate-100">
                           <div 
                             style={{ width: `${wi.jpCurrentMonth ? (wi.breakdown.apbd / wi.jpCurrentMonth) * 100 : 0}%` }} 
-                            className="bg-blue-900"
+                            className="bg-blue-600"
                           />
                           <div 
                             style={{ width: `${wi.jpCurrentMonth ? (wi.breakdown.kontribusi / wi.jpCurrentMonth) * 100 : 0}%` }} 

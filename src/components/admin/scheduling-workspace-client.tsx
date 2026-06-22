@@ -318,8 +318,8 @@ export function SchedulingWorkspaceClient({
         {allBatches && allBatches.length > 0 && (
           <Card className="shadow-sm border-slate-200 bg-white">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-3">
-              <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-900">
-                <Layers className="h-4 w-4 text-blue-900" />
+              <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
+                <Layers className="h-4 w-4 text-blue-600" />
                 Navigate Batches
               </CardTitle>
             </CardHeader>
@@ -331,7 +331,7 @@ export function SchedulingWorkspaceClient({
                     onClick={() => router.push(`/admin/scheduling/${b.id}`)}
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${
                       b.id === batchId 
-                        ? 'bg-blue-50 text-blue-900 border border-blue-200' 
+                        ? 'bg-blue-50 text-blue-600 border border-blue-200' 
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
@@ -348,7 +348,7 @@ export function SchedulingWorkspaceClient({
         {currentBatchSelectionId && (
           <Card className="shadow-sm border-slate-200 bg-white">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-3">
-              <CardTitle className="text-sm font-bold text-blue-900">JP Allocation Tracker</CardTitle>
+              <CardTitle className="text-sm font-bold text-blue-600">JP Allocation Tracker</CardTitle>
               <CardDescription className="text-xs">Capacity balances for selected category.</CardDescription>
             </CardHeader>
             <CardContent className="p-4 space-y-3 max-h-[300px] overflow-y-auto">
@@ -384,7 +384,7 @@ export function SchedulingWorkspaceClient({
             <button
               onClick={() => setViewMode('table')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                viewMode === 'table' ? 'bg-white text-blue-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <TableProperties className="h-3.5 w-3.5" />
@@ -393,7 +393,7 @@ export function SchedulingWorkspaceClient({
             <button
               onClick={() => setViewMode('calendar')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                viewMode === 'calendar' ? 'bg-white text-blue-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                viewMode === 'calendar' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <CalendarDays className="h-3.5 w-3.5" />
@@ -402,7 +402,7 @@ export function SchedulingWorkspaceClient({
             <button
               onClick={() => setViewMode('day')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                viewMode === 'day' ? 'bg-white text-blue-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Clock className="h-3.5 w-3.5" />
@@ -426,13 +426,13 @@ export function SchedulingWorkspaceClient({
                   jpKe: '1-2',
                   jpCount: '2'
                 });
-              }} className="bg-blue-900 hover:bg-blue-800 text-white flex items-center gap-2 text-xs font-semibold py-5 px-4 shadow-md shadow-blue-100">
+              }} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 text-xs font-semibold py-5 px-4 shadow-md shadow-blue-100">
                 <Plus className="h-4 w-4" /> Assign Slot Session
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-white max-w-4xl p-0 overflow-hidden">
               <DialogHeader className="p-6 pb-0">
-                <DialogTitle className="text-xl font-bold text-blue-900">
+                <DialogTitle className="text-xl font-bold text-blue-600">
                   {editingSessionId ? 'Edit Session Allocation' : 'Assign New Session Allocation'}
                 </DialogTitle>
                 <DialogDescription>Setup instructor mapping, classroom availability restrictions, and operational parameters.</DialogDescription>
@@ -464,7 +464,7 @@ export function SchedulingWorkspaceClient({
                       <Label>Date</Label>
                       <div className="flex gap-1">
                         <Input type="date" min={activeBatch?.startDate} max={activeBatch?.endDate} value={sessionForm.date} onChange={e => updateForm({ date: e.target.value })} required className="pr-1 text-xs" />
-                        <Button type="button" variant="outline" size="icon" onClick={() => updateForm({ date: new Date().toISOString().split('T')[0] })} title="Smart Today Shortcut" className="h-9 w-9 shrink-0 border-blue-200 hover:bg-blue-50 text-blue-900">
+                        <Button type="button" variant="outline" size="icon" onClick={() => updateForm({ date: new Date().toISOString().split('T')[0] })} title="Smart Today Shortcut" className="h-9 w-9 shrink-0 border-blue-200 hover:bg-blue-50 text-blue-600">
                           <Zap className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -519,7 +519,7 @@ export function SchedulingWorkspaceClient({
                   )}
 
                   <DialogFooter className="pt-2">
-                    <Button type="submit" className="bg-blue-900 hover:bg-blue-800 text-white w-full py-5 text-sm font-semibold">
+                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white w-full py-5 text-sm font-semibold">
                       Save Allocation
                     </Button>
                   </DialogFooter>
@@ -549,8 +549,8 @@ export function SchedulingWorkspaceClient({
         {viewMode === 'calendar' && (
           <Card className="shadow-sm border-slate-200 bg-white">
             <CardHeader className="border-b border-slate-100 flex flex-row justify-between items-center bg-slate-50/50 px-6 py-4">
-              <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-900">
-                <CalendarDays className="h-4.5 w-4.5 text-blue-900" />
+              <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
+                <CalendarDays className="h-4.5 w-4.5 text-blue-600" />
                 Active Calendar Month View {batchId ? `(Batch: ${activeBatch?.name})` : '(All Batches)'}
               </CardTitle>
               <div className="flex items-center gap-3">
@@ -623,8 +623,8 @@ export function SchedulingWorkspaceClient({
           <Card className="shadow-sm border-slate-200 bg-white">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 py-4">
               <div>
-                <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-900">
-                  <Clock className="h-4 w-4 text-blue-900" />
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
+                  <Clock className="h-4 w-4 text-blue-600" />
                   Granular Hourly Timeline View
                 </CardTitle>
                 <CardDescription className="text-xs">Examine operational hourly allocations stacking rules side-by-side.</CardDescription>
@@ -676,7 +676,7 @@ export function SchedulingWorkspaceClient({
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => triggerEdit(session)} className="text-blue-900">
+                          <Button size="icon" variant="ghost" onClick={() => triggerEdit(session)} className="text-blue-600">
                             <Edit className="h-4.5 w-4.5" />
                           </Button>
                           <Button size="icon" variant="ghost" onClick={() => {
@@ -701,8 +701,8 @@ export function SchedulingWorkspaceClient({
         {viewMode === 'table' && (
           <Card className="shadow-sm border-slate-200 bg-white">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-              <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-900">
-                <TableProperties className="h-4.5 w-4.5 text-blue-900" />
+              <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
+                <TableProperties className="h-4.5 w-4.5 text-blue-600" />
                 Schedules Table Grid Matrix
               </CardTitle>
             </CardHeader>
@@ -751,7 +751,7 @@ export function SchedulingWorkspaceClient({
                           </TableCell>
                           <TableCell className="pr-6 text-right">
                             <div className="flex justify-end gap-1.5">
-                              <Button size="icon" variant="ghost" onClick={() => triggerEdit(session)} className="text-blue-900 h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                              <Button size="icon" variant="ghost" onClick={() => triggerEdit(session)} className="text-blue-600 h-8 w-8"><Edit className="h-4 w-4" /></Button>
                               <Button size="icon" variant="ghost" onClick={() => {
                                 triggerConfirmation(
                                   "Delete Allocated Session",
@@ -780,7 +780,7 @@ export function SchedulingWorkspaceClient({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-slate-200 text-slate-700 hover:bg-slate-50">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDialog.onConfirm} className="bg-blue-900 hover:bg-blue-800 text-white">Confirm</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDialog.onConfirm} className="bg-blue-600 hover:bg-blue-700 text-white">Confirm</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

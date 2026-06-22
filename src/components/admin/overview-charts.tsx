@@ -25,7 +25,7 @@ export function OverviewCharts({ barChartData, pieChartData }: OverviewChartsPro
               <YAxis stroke="#64748b" fontSize={11} />
               <Tooltip cursor={{ fill: '#f8fafc' }} />
               <Legend />
-              <Bar dataKey="Total JP" fill="#1E3A8A" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Total JP" fill="#2563eb" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -59,7 +59,7 @@ export function OverviewCharts({ barChartData, pieChartData }: OverviewChartsPro
           </div>
           <div className="flex justify-around text-xs font-semibold">
             <span className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full bg-blue-900"></span> APBD
+              <span className="h-3 w-3 rounded-full bg-blue-600"></span> APBD
             </span>
             <span className="flex items-center gap-1">
               <span className="h-3 w-3 rounded-full bg-emerald-600"></span> Kontribusi

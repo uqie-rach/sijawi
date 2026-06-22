@@ -36,21 +36,20 @@ export function Sidebar() {
     { href: '/admin/year-view', label: 'Year View', icon: Grid3X3 },
   ];
 
-  const navItems = ENABLE_ADVANCED_CALENDAR
+  const navItems = ENABLE_ADVANCED_CALENDAR 
     ? [...baseNavItems, ...advancedNavItems]
     : baseNavItems;
 
   return (
-    <aside className="w-full md:w-64 bg-blue-900 text-white flex flex-col justify-between border-r border-blue-950 shrink-0">
+    <aside className="w-full md:w-64 bg-white text-slate-800 flex flex-col justify-between border-r border-slate-200 shrink-0">
       <div>
-        <div className="p-6 border-b border-blue-950 flex items-center gap-3">
+        <div className="p-6 border-b border-slate-100 flex items-center gap-3">
           <div className="bg-amber-500 p-1.5 rounded-lg shadow-md shadow-amber-500/20">
-            <GraduationCap className="h-5 w-5 text-blue-950" />
-
+            <GraduationCap className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="font-black text-lg tracking-tight text-white">{BRANDING.name}</h2>
-            <p className="text-[10px] text-amber-400 font-medium">Super Admin Console</p>
+            <h2 className="font-black text-lg tracking-tight text-blue-900">{BRANDING.name}</h2>
+            <p className="text-[10px] text-amber-600 font-semibold">Super Admin Console</p>
           </div>
         </div>
 
@@ -63,8 +62,8 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${isActive
-                  ? 'bg-amber-500 text-blue-950 shadow-md shadow-amber-500/10'
-                  : 'text-blue-100 hover:bg-blue-800 hover:text-white'
+                  ? 'bg-blue-50 text-blue-600 shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
               >
                 <Icon className="h-4 w-4" />
@@ -75,15 +74,15 @@ export function Sidebar() {
         </nav>
       </div>
 
-      <div className="p-4 border-t border-blue-950 space-y-4">
-        <div className="bg-blue-950/40 p-3 rounded-lg border border-blue-800/40">
-          <p className="text-[10px] text-blue-200">Logged in as</p>
-          <p className="text-sm font-bold text-white">Super Admin</p>
+      <div className="p-4 border-t border-slate-100 space-y-4">
+        <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+          <p className="text-[10px] text-slate-500">Logged in as</p>
+          <p className="text-sm font-bold text-slate-800">Super Admin</p>
         </div>
         <Button
           variant="destructive"
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 bg-red-600/20 hover:bg-red-600 text-red-200 hover:text-white border border-red-500/30"
+          className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"
         >
           <LogOut className="h-4 w-4" />
           Exit Admin Mode

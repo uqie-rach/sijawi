@@ -151,17 +151,17 @@ export default function WidyaswaraDashboard() {
       <aside className="w-64 bg-white text-slate-800 flex flex-col justify-between border-r border-slate-200 shrink-0 hidden md:flex">
         <div>
           <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-            <div className="bg-[#D4A017] p-1.5 rounded-xl shadow-md shadow-[#D4A017]/20">
+            <div className="bg-amber-500 p-1.5 rounded-xl shadow-md shadow-amber-500/20">
               <GraduationCap className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="font-black text-lg tracking-tight text-[#1D4ED8]">{BRANDING.name}</h2>
+              <h2 className="font-black text-lg tracking-tight text-blue-600">{BRANDING.name}</h2>
               <p className="text-[10px] text-slate-500 font-medium">Widyaiswara Portal</p>
             </div>
           </div>
 
           <nav className="p-4 space-y-1">
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-[#E9EEFC] text-[#1D4ED8] shadow-sm">
+            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-blue-50 text-blue-600 shadow-sm">
               <LayoutDashboard className="h-4 w-4" />
               Overview
             </button>
@@ -191,8 +191,8 @@ export default function WidyaswaraDashboard() {
         <header className="relative bg-white border-b border-slate-200 text-slate-800 px-8 py-6 shrink-0">
           <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <div className="flex items-center gap-2 bg-[#E9EEFC] px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase mb-2 w-fit border border-[#C0CFF6] text-[#1D4ED8]">
-                <Sparkles className="h-3.5 w-3.5 text-[#1D4ED8]" />
+              <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase mb-2 w-fit border border-blue-200 text-blue-600">
+                <Sparkles className="h-3.5 w-3.5 text-blue-600" />
                 {BRANDING.fullName}
               </div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">{BRANDING.name} Portal</h1>
@@ -277,7 +277,7 @@ export default function WidyaswaraDashboard() {
             <Card className="shadow-sm border-slate-200 bg-white rounded-xl">
               <CardHeader className="border-b border-slate-100 bg-slate-50/50">
                 <CardTitle className="text-sm font-bold flex items-center gap-1.5 text-slate-800">
-                  <TrendingUp className="h-4.5 w-4.5 text-blue-900" />
+                  <TrendingUp className="h-4.5 w-4.5 text-blue-600" />
                   Widyaiswara JP Performance Tracking
                 </CardTitle>
                 <CardDescription className="text-xs">
@@ -296,7 +296,7 @@ export default function WidyaswaraDashboard() {
                       <Bar dataKey="Scheduled JP" fill="url(#colorJp)" radius={[6, 6, 0, 0]} barSize={55} />
                       <defs>
                         <linearGradient id="colorJp" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#1e3a8a" stopOpacity={0.95} />
+                          <stop offset="5%" stopColor="#2563eb" stopOpacity={0.95} />
                           <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.8} />
                         </linearGradient>
                       </defs>
@@ -311,7 +311,7 @@ export default function WidyaswaraDashboard() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="space-y-1">
                   <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <Calendar className="h-4.5 w-4.5 text-blue-900" />
+                    <Calendar className="h-4.5 w-4.5 text-blue-600" />
                     Teaching Schedules Portal
                   </h3>
                   <p className="text-xs text-slate-500">Examine operational scheduled slots from either a personal or global center perspective.</p>
@@ -322,7 +322,7 @@ export default function WidyaswaraDashboard() {
                   <button
                     onClick={() => setScheduleFilter('personal')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${scheduleFilter === 'personal'
-                        ? 'bg-white text-blue-900 shadow-sm'
+                        ? 'bg-white text-blue-600 shadow-sm'
                         : 'text-slate-600 hover:text-slate-900'
                       }`}
                   >
@@ -331,7 +331,7 @@ export default function WidyaswaraDashboard() {
                   <button
                     onClick={() => setScheduleFilter('global')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${scheduleFilter === 'global'
-                        ? 'bg-white text-blue-900 shadow-sm'
+                        ? 'bg-white text-blue-600 shadow-sm'
                         : 'text-slate-600 hover:text-slate-900'
                       }`}
                   >
@@ -342,7 +342,7 @@ export default function WidyaswaraDashboard() {
 
               {/* View layout selectors */}
               <div className="flex justify-between items-center bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl shadow-sm">
-                <Badge variant="outline" className="bg-blue-50 text-blue-900 border-blue-200 font-bold px-2.5 py-1 text-xs">
+                <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200 font-bold px-2.5 py-1 text-xs">
                   {scheduleFilter === 'personal' ? 'My Schedule Only' : 'All WIs Schedule Feed'} ({activeScheduleSessions.length} sessions)
                 </Badge>
 
@@ -386,7 +386,7 @@ export default function WidyaswaraDashboard() {
                     <div key={date} className="space-y-4">
                       {/* Date Header banner */}
                       <div className="flex items-center gap-3">
-                        <div className="bg-blue-50 border border-blue-100 text-blue-900 font-extrabold px-3 py-1.5 rounded-xl text-xs">
+                        <div className="bg-blue-50 border border-blue-100 text-blue-600 font-extrabold px-3 py-1.5 rounded-xl text-xs">
                           {new Date(date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                         </div>
                         <div className="h-px bg-slate-200 flex-1" />
@@ -406,7 +406,7 @@ export default function WidyaswaraDashboard() {
                             >
                               {/* Own Session Label Overlay */}
                               {isOwnSession && (
-                                <span className="absolute -top-2.5 -right-2.5 bg-blue-900 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-md">
+                                <span className="absolute -top-2.5 -right-2.5 bg-blue-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-md">
                                   My Session
                                 </span>
                               )}
@@ -425,7 +425,7 @@ export default function WidyaswaraDashboard() {
                                   </div>
                                 </div>
                                 <CardTitle className="text-sm font-bold text-slate-900 mt-2">{session.mapelName}</CardTitle>
-                                <CardDescription className="text-xs font-semibold text-blue-900 flex items-center gap-1">
+                                <CardDescription className="text-xs font-semibold text-blue-600 flex items-center gap-1">
                                   <BookOpen className="h-3.5 w-3.5" />
                                   {session.batchName}
                                 </CardDescription>
@@ -503,7 +503,7 @@ export default function WidyaswaraDashboard() {
                     wiSessions.filter(s => s.date === selectedDayDate).map(s => (
                       <div key={s.id} className="p-3 bg-slate-50 rounded-lg border border-slate-150 space-y-1.5 relative hover:border-blue-200 transition-all">
                         <div className="flex justify-between items-center">
-                          <span className="text-[9px] font-bold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded">{s.startTime} - {s.endTime}</span>
+                          <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{s.startTime} - {s.endTime}</span>
                           <span className="text-[9px] text-slate-400 font-bold">{s.jpCount} JP</span>
                         </div>
                         <h4 className="text-xs font-bold text-slate-950 line-clamp-1">{s.mapelName}</h4>
@@ -529,7 +529,7 @@ export default function WidyaswaraDashboard() {
                     {upcomingTimelineSessions.map((s, idx) => (
                       <div key={s.id} className="relative">
                         {/* Bullet point dot */}
-                        <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-blue-900 border border-white shadow-sm" />
+                        <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-blue-600 border border-white shadow-sm" />
 
                         <div className="space-y-1">
                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
