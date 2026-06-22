@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 interface ReportsClientProps {
   initialWis: any[];
@@ -48,34 +50,319 @@ export function ReportsClient({ initialWis }: ReportsClientProps) {
     currentPage * rowsPerPage
   );
 
-  const handleExportGlobal = () => {
-    const header = "LAPORAN REKAPITULASI GLOBAL BULANAN WIDYAISWARA\n==================================================\n\n";
-    const tableHeader = "NIP | Nama Widyaiswara | Jabatan | APBD | Kontribusi | Kemitraan | Grand Total JP\n";
-    const rows = filteredWis.map(wi => 
-      `${wi.nip} | ${wi.name}, ${wi.gelar} | ${wi.jabatan} | ${wi.apbd} JP | ${wi.kontribusi} JP | ${wi.kemitraan} JP | ${wi.grandTotal} JP`
-    ).join('\n');
-    
-    const blob = new Blob([header + tableHeader + rows], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Laporan_Rekap_Global_${new Date().toISOString().split('T')[0]}.txt`;
-    link.click();
-    toast.success("Rekap Global berhasil diekspor!");
+  // 1. Professional Global Monthly Recap Export (.xlsx)
+  const handleExportGlobal = async () => {
+    try {
+      if (filteredWis.length === 0) {
+        toast.error("Tidak ada data untuk diekspor.");
+        return;
+      }
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Rekap Global');
+
+      // Title Block
+      worksheet.mergeCells('A1:G1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = 'LAPORAN REKAPITULASI GLOBAL BULANAN WIDYAISWARA';
+      titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: '1E3A8A' } };
+      titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      worksheet.getRow(1).height = 30;
+
+      worksheet.addRow([]); // Spacing
+
+      // Header Row
+      const headerRow = worksheet.addRow([
+        'NIP',
+        'Nama Widyaiswara',
+        'Jabatan',
+        'Total JP APBD',
+        'Total JP Kontribusi',
+        'Total JP Kemitraan',
+        'Grand Total JP'
+      ]);
+
+      headerRow.height = 25;
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'EFF6FF' } // Light blue background
+        };
+        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: '1E3A8A' } };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'BFDBFE' } },
+          bottom: { style: 'medium', color: { argb: '1E3A8A' } },
+          left: { style: 'thin', color: { argb: 'BFDBFE' } },
+          right: { style: 'thin', color: { argb: 'BFDBFE' } }
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      });
+
+      // Data Rows
+      filteredWis.forEach((wi) => {
+        const row = worksheet.addRow([
+          wi.nip,
+          `${wi.name}, ${wi.gelar}`,
+          wi.jabatan,
+          Number(wi.apbd),
+          Number(wi.kontribusi),
+          Number(wi.kemitraan),
+          Number(wi.grandTotal)
+        ]);
+
+        row.height = 20;
+        row.eachCell((cell, colNumber) => {
+          cell.font = { name: 'Arial', size: 10 };
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'E2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'E2E8F0' } },
+            left: { style: 'thin', color: { argb: 'E2E8F0' } },
+            right: { style: 'thin', color: { argb: 'E2E8F0' } }
+          };
+          if (colNumber >= 4) {
+            cell.alignment = { vertical: 'middle', horizontal: 'right' };
+            cell.numFmt = '#,##0';
+          } else {
+            cell.alignment = { vertical: 'middle', horizontal: 'left' };
+          }
+        });
+      });
+
+      // Total Summary Row
+      const totalRowIndex = worksheet.rowCount + 1;
+      const totalRow = worksheet.addRow([
+        'Total Keseluruhan',
+        '',
+        '',
+        { formula: `SUM(D4:D${totalRowIndex - 1})` },
+        { formula: `SUM(E4:E${totalRowIndex - 1})` },
+        { formula: `SUM(F4:F${totalRowIndex - 1})` },
+        { formula: `SUM(G4:G${totalRowIndex - 1})` }
+      ]);
+
+      worksheet.mergeCells(`A${totalRowIndex}:C${totalRowIndex}`);
+      totalRow.height = 22;
+      totalRow.eachCell((cell, colNumber) => {
+        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: '1E3A8A' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'F8FAFC' }
+        };
+        cell.border = {
+          top: { style: 'medium', color: { argb: '1E3A8A' } },
+          bottom: { style: 'double', color: { argb: '1E3A8A' } },
+          left: { style: 'thin', color: { argb: 'E2E8F0' } },
+          right: { style: 'thin', color: { argb: 'E2E8F0' } }
+        };
+        if (colNumber >= 4) {
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+          cell.numFmt = '#,##0';
+        } else {
+          cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        }
+      });
+
+      // Auto-fit Columns
+      worksheet.columns.forEach((column) => {
+        let maxLen = 0;
+        column.eachCell?.({ includeEmpty: true }, (cell) => {
+          const val = cell.value;
+          if (val) {
+            let strLen = 0;
+            if (typeof val === 'object' && 'formula' in val) {
+              strLen = 10; // Default length for formula results
+            } else {
+              strLen = String(val).length;
+            }
+            if (strLen > maxLen) maxLen = strLen;
+          }
+        });
+        column.width = Math.max(maxLen + 4, 12);
+      });
+
+      // Write and Save File
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `Laporan_Rekap_Global_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.success("Rekap Global berhasil diekspor ke Excel!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Gagal mengekspor laporan.");
+    }
   };
 
-  const handleExportIndividual = (wi: any) => {
-    const header = `LAPORAN KINERJA INDIVIDU WIDYAISWARA\n====================================\n\n`;
-    const metadata = `NIP: ${wi.nip}\nNama: ${wi.name}, ${wi.gelar}\nJabatan: ${wi.jabatan}\nTingkat Kompetensi: Level ${wi.level} (${wi.levelLabel})\n\n`;
-    const summary = `REKAPITULASI JAM PELAJARAN (JP):\n--------------------------------\nAPBD: ${wi.apbd} JP\nKontribusi: ${wi.kontribusi} JP\nKemitraan: ${wi.kemitraan} JP\nGrand Total: ${wi.grandTotal} JP\n`;
-    
-    const blob = new Blob([header + metadata + summary], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Laporan_WI_${wi.name.replace(/\s+/g, '_')}.txt`;
-    link.click();
-    toast.success(`Laporan individu untuk ${wi.name} berhasil diekspor!`);
+  // 2. Professional Individual Widyaiswara Report Export (.xlsx)
+  const handleExportIndividual = async (wi: any) => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Laporan Individu');
+
+      // Title Block
+      worksheet.mergeCells('A1:F1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = 'LAPORAN KINERJA INDIVIDU WIDYAISWARA';
+      titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: '1E3A8A' } };
+      titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      worksheet.getRow(1).height = 30;
+
+      worksheet.addRow([]); // Spacing
+
+      // Metadata Block
+      const metaRows = [
+        ['NIP', wi.nip],
+        ['Nama & Gelar', `${wi.name}, ${wi.gelar}`],
+        ['Jabatan', wi.jabatan],
+        ['Tingkat Kompetensi', `Level ${wi.level} (${wi.levelLabel})`]
+      ];
+
+      metaRows.forEach((meta) => {
+        const row = worksheet.addRow(meta);
+        row.getCell(1).font = { name: 'Arial', size: 10, bold: true, color: { argb: '475569' } };
+        row.getCell(2).font = { name: 'Arial', size: 10, bold: true };
+      });
+
+      worksheet.addRow([]); // Spacing
+
+      // Fetch sessions for this specific WI to build the timeline
+      const resSessions = await fetch('/api/sessions').then(r => r.ok ? r.json() : []);
+      const resBatches = await fetch('/api/batches').then(r => r.ok ? r.json() : []);
+      const resMapels = await fetch('/api/mata-pelatihan').then(r => r.ok ? r.json() : []);
+
+      const wiSessions = resSessions.filter((s: any) => s.wiId === wi.id);
+
+      // Session Table Header
+      const headerRow = worksheet.addRow([
+        'Tanggal',
+        'Nama Batch',
+        'Mata Pelatihan',
+        'JP Ke',
+        'Jumlah JP',
+        'Format Pelaksanaan'
+      ]);
+
+      headerRow.height = 25;
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'EFF6FF' }
+        };
+        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: '1E3A8A' } };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'BFDBFE' } },
+          bottom: { style: 'medium', color: { argb: '1E3A8A' } },
+          left: { style: 'thin', color: { argb: 'BFDBFE' } },
+          right: { style: 'thin', color: { argb: 'BFDBFE' } }
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      });
+
+      const startRowIndex = worksheet.rowCount + 1;
+
+      // Session Table Data
+      if (wiSessions.length === 0) {
+        const emptyRow = worksheet.addRow(['Tidak ada jadwal mengajar bulan ini.', '', '', '', 0, '']);
+        worksheet.mergeCells(`A${startRowIndex}:D${startRowIndex}`);
+        emptyRow.eachCell((cell) => {
+          cell.font = { name: 'Arial', size: 10, italic: true };
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        });
+      } else {
+        wiSessions.forEach((s: any) => {
+          const batch = resBatches.find((b: any) => b.id === s.batchId);
+          const mapel = resMapels.find((m: any) => m.id === s.mapelId);
+
+          const row = worksheet.addRow([
+            s.date,
+            batch ? batch.name : 'Unknown Batch',
+            mapel ? mapel.name : 'Unknown Subject',
+            s.jpKe,
+            Number(s.jpCount),
+            s.format
+          ]);
+
+          row.height = 20;
+          row.eachCell((cell, colNumber) => {
+            cell.font = { name: 'Arial', size: 10 };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'E2E8F0' } },
+              bottom: { style: 'thin', color: { argb: 'E2E8F0' } },
+              left: { style: 'thin', color: { argb: 'E2E8F0' } },
+              right: { style: 'thin', color: { argb: 'E2E8F0' } }
+            };
+            if (colNumber === 5) {
+              cell.alignment = { vertical: 'middle', horizontal: 'right' };
+              cell.numFmt = '#,##0';
+            } else {
+              cell.alignment = { vertical: 'middle', horizontal: 'left' };
+            }
+          });
+        });
+      }
+
+      // Summary Row
+      const totalRowIndex = worksheet.rowCount + 1;
+      const totalRow = worksheet.addRow([
+        'Total Jam Pelajaran (JP)',
+        '',
+        '',
+        '',
+        { formula: `SUM(E${startRowIndex}:E${totalRowIndex - 1})` },
+        ''
+      ]);
+
+      worksheet.mergeCells(`A${totalRowIndex}:D${totalRowIndex}`);
+      totalRow.height = 22;
+      totalRow.eachCell((cell, colNumber) => {
+        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: '1E3A8A' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'F8FAFC' }
+        };
+        cell.border = {
+          top: { style: 'medium', color: { argb: '1E3A8A' } },
+          bottom: { style: 'double', color: { argb: '1E3A8A' } },
+          left: { style: 'thin', color: { argb: 'E2E8F0' } },
+          right: { style: 'thin', color: { argb: 'E2E8F0' } }
+        };
+        if (colNumber === 5) {
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+          cell.numFmt = '#,##0';
+        } else {
+          cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        }
+      });
+
+      // Auto-fit Columns
+      worksheet.columns.forEach((column) => {
+        let maxLen = 0;
+        column.eachCell?.({ includeEmpty: true }, (cell) => {
+          const val = cell.value;
+          if (val) {
+            let strLen = 0;
+            if (typeof val === 'object' && 'formula' in val) {
+              strLen = 10;
+            } else {
+              strLen = String(val).length;
+            }
+            if (strLen > maxLen) maxLen = strLen;
+          }
+        });
+        column.width = Math.max(maxLen + 4, 12);
+      });
+
+      // Write and Save File
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `Laporan_WI_${wi.name.replace(/\s+/g, '_')}.xlsx`);
+      toast.success(`Laporan individu untuk ${wi.name} berhasil diekspor ke Excel!`);
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Gagal mengekspor laporan.");
+    }
   };
 
   return (
