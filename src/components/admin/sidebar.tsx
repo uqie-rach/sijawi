@@ -36,7 +36,7 @@ export function Sidebar() {
     { href: '/admin/year-view', label: 'Year View', icon: Grid3X3 },
   ];
 
-  const navItems = ENABLE_ADVANCED_CALENDAR 
+  const navItems = ENABLE_ADVANCED_CALENDAR
     ? [...baseNavItems, ...advancedNavItems]
     : baseNavItems;
 
@@ -46,6 +46,7 @@ export function Sidebar() {
         <div className="p-6 border-b border-blue-950 flex items-center gap-3">
           <div className="bg-amber-500 p-1.5 rounded-lg shadow-md shadow-amber-500/20">
             <GraduationCap className="h-5 w-5 text-blue-950" />
+
           </div>
           <div>
             <h2 className="font-black text-lg tracking-tight text-white">{BRANDING.name}</h2>

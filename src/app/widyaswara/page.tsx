@@ -145,38 +145,38 @@ export default function WidyaswaraDashboard() {
     .slice(0, 3);
 
   return (
-    <div className="min-h-screen flex bg-white">
+    <div className="min-h-screen flex bg-slate-50">
 
-      {/* OUTER SIDEBAR */}
-      <aside className="w-64 bg-blue-900 text-white flex flex-col justify-between border-r border-blue-950 shrink-0 hidden md:flex">
+      {/* OUTER SIDEBAR - Modern White Sidebar */}
+      <aside className="w-64 bg-white text-slate-800 flex flex-col justify-between border-r border-slate-200 shrink-0 hidden md:flex">
         <div>
-          <div className="p-6 border-b border-blue-950 flex items-center gap-3">
-            <div className="bg-amber-500 p-1.5 rounded-lg shadow-md shadow-amber-500/20">
-              <GraduationCap className="h-5 w-5 text-blue-950" />
+          <div className="p-6 border-b border-slate-100 flex items-center gap-3">
+            <div className="bg-[#D4A017] p-1.5 rounded-xl shadow-md shadow-[#D4A017]/20">
+              <GraduationCap className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="font-black text-lg tracking-tight text-white">{BRANDING.name}</h2>
-              <p className="text-[10px] text-amber-400 font-medium">Widyaiswara Portal</p>
+              <h2 className="font-black text-lg tracking-tight text-[#1D4ED8]">{BRANDING.name}</h2>
+              <p className="text-[10px] text-slate-500 font-medium">Widyaiswara Portal</p>
             </div>
           </div>
 
           <nav className="p-4 space-y-1">
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors bg-amber-500 text-blue-950 shadow-md shadow-amber-500/10">
+            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-[#E9EEFC] text-[#1D4ED8] shadow-sm">
               <LayoutDashboard className="h-4 w-4" />
               Overview
             </button>
           </nav>
         </div>
 
-        <div className="p-4 border-t border-blue-950 space-y-4">
-          <div className="bg-blue-950/40 p-3 rounded-lg border border-blue-800/40">
-            <p className="text-[10px] text-blue-200">Logged in as</p>
-            <p className="text-xs font-bold text-white truncate">{activeWi.name}</p>
+        <div className="p-4 border-t border-slate-100 space-y-4">
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <p className="text-[10px] text-slate-500 font-semibold">Logged in as</p>
+            <p className="text-xs font-bold text-slate-800 truncate">{activeWi.name}</p>
           </div>
           <Button
             variant="destructive"
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 bg-red-600/25 hover:bg-red-600 text-red-200 hover:text-white border border-red-500/20 py-2.5 text-xs font-semibold transition-all"
+            className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-2.5 text-xs font-bold transition-all rounded-xl"
           >
             <LogOut className="h-3.5 w-3.5" />
             Sign Out Portal
@@ -187,32 +187,29 @@ export default function WidyaswaraDashboard() {
       {/* Main Workspace Frame */}
       <div className="flex-1 flex flex-col min-w-0">
 
-        {/* ATTRACTIVE GRADIENT HEADER */}
-        <header className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-blue-950 text-white px-8 py-6 shadow-lg overflow-hidden shrink-0">
-          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
-
+        {/* ATTRACTIVE MODERN HEADER */}
+        <header className="relative bg-white border-b border-slate-200 text-slate-800 px-8 py-6 shrink-0">
           <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <div className="flex items-center gap-2 bg-amber-500/10 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase mb-2 w-fit border border-amber-500/20 text-amber-400">
-                <Sparkles className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+              <div className="flex items-center gap-2 bg-[#E9EEFC] px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase mb-2 w-fit border border-[#C0CFF6] text-[#1D4ED8]">
+                <Sparkles className="h-3.5 w-3.5 text-[#1D4ED8]" />
                 {BRANDING.fullName}
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{BRANDING.name} Portal</h1>
-              <p className="text-sm text-blue-100 mt-1 max-w-xl">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">{BRANDING.name} Portal</h1>
+              <p className="text-sm text-slate-500 mt-1 max-w-xl">
                 {BRANDING.tagline}
               </p>
             </div>
 
-            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/15 shadow-inner">
-              <span className="text-xs text-blue-200 font-semibold whitespace-nowrap">Viewing Profile:</span>
+            <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
+              <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Viewing Profile:</span>
               <Select value={activeWi.id} onValueChange={setSelectedWiId}>
-                <SelectTrigger className="h-8 bg-blue-950/60 border-none text-white font-bold focus:ring-0 px-2.5 py-1 gap-1 text-xs rounded-lg">
+                <SelectTrigger className="h-8 bg-white border border-slate-200 text-slate-800 font-bold focus:ring-0 px-2.5 py-1 gap-1 text-xs rounded-lg">
                   <SelectValue placeholder="Select profile" />
                 </SelectTrigger>
-                <SelectContent className="bg-blue-950 border-blue-800 text-white">
+                <SelectContent className="bg-white border-slate-200 text-slate-800">
                   {widyaswaras.map(w => (
-                    <SelectItem key={w.id} value={w.id} className="hover:bg-blue-800 focus:bg-blue-800 text-xs font-semibold">
+                    <SelectItem key={w.id} value={w.id} className="hover:bg-slate-100 focus:bg-slate-100 text-xs font-semibold">
                       {w.name}, {w.gelar}
                     </SelectItem>
                   ))}
@@ -223,7 +220,7 @@ export default function WidyaswaraDashboard() {
         </header>
 
         {/* Dashboard Workspace */}
-        <div className="flex-1 p-8 overflow-y-auto grid lg:grid-cols-4 gap-8 bg-white">
+        <div className="flex-1 p-8 overflow-y-auto grid lg:grid-cols-4 gap-8 bg-slate-50/50">
 
           {/* LEFT SIDE: MAIN DASHBOARD AREA (3 COLS) */}
           <div className="lg:col-span-3 space-y-8">

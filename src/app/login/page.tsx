@@ -53,85 +53,85 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-gradient-to-b from-blue-900 via-slate-900 to-blue-950 text-white">
-      <header className="container mx-auto px-6 py-6 flex justify-between items-center border-b border-blue-800/40">
+    <div className="min-h-screen flex flex-col justify-between bg-slate-50 text-slate-800">
+      <header className="container mx-auto px-6 py-6 flex justify-between items-center border-b border-slate-200/60">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
-          <div className="bg-amber-500 p-2 rounded-lg shadow-md shadow-amber-500/20">
-            <GraduationCap className="h-6 w-6 text-blue-950" />
+          <div className="bg-[#D4A017] p-2 rounded-xl shadow-md shadow-[#D4A017]/20">
+            <GraduationCap className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="font-black text-2xl tracking-tight text-white">{BRANDING.name}</h1>
-            <p className="text-xs text-amber-400 font-medium">{BRANDING.fullName}</p>
+            <h1 className="font-black text-2xl tracking-tight text-[#1D4ED8]">{BRANDING.name}</h1>
+            <p className="text-xs text-slate-500 font-medium">{BRANDING.fullName}</p>
           </div>
         </div>
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         <div className="text-center max-w-xl mb-8">
-          <div className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full text-xs font-bold text-amber-400 mb-3">
+          <div className="inline-flex items-center gap-1.5 bg-[#E9EEFC] border border-[#C0CFF6] px-3 py-1 rounded-full text-xs font-bold text-[#1D4ED8] mb-3">
             <Sparkles className="h-3.5 w-3.5" />
             {BRANDING.tagline}
           </div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">Selamat Datang di {BRANDING.name}</h2>
-          <p className="text-sm text-slate-300">Silakan masuk untuk mengakses jadwal mengajar dan manajemen widyaiswara.</p>
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-2">Selamat Datang di {BRANDING.name}</h2>
+          <p className="text-sm text-slate-600">Silakan masuk untuk mengakses jadwal mengajar dan manajemen widyaiswara.</p>
         </div>
 
-        <Card className="w-full max-w-md bg-slate-900/90 border-slate-800 text-white shadow-2xl">
+        <Card className="w-full max-w-md bg-white border-slate-200 text-slate-800 shadow-xl rounded-2xl">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-xl font-bold tracking-tight">Sign In Portal</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-xl font-bold tracking-tight text-slate-900">Sign In Portal</CardTitle>
+            <CardDescription className="text-slate-500">
               Masukkan email dan kata sandi Anda untuk melanjutkan.
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleLogin}>
             <CardContent className="space-y-4">
               {error && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex items-start gap-2 text-xs text-red-400">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2 text-xs text-red-700">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-300">Email Address</Label>
+                <Label htmlFor="email" className="text-slate-700 font-semibold">Email Address</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                   <Input 
                     id="email" 
                     type="email" 
                     placeholder="admin@wtms.com atau email WI" 
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="pl-10 bg-slate-950 border-slate-800 text-white focus:ring-amber-500 focus:border-amber-500"
+                    className="pl-10 bg-slate-50 border-slate-200 text-slate-800 focus:ring-[#1D4ED8] focus:border-[#1D4ED8] rounded-xl"
                     required 
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-slate-300">Password</Label>
+                <Label htmlFor="password" className="text-slate-700 font-semibold">Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                   <Input 
                     id="password" 
                     type="password" 
                     placeholder="admin123 atau wi123" 
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="pl-10 bg-slate-950 border-slate-800 text-white focus:ring-amber-500 focus:border-amber-500"
+                    className="pl-10 bg-slate-50 border-slate-200 text-slate-800 focus:ring-[#1D4ED8] focus:border-[#1D4ED8] rounded-xl"
                     required 
                   />
                 </div>
               </div>
 
-              <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800/60 text-[11px] text-slate-400 space-y-1">
-                <p className="font-semibold text-amber-400">💡 Quick Demo Credentials:</p>
-                <p>• Admin: <span className="font-mono text-blue-400">admin@wtms.com</span> / <span className="font-mono text-blue-400">admin123</span></p>
-                <p>• Widyaiswara: <span className="font-mono text-indigo-400">wtms+wi.uqie@gmail.com</span> / <span className="font-mono text-indigo-400">wi123</span></p>
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
+                <p className="font-bold text-[#D4A017]">💡 Quick Demo Credentials:</p>
+                <p>• Admin: <span className="font-mono text-[#1D4ED8] font-semibold">admin@wtms.com</span> / <span className="font-mono text-[#1D4ED8] font-semibold">admin123</span></p>
+                <p>• Widyaiswara: <span className="font-mono text-[#1D4ED8] font-semibold">wtms+wi.uqie@gmail.com</span> / <span className="font-mono text-[#1D4ED8] font-semibold">wi123</span></p>
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-blue-950 font-bold py-6 text-base shadow-lg shadow-amber-500/20">
+              <Button type="submit" className="w-full bg-[#1D4ED8] hover:bg-[#1943B8] text-white font-bold py-6 text-base shadow-lg shadow-[#1D4ED8]/20 rounded-xl">
                 Masuk Portal
               </Button>
             </CardFooter>
@@ -139,7 +139,7 @@ export default function LoginPage() {
         </Card>
       </main>
 
-      <footer className="border-t border-blue-900/40 bg-slate-950/80">
+      <footer className="border-t border-slate-200 bg-white">
         <MadeWithDyad />
       </footer>
     </div>
