@@ -9,10 +9,10 @@ services:
     volumes:
       - mongodb_data:/data/db
     environment:
-      - MONGO_INITDB_DATABASE=wtms
+      - MONGO_INITDB_DATABASE=sijawi
     restart: unless-stopped
     networks:
-      - wtms-network
+      - sijawi-network
 
   web:
     build:
@@ -22,18 +22,18 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/wtms
+      - MONGODB_URI=mongodb://mongodb:27017/sijawi
       - NODE_ENV=production
     depends_on:
       - mongodb
     restart: unless-stopped
     networks:
-      - wtms-network
+      - sijawi-network
 
 volumes:
   mongodb_data:
     driver: local
 
 networks:
-  wtms-network:
+  sijawi-network:
     driver: bridge
