@@ -41,10 +41,10 @@ export async function GET(request: Request) {
     const joinedSessions = sessions.map(s => {
       const batch = batchMap.get(s.batch_id);
       const mapel = mapelMap.get(s.mapel_id);
-      
-      const resolvedWis = (s.wi_ids || []).map(id => wiMap.get(id)).filter(Boolean);
-      const wiNames = resolvedWis.map(w => `${w.name}, ${w.gelar}`).join(', ');
-      const wiEmails = resolvedWis.map(w => w.email).join(', ');
+
+      const resolvedWis = (s.wi_ids || []).map((id: any) => wiMap.get(id)).filter(Boolean);
+      const wiNames = resolvedWis.map((w: { name: any; gelar: any; }) => `${w.name}, ${w.gelar}`).join(', ');
+      const wiEmails = resolvedWis.map((w: { email: any; }) => w.email).join(', ');
 
       return {
         id: s._id,
@@ -80,8 +80,8 @@ export async function GET(request: Request) {
     }
     if (search) {
       const searchLower = search.toLowerCase();
-      filtered = filtered.filter(s => 
-        s.wiName.toLowerCase().includes(searchLower) || 
+      filtered = filtered.filter(s =>
+        s.wiName.toLowerCase().includes(searchLower) ||
         s.wiEmail.toLowerCase().includes(searchLower)
       );
     }

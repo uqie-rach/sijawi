@@ -44,8 +44,8 @@ export const getEvents = async (): Promise<IEvent[]> => {
       const lok = lokasiMap.get(s.lokasi_id || '');
 
       // Resolve multiple instructor names
-      const resolvedWis = (s.wi_ids || []).map(id => wiMap.get(id)).filter(Boolean);
-      const wiNames = resolvedWis.map(w => `${w.name}, ${w.gelar}`).join(', ');
+      const resolvedWis = (s.wi_ids || []).map((id: any) => wiMap.get(id)).filter(Boolean);
+      const wiNames = resolvedWis.map((w: { name: any; gelar: any; }) => `${w.name}, ${w.gelar}`).join(', ');
 
       let color: TEventColor = 'blue';
       if (s.format === 'Virtual') {

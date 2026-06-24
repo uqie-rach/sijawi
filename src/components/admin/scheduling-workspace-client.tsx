@@ -653,8 +653,8 @@ export function SchedulingWorkspaceClient({
                     const mapel = activeMapels.find(m => m.id === session.mapelId);
 
                     // Unpack multi-WI names
-                    const resolvedWis = (session.wiIds || []).map(id => activeWis.find(w => w.id === id)).filter(Boolean);
-                    const wiNames = resolvedWis.map(w => `${w.name}, ${w.gelar}`).join(', ');
+                    const resolvedWis = (session.wiIds || []).map((id: any) => activeWis.find(w => w.id === id)).filter(Boolean);
+                    const wiNames = resolvedWis.map((w: { name: any; gelar: any; }) => `${w.name}, ${w.gelar}`).join(', ');
 
                     const lok = activeLokasis.find(l => l.id === session.lokasiId);
 
@@ -739,8 +739,8 @@ export function SchedulingWorkspaceClient({
                       const mapel = activeMapels.find(m => m.id === session.mapelId);
 
                       // Unpack multiple Widyaiswaras with titles
-                      const resolvedWis = (session.wiIds || []).map(id => activeWis.find(w => w.id === id)).filter(Boolean);
-                      const wiNames = resolvedWis.map(w => `${w.name}, ${w.gelar}`).join(', ');
+                      const resolvedWis = (session.wiIds || []).map((id: any) => activeWis.find(w => w.id === id)).filter(Boolean);
+                      const wiNames = resolvedWis.map((w: { name: any; gelar: any; }) => `${w.name}, ${w.gelar}`).join(', ');
 
                       const lok = activeLokasis.find(l => l.id === session.lokasiId);
 
