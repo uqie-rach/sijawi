@@ -20,7 +20,7 @@ services:
       dockerfile: Dockerfile
     container_name: sijawi-web
     ports:
-      - "3000:3000"
+      - "3200:3000"
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/sijawi
       - NODE_ENV=production
