@@ -60,7 +60,7 @@ export function SchedulingWorkspaceClient({
   const activeLokasis = lokasiList.length ? lokasiList : initialLokasis;
   const activeSessions = sessions.length ? sessions : initialSessions;
 
-  const batchSessions = batchId 
+  const batchSessions = batchId
     ? activeSessions.filter(s => s.batchId === batchId)
     : activeSessions;
 
@@ -89,7 +89,7 @@ export function SchedulingWorkspaceClient({
     open: false,
     title: '',
     description: '',
-    onConfirm: () => {}
+    onConfirm: () => { }
   });
 
   useEffect(() => {
@@ -167,7 +167,7 @@ export function SchedulingWorkspaceClient({
       // Wait, let's serialize them correctly or run validations for each.
       // Since the server DB requires 'wiId' in the payload, but our rule says we change the model to 'wi_id: String' or 'wiIds'.
       // Our Mongoose JadwalSesi schema was written to take 'wi_id: String' to map with single string for seed, but also we can save as wi_id. Let's make sure the client saves 'wiId: sessionForm.wiIds[0]' or maps them. Wait, since the user explicitly asked to change the model to contain 'widyaiswara_id' and we support multi-WI, let's pass 'wiIds: sessionForm.wiIds' to our API payload, and also fallback to `wiId: sessionForm.wiIds[0]` to keep backward compatible if needed!
-      
+
       const payload = {
         batchId: targetBatchId,
         mapelId: sessionForm.mapelId,
@@ -227,7 +227,7 @@ export function SchedulingWorkspaceClient({
 
   const isLocationClashed = (lokId: string) => {
     if (sessionForm.format !== 'Klasikal' || !sessionForm.date || !sessionForm.startTime || !sessionForm.endTime) return false;
-    return activeSessions.some(s => 
+    return activeSessions.some(s =>
       s.id !== editingSessionId &&
       s.format === 'Klasikal' &&
       s.lokasiId === lokId &&
@@ -309,11 +309,10 @@ export function SchedulingWorkspaceClient({
                   <button
                     key={b.id}
                     onClick={() => router.push(`/admin/scheduling/${b.id}`)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${
-                      b.id === batchId 
-                        ? 'bg-blue-50 text-blue-600 border border-blue-200' 
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${b.id === batchId
+                      ? 'bg-blue-50 text-blue-600 border border-blue-200'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
                   >
                     <span className="truncate max-w-[130px]">{b.name}</span>
                     <span className="text-[9px] opacity-75">{b.startDate}</span>
@@ -363,27 +362,24 @@ export function SchedulingWorkspaceClient({
           <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
             <button
               onClick={() => setViewMode('table')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               <TableProperties className="h-3.5 w-3.5" />
               Matriks Tabel
             </button>
             <button
               onClick={() => setViewMode('calendar')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                viewMode === 'calendar' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewMode === 'calendar' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               <CalendarDays className="h-3.5 w-3.5" />
               Tampilan Kalender
             </button>
             <button
               onClick={() => setViewMode('day')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               <Clock className="h-3.5 w-3.5" />
               Lini Masa Hari
@@ -417,7 +413,7 @@ export function SchedulingWorkspaceClient({
                 </DialogTitle>
                 <DialogDescription>Atur pemetaan instruktur, batasan ketersediaan ruang kelas, dan parameter operasional.</DialogDescription>
               </DialogHeader>
-              
+
               <div className="grid md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-slate-100 p-6 gap-6">
                 {/* Form Inputs (3 Cols) */}
                 <form onSubmit={handleSubmit} className="md:col-span-3 space-y-4">
@@ -427,7 +423,7 @@ export function SchedulingWorkspaceClient({
                       <Combobox options={batchOptions} value={sessionForm.batchId} onValueChange={val => updateForm({ batchId: val })} placeholder="Pilih angkatan..." />
                     </div>
                   )}
-                  
+
                   <div className="space-y-1">
                     <Label>Mata Pelatihan (Mapel)</Label>
                     <Combobox options={mapelOptions} value={sessionForm.mapelId} onValueChange={val => updateForm({ mapelId: val })} placeholder="Cari mata pelajaran..." />
@@ -596,11 +592,10 @@ export function SchedulingWorkspaceClient({
                         setSelectedDayDate(dateStr);
                         setViewMode('day');
                       }}
-                      className={`min-h-[75px] border rounded p-1.5 flex flex-col justify-between transition-all cursor-pointer ${
-                        isDayInBatchRange 
-                          ? 'bg-white border-slate-200 hover:border-blue-400 hover:bg-slate-50/30' 
-                          : 'bg-slate-50/50 border-slate-100 opacity-40 hover:bg-slate-100/40'
-                      }`}
+                      className={`min-h-[75px] border rounded p-1.5 flex flex-col justify-between transition-all cursor-pointer ${isDayInBatchRange
+                        ? 'bg-white border-slate-200 hover:border-blue-400 hover:bg-slate-50/30'
+                        : 'bg-slate-50/50 border-slate-100 opacity-40 hover:bg-slate-100/40'
+                        }`}
                     >
                       <span className={`text-[11px] font-extrabold ${isDayInBatchRange ? 'text-slate-800' : 'text-slate-400'}`}>
                         {day.getDate()}
@@ -612,11 +607,10 @@ export function SchedulingWorkspaceClient({
                             <div
                               key={ev.id}
                               onClick={(e) => { e.stopPropagation(); triggerEdit(ev); }}
-                              className={`text-[9px] px-1 py-0.5 rounded truncate font-medium border ${
-                                ev.format === 'Klasikal' ? 'bg-blue-50 text-blue-800 border-blue-100' :
+                              className={`text-[9px] px-1 py-0.5 rounded truncate font-medium border ${ev.format === 'Klasikal' ? 'bg-blue-50 text-blue-800 border-blue-100' :
                                 ev.format === 'Virtual' ? 'bg-purple-50 text-purple-800 border-purple-100' :
-                                'bg-amber-50 text-amber-800 border-amber-100'
-                              }`}
+                                  'bg-amber-50 text-amber-800 border-amber-100'
+                                }`}
                               title={`${mapel?.name || 'Mata Pelajaran'} (${ev.startTime} - ${ev.endTime})`}
                             >
                               {mapel?.name || 'Mata Pelajaran'}
@@ -657,7 +651,7 @@ export function SchedulingWorkspaceClient({
                 <div className="space-y-4">
                   {batchSessions.filter(s => s.date === selectedDayDate).map(session => {
                     const mapel = activeMapels.find(m => m.id === session.mapelId);
-                    
+
                     // Unpack multi-WI names
                     const resolvedWis = (session.wiIds || []).map(id => activeWis.find(w => w.id === id)).filter(Boolean);
                     const wiNames = resolvedWis.map(w => `${w.name}, ${w.gelar}`).join(', ');
@@ -668,11 +662,10 @@ export function SchedulingWorkspaceClient({
                       <div key={session.id} className="p-4 border border-slate-100 rounded-xl bg-slate-50/50 hover:border-blue-200 transition-all flex justify-between items-center">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <Badge className={`text-[9px] font-bold ${
-                              session.format === 'Klasikal' ? 'bg-blue-100 text-blue-800' :
+                            <Badge className={`text-[9px] font-bold ${session.format === 'Klasikal' ? 'bg-blue-100 text-blue-800' :
                               session.format === 'Virtual' ? 'bg-purple-100 text-purple-800' :
-                              'bg-amber-100 text-amber-800'
-                            }`}>
+                                'bg-amber-100 text-amber-800'
+                              }`}>
                               {session.format}
                             </Badge>
                             <span className="text-xs font-extrabold text-slate-600 flex items-center gap-1">
@@ -684,7 +677,7 @@ export function SchedulingWorkspaceClient({
                           <div className="flex items-center gap-4 text-xs text-slate-500">
                             <span className="flex items-start gap-1">
                               <UserCheck className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
-                              <span>Widyaiswara: <strong>{wiName || 'Tidak Diketahui'}</strong></span>
+                              <span>Widyaiswara: <strong>{wiNames || 'Tidak Diketahui'}</strong></span>
                             </span>
                             <span className="flex items-center gap-1">
                               <MapPin className="h-3.5 w-3.5 text-slate-400" />
@@ -744,7 +737,7 @@ export function SchedulingWorkspaceClient({
                   <TableBody>
                     {batchSessions.map(session => {
                       const mapel = activeMapels.find(m => m.id === session.mapelId);
-                      
+
                       // Unpack multiple Widyaiswaras with titles
                       const resolvedWis = (session.wiIds || []).map(id => activeWis.find(w => w.id === id)).filter(Boolean);
                       const wiNames = resolvedWis.map(w => `${w.name}, ${w.gelar}`).join(', ');
@@ -756,15 +749,14 @@ export function SchedulingWorkspaceClient({
                           <TableCell className="pl-6 font-semibold text-slate-900 text-xs">{session.date}</TableCell>
                           <TableCell className="font-semibold text-slate-900 text-xs">{mapel?.name}</TableCell>
                           <TableCell className="text-xs text-slate-600 font-medium max-w-[200px] truncate" title={wiNames}>
-                            {wiName}
+                            {wiNames}
                           </TableCell>
                           <TableCell>
                             <div className="space-y-1">
-                              <Badge className={`text-[9px] font-bold ${
-                                session.format === 'Klasikal' ? 'bg-blue-100 text-blue-800' :
+                              <Badge className={`text-[9px] font-bold ${session.format === 'Klasikal' ? 'bg-blue-100 text-blue-800' :
                                 session.format === 'Virtual' ? 'bg-purple-100 text-purple-800' :
-                                'bg-amber-100 text-amber-800'
-                              }`}>{session.format}</Badge>
+                                  'bg-amber-100 text-amber-800'
+                                }`}>{session.format}</Badge>
                               {session.format === 'Klasikal' && <p className="text-[10px] text-slate-500 font-medium">{lok?.name || 'Ruangan'}</p>}
                             </div>
                           </TableCell>

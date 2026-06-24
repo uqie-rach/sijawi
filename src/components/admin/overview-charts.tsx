@@ -55,7 +55,7 @@ export function OverviewCharts({ barChartData, pieChartData }: OverviewChartsPro
                 </Pie>
                 <Tooltip cursor={{ fill: '#f1f5f9' }} />
               </PieChart>
-            </Container>
+            </ResponsiveContainer>
           </div>
           <div className="flex justify-around text-xs font-semibold">
             <span className="flex items-center gap-1">
