@@ -83,7 +83,7 @@ async function getSchedulingIndexData() {
         id: s._id,
         batchId: s.batch_id,
         mapelId: s.mapel_id,
-        wiId: s.wi_id,
+        wiIds: s.wi_ids || [], // array of strings
         date: s.date,
         startTime: s.start_time,
         endTime: s.end_time,
@@ -140,7 +140,7 @@ export default async function SchedulingIndexPage() {
                         <Badge className={`font-semibold text-[10px] ${
                           b.pola === 'APBD' ? 'bg-blue-50 text-blue-900 border-blue-200' :
                           b.pola === 'Kontribusi' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                          'bg-amber-50 text-amber-700 border-amber-200'
+                          'bg-sky-50 text-sky-700 border-sky-200'
                         }`}>
                           {b.pola}
                         </Badge>

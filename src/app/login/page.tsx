@@ -56,7 +56,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 text-slate-800">
       <header className="container mx-auto px-6 py-6 flex justify-between items-center border-b border-slate-200/60">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
-          <div className="bg-amber-500 p-2 rounded-xl shadow-md shadow-amber-500/20">
+          <div className="bg-blue-600 p-2 rounded-xl shadow-md shadow-blue-500/20">
             <GraduationCap className="h-6 w-6 text-white" />
           </div>
           <div>
@@ -125,7 +125,7 @@ export default function LoginPage() {
               </div>
 
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
-                <p className="font-bold text-amber-600">💡 Quick Demo Credentials:</p>
+                <p className="font-bold text-blue-600">💡 Quick Demo Credentials:</p>
                 <p>• Admin: <span className="font-mono text-blue-600 font-semibold">admin@wtms.com</span> / <span className="font-mono text-blue-600 font-semibold">admin123</span></p>
                 <p>• Widyaiswara: <span className="font-mono text-blue-600 font-semibold">wtms+wi.uqie@gmail.com</span> / <span className="font-mono text-blue-600 font-semibold">wi123</span></p>
               </div>

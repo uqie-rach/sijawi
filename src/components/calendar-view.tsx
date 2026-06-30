@@ -116,7 +116,7 @@ export function CalendarView({ events, onEventClick, title = "Training Schedule 
                   <span className={`absolute -left-[31px] top-1.5 h-4 w-4 rounded-full border-2 border-white shadow-sm ${
                     event.format === 'Klasikal' ? 'bg-blue-500' :
                     event.format === 'Virtual' ? 'bg-purple-500' :
-                    'bg-amber-500'
+                    'bg-sky-500'
                   }`} />
                   
                   <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 hover:border-blue-200 transition-all duration-200">
@@ -125,7 +125,7 @@ export function CalendarView({ events, onEventClick, title = "Training Schedule 
                         <Badge className={`font-semibold ${
                           event.format === 'Klasikal' ? 'bg-blue-100 text-blue-800 border-blue-200' :
                           event.format === 'Virtual' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                          'bg-amber-100 text-amber-800 border-amber-200'
+                          'bg-sky-100 text-sky-800 border-sky-200'
                         }`}>
                           {event.format}
                         </Badge>
@@ -240,7 +240,7 @@ export function CalendarView({ events, onEventClick, title = "Training Schedule 
                       className={`p-1 rounded text-[10px] font-medium cursor-pointer transition-all duration-150 border ${
                         event.format === 'Klasikal' ? 'bg-blue-50 text-blue-800 border-blue-100 hover:bg-blue-100' :
                         event.format === 'Virtual' ? 'bg-purple-50 text-purple-800 border-purple-100 hover:bg-purple-100' :
-                        'bg-amber-50 text-amber-800 border-amber-100 hover:bg-amber-100'
+                        'bg-sky-50 text-sky-800 border-sky-100 hover:bg-sky-100'
                       }`}
                       title={`${event.title} (${event.startTime} - ${event.endTime})`}
                     >

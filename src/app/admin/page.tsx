@@ -96,7 +96,7 @@ export default async function OverviewPage() {
   const pieChartData = [
     { name: 'APBD', value: totalApbd, color: '#2563eb' },
     { name: 'Kontribusi', value: totalKontribusi, color: '#10b981' },
-    { name: 'Kemitraan', value: totalKemitraan, color: '#C8A14A' },
+    { name: 'Kemitraan', value: totalKemitraan, color: '#0ea5e9' },
   ].filter((item) => item.value > 0);
 
   return (
@@ -178,7 +178,7 @@ export default async function OverviewPage() {
                           />
                           <div 
                             style={{ width: `${wi.jpCurrentMonth ? (wi.breakdown.kemitraan / wi.jpCurrentMonth) * 100 : 0}%` }} 
-                            className="bg-amber-500"
+                            className="bg-sky-500"
                           />
                         </div>
                       </div>

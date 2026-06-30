@@ -319,7 +319,7 @@ export function MasterTabs({
                     <TableRow key={k.id}>
                       <TableCell className="font-semibold pl-6">{k.name}</TableCell>
                       <TableCell>
-                        <Badge className="bg-amber-100 text-amber-800 border-amber-200">
+                        <Badge className="bg-sky-100 text-sky-800 border-sky-200">
                           Level {k.minWeight} atau lebih tinggi
                         </Badge>
                       </TableCell>

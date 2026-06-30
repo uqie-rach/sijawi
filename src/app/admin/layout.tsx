@@ -50,7 +50,7 @@ export default async function AdminLayout({
           </div>
 
           <div className="flex items-center gap-4 bg-blue-50 border border-blue-100 px-4 py-2 rounded-lg">
-            <div className="bg-amber-500 p-1.5 rounded-md text-blue-950">
+            <div className="bg-blue-600 p-1.5 rounded-md text-white">
               <span className="text-xs font-black">JP</span>
             </div>
             <div>

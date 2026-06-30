@@ -44,12 +44,12 @@ export function Sidebar() {
     <aside className="w-full md:w-64 bg-white text-slate-800 flex flex-col justify-between border-r border-slate-200 shrink-0">
       <div>
         <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-          <div className="bg-amber-500 p-1.5 rounded-lg shadow-md shadow-amber-500/20">
+          <div className="bg-blue-600 p-1.5 rounded-lg shadow-md shadow-blue-500/20">
             <GraduationCap className="h-5 w-5 text-white" />
           </div>
           <div>
             <h2 className="font-black text-lg tracking-tight text-blue-900">{BRANDING.name}</h2>
-            <p className="text-[10px] text-amber-600 font-semibold">Konsol Super Admin</p>
+            <p className="text-[10px] text-blue-600 font-semibold">Konsol Super Admin</p>
           </div>
         </div>
 
