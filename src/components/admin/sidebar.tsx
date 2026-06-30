@@ -1,9 +1,23 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Database, CalendarDays, BarChart3, LogOut, GraduationCap, List, CalendarRange, Grid2x2, Columns, Grid3X3 } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  Database, 
+  CalendarDays, 
+  BarChart3, 
+  LogOut, 
+  GraduationCap, 
+  List, 
+  CalendarRange, 
+  Grid2x2, 
+  Columns, 
+  Grid3X3,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useWTMS } from '@/context/wtms-context';
 import { BRANDING, ENABLE_ADVANCED_CALENDAR } from '@/lib/config';
@@ -12,6 +26,23 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { setIsAuthenticated, setUserRole, setSelectedWiId } = useWTMS();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Load collapse state on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebar_admin_collapsed');
+      if (saved) {
+        setIsCollapsed(JSON.parse(saved));
+      }
+    }
+  }, []);
+
+  const toggleCollapse = () => {
+    const nextState = !isCollapsed;
+    setIsCollapsed(nextState);
+    localStorage.setItem('sidebar_admin_collapsed', JSON.stringify(nextState));
+  };
 
   const handleLogout = () => {
     document.cookie = "sessionToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
@@ -41,19 +72,35 @@ export function Sidebar() {
     : baseNavItems;
 
   return (
-    <aside className="w-full md:w-64 bg-white text-slate-800 flex flex-col justify-between border-r border-slate-200 shrink-0">
+    <aside 
+      className={`relative bg-white text-slate-800 flex flex-col justify-between border-r border-slate-200 shrink-0 transition-all duration-300 ${
+        isCollapsed ? 'w-20' : 'w-full md:w-64'
+      } md:h-screen md:sticky md:top-0`}
+    >
       <div>
-        <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-          <div className="bg-blue-600 p-1.5 rounded-lg shadow-md shadow-blue-500/20">
+        {/* Toggle Collapse Button for desktop */}
+        <button
+          onClick={toggleCollapse}
+          className="absolute -right-3 top-7 hidden md:flex bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-full p-1 shadow-sm z-50 transition-transform"
+        >
+          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
+
+        {/* Branding header */}
+        <div className={`p-6 border-b border-slate-100 flex items-center gap-3 ${isCollapsed ? 'justify-center p-4' : ''}`}>
+          <div className="bg-blue-600 p-1.5 rounded-lg shadow-md shadow-blue-500/20 shrink-0">
             <GraduationCap className="h-5 w-5 text-white" />
           </div>
-          <div>
-            <h2 className="font-black text-lg tracking-tight text-blue-900">{BRANDING.name}</h2>
-            <p className="text-[10px] text-blue-600 font-semibold">Konsol Super Admin</p>
-          </div>
+          {!isCollapsed && (
+            <div className="animate-in fade-in duration-300">
+              <h2 className="font-black text-lg tracking-tight text-blue-900">{BRANDING.name}</h2>
+              <p className="text-[10px] text-blue-600 font-semibold">Konsol Super Admin</p>
+            </div>
+          )}
         </div>
 
-        <nav className="p-4 space-y-1">
+        {/* Navigation Items */}
+        <nav className={`p-4 space-y-1 ${isCollapsed ? 'p-2' : ''}`}>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
@@ -61,31 +108,45 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${isActive
-                  ? 'bg-blue-50 text-blue-600 shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                  isCollapsed ? 'justify-center px-0 py-3' : ''
+                } ${
+                  isActive
+                    ? 'bg-blue-50 text-blue-600 shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+                title={isCollapsed ? item.label : undefined}
               >
-                <Icon className="h-4 w-4" />
-                {item.label}
+                <Icon className="h-4 w-4 shrink-0" />
+                {!isCollapsed && <span className="animate-in fade-in duration-300">{item.label}</span>}
               </Link>
             );
           })}
         </nav>
       </div>
 
-      <div className="p-4 border-t border-slate-100 space-y-4">
-        <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-          <p className="text-[10px] text-slate-500">Masuk sebagai</p>
-          <p className="text-sm font-bold text-slate-800">Super Admin</p>
-        </div>
+      {/* Footer Info & Logout */}
+      <div className={`p-4 border-t border-slate-100 space-y-4 ${isCollapsed ? 'p-2' : ''}`}>
+        {!isCollapsed ? (
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 animate-in fade-in duration-300">
+            <p className="text-[10px] text-slate-500">Masuk sebagai</p>
+            <p className="text-sm font-bold text-slate-800">Super Admin</p>
+          </div>
+        ) : (
+          <div className="flex justify-center text-slate-500" title="Super Admin">
+            <GraduationCap className="h-4 w-4 text-blue-600" />
+          </div>
+        )}
         <Button
           variant="destructive"
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"
+          className={`w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 ${
+            isCollapsed ? 'px-0 py-2.5' : ''
+          }`}
+          title={isCollapsed ? "Keluar Mode Admin" : undefined}
         >
-          <LogOut className="h-4 w-4" />
-          Keluar Mode Admin
+          <LogOut className="h-4 w-4 shrink-0" />
+          {!isCollapsed && <span className="animate-in fade-in duration-300">Keluar Mode Admin</span>}
         </Button>
       </div>
     </aside>
