@@ -5,8 +5,10 @@
 @layer base {
   :root {
     /* Dominant clean white background */
-    --background: 0 0% 100%; /* #FFFFFF */
-    --foreground: 224 71% 23%; /* #1E3A8A (Tailwind blue-900) */
+    --background: 0 0% 100%;
+    /* #FFFFFF */
+    --foreground: 224 71% 23%;
+    /* #1E3A8A (Tailwind blue-900) */
 
     --card: 0 0% 100%;
     --card-foreground: 224 71% 23%;
@@ -15,18 +17,21 @@
     --popover-foreground: 224 71% 23%;
 
     /* Primary: Standard Tailwind Blue 600 (#2563EB) */
-    --primary: 221 83% 53%; /* #2563EB */
+    --primary: 221 83% 53%;
+    /* #2563EB */
     --primary-foreground: 0 0% 100%;
 
     /* Secondary: Standard Tailwind Blue 50 (#EFF6FF) */
-    --secondary: 221 100% 97%; /* #EFF6FF */
+    --secondary: 221 100% 97%;
+    /* #EFF6FF */
     --secondary-foreground: 221 83% 53%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
     /* Accent: Modern Vibrant Teal/Cyan (#0891B2) */
-    --accent: 187 92% 42%; /* #0891B2 */
+    --accent: 187 92% 42%;
+    /* #0891B2 */
     --accent-foreground: 224 71% 23%;
 
     --destructive: 0 84.2% 60.2%;
@@ -48,7 +53,7 @@
     --sidebar-border: 214.3 31.8% 91.4%;
     --sidebar-ring: 221 83% 53%;
   }
-  
+
   .dark {
     --background: 224 71% 10%;
     --foreground: 210 40% 98%;
@@ -81,6 +86,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground antialiased;
   }
