@@ -11,6 +11,7 @@ export interface IWidyaiswara extends Document {
   level_label: string;
   jp_last_month: number;
   password_hash?: string; // hashed password
+  password_plain?: string; // plain text password for admin reference
 }
 
 const WidyaiswaraSchema: Schema = new Schema(
@@ -25,6 +26,7 @@ const WidyaiswaraSchema: Schema = new Schema(
     level_label: { type: String, required: true },
     jp_last_month: { type: Number, default: 0 },
     password_hash: { type: String }, // hashed password
+    password_plain: { type: String, default: 'wi123' }, // plain text password for admin reference
   },
   {
     timestamps: true,
