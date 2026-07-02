@@ -13,6 +13,7 @@ export interface Widyaiswara {
   level: number; // 1 to 5
   levelLabel: string; // PPPK, Latsar, PKP, PKA, PKN
   jpLastMonth: number;
+  password?: string;
 }
 
 export interface KategoriPelatihan {
