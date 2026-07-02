@@ -132,7 +132,8 @@ export async function GET() {
       jabatan: r.jabatan,
       level: r.level,
       levelLabel: r.level_label,
-      jpLastMonth: r.jp_last_month || 0
+      jpLastMonth: r.jp_last_month || 0,
+      password: r.password_plain || 'wi123'
     }));
     return Response.json(widyaswaras);
   } catch (error: any) {
@@ -162,7 +163,8 @@ export async function POST(request: Request) {
       level,
       level_label: levelLabel,
       jp_last_month: jpLastMonth || 0,
-      password_hash: passwordHash
+      password_hash: passwordHash,
+      password_plain: plainPassword
     });
 
     await newWi.save();
@@ -202,6 +204,7 @@ export async function PUT(request: Request) {
 
     if (password) {
       updateData.password_hash = await bcrypt.hash(password);
+      updateData.password_plain = password;
     }
 
     await Widyaiswara.findByIdAndUpdate(id, updateData);

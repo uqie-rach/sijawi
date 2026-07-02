@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, MapPin } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Eye, EyeOff } from 'lucide-react';
 import { useWTMS } from '@/context/wtms-context';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -60,9 +60,12 @@ export function MasterTabs({
   const activeBatches = batches.length ? batches : initialBatches;
 
   // Form states with LocalStorage persistence of drafts
-  const [wiForm, setWiForm] = useState({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' });
+  const [wiForm, setWiForm] = useState({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3', password: 'wi123' });
   const [editingWiId, setEditingWiId] = useState<string | null>(null);
   const [isWiDialogOpen, setIsWiDialogOpen] = useState(false);
+
+  // State to track password visibility for each Widyaiswara in the list
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
 
   const [katForm, setKatForm] = useState({ name: '', minWeight: '3' });
   const [editingKatId, setEditingKatId] = useState<string | null>(null);
@@ -176,6 +179,13 @@ export function MasterTabs({
     }
   };
 
+  const togglePasswordVisibility = (id: string) => {
+    setVisiblePasswords(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
   return (
     <Tabs defaultValue="wi" className="w-full space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -189,14 +199,14 @@ export function MasterTabs({
 
         <Dialog open={isWiDialogOpen} onOpenChange={setIsWiDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => { setEditingWiId(null); setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3' }); }} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
+            <Button onClick={() => { setEditingWiId(null); setWiForm({ name: '', gelar: '', email: '', nip: '', jabatan: 'WI Ahli Madya', level: '3', password: 'wi123' }); }} className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
               <Plus className="h-4 w-4" /> Tambah Widyaiswara
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-white">
             <DialogHeader>
               <DialogTitle>{editingWiId ? 'Edit Widyaiswara' : 'Tambah Widyaiswara Baru'}</DialogTitle>
-              <DialogDescription>Atur detail profil instruktur dan tingkat kompetensi mengajar.</DialogDescription>
+              <DialogDescription>Atur detail profil instruktur, tingkat kompetensi mengajar, dan kata sandi akun.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleWiSubmit} className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-4">
@@ -246,6 +256,11 @@ export function MasterTabs({
                   </Select>
                 </div>
               </div>
+              <div className="space-y-1">
+                <Label>Kata Sandi (Password)</Label>
+                <Input type="text" value={wiForm.password} onChange={e => updateWiForm({ password: e.target.value })} placeholder="wi123" required />
+                <p className="text-[10px] text-slate-400">Kata sandi ini akan digunakan oleh Widyaiswara untuk masuk ke portal.</p>
+              </div>
               <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4">Simpan Widyaiswara</Button>
             </form>
           </DialogContent>
@@ -262,40 +277,60 @@ export function MasterTabs({
                   <TableHead>NIP</TableHead>
                   <TableHead>Jabatan</TableHead>
                   <TableHead>Tingkat Kompetensi</TableHead>
+                  <TableHead>Kata Sandi</TableHead>
                   <TableHead className="pr-6 text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {activeWis.map(wi => (
-                  <TableRow key={wi.id}>
-                    <TableCell className="font-semibold text-slate-900 pl-6">{wi.name}, {wi.gelar}</TableCell>
-                    <TableCell className="text-slate-600 font-mono text-xs">{wi.nip}</TableCell>
-                    <TableCell className="text-slate-600 text-xs font-medium">{wi.jabatan}</TableCell>
-                    <TableCell>
-                      <Badge className="bg-blue-100 text-blue-900 border-blue-200">
-                        Level {wi.level} - {wi.levelLabel}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="pr-6 text-right space-x-2">
-                      <Button size="sm" variant="ghost" onClick={() => {
-                        setEditingWiId(wi.id);
-                        setWiForm({ name: wi.name, gelar: wi.gelar, email: wi.email, nip: wi.nip, jabatan: wi.jabatan, level: String(wi.level) });
-                        setIsWiDialogOpen(true);
-                      }} className="text-blue-600 hover:text-blue-700">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => {
-                        triggerConfirmation(
-                          "Hapus Profil Widyaiswara",
-                          `Apakah Anda yakin ingin menghapus profil Widyaiswara ${wi.name} secara permanen?`,
-                          () => deleteWidyaswara(wi.id)
-                        );
-                      }} className="text-red-600 hover:text-red-800">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {activeWis.map(wi => {
+                  const isPasswordVisible = !!visiblePasswords[wi.id];
+                  return (
+                    <TableRow key={wi.id}>
+                      <TableCell className="font-semibold text-slate-900 pl-6">{wi.name}, {wi.gelar}</TableCell>
+                      <TableCell className="text-slate-600 font-mono text-xs">{wi.nip}</TableCell>
+                      <TableCell className="text-slate-600 text-xs font-medium">{wi.jabatan}</TableCell>
+                      <TableCell>
+                        <Badge className="bg-blue-100 text-blue-900 border-blue-200">
+                          Level {wi.level} - {wi.levelLabel}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-200 min-w-[80px] text-center">
+                            {isPasswordVisible ? (wi.password || 'wi123') : '••••••••'}
+                          </span>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => togglePasswordVisibility(wi.id)}
+                            className="h-7 w-7 text-slate-500 hover:text-slate-700"
+                            title={isPasswordVisible ? "Sembunyikan Password" : "Tampilkan Password"}
+                          >
+                            {isPasswordVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell className="pr-6 text-right space-x-2">
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          setEditingWiId(wi.id);
+                          setWiForm({ name: wi.name, gelar: wi.gelar, email: wi.email, nip: wi.nip, jabatan: wi.jabatan, level: String(wi.level), password: wi.password || 'wi123' });
+                          setIsWiDialogOpen(true);
+                        }} className="text-blue-600 hover:text-blue-700">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          triggerConfirmation(
+                            "Hapus Profil Widyaiswara",
+                            `Apakah Anda yakin ingin menghapus profil Widyaiswara ${wi.name} secara permanen?`,
+                            () => deleteWidyaswara(wi.id)
+                          );
+                        }} className="text-red-600 hover:text-red-800">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

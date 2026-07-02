@@ -18,7 +18,17 @@ async function getMasterData() {
     const batches = await Pelatihan.find().sort({ start_date: -1 });
 
     return {
-      wis: wis.map(w => ({ id: w._id, name: w.name, gelar: w.gelar, email: w.email, nip: w.nip, jabatan: w.jabatan, level: Number(w.level), levelLabel: w.level_label })),
+      wis: wis.map(w => ({ 
+        id: w._id, 
+        name: w.name, 
+        gelar: w.gelar, 
+        email: w.email, 
+        nip: w.nip, 
+        jabatan: w.jabatan, 
+        level: Number(w.level), 
+        levelLabel: w.level_label,
+        password: w.password_plain || 'wi123'
+      })),
       kats: kats.map(k => ({ id: k._id, name: k.name, minWeight: Number(k.min_weight) })),
       mapels: mapels.map(m => ({ id: m._id, name: m.name, kategoriId: m.kategori_id, jpTotal: Number(m.jp_total) })),
       lokasis: lokasis.map(l => ({ id: l._id, name: l.name })),
