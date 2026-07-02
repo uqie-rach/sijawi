@@ -24,6 +24,8 @@ import { WidyaswaraSidebar } from '@/components/widyaswara/sidebar';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { BRANDING } from '@/lib/config';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Select, SelectValue, SelectTrigger, SelectContent, SelectItem } from '@/components/ui/select';
 
 export default function WidyaswaraDashboard() {
   const router = useRouter();
@@ -241,17 +243,15 @@ export default function WidyaswaraDashboard() {
                 <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
                   <button
                     onClick={() => setScheduleFilter('personal')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      scheduleFilter === 'personal' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${scheduleFilter === 'personal' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      }`}
                   >
                     Jadwal Saya
                   </button>
                   <button
                     onClick={() => setScheduleFilter('global')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      scheduleFilter === 'global' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${scheduleFilter === 'global' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      }`}
                   >
                     Jadwal Global
                   </button>
@@ -266,18 +266,16 @@ export default function WidyaswaraDashboard() {
                 <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
                   <button
                     onClick={() => setViewMode('table')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                      viewMode === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all ${viewMode === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      }`}
                   >
                     <TableIcon className="h-3.5 w-3.5" />
                     Tabel
                   </button>
                   <button
                     onClick={() => setViewMode('calendar')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                      viewMode === 'calendar' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all ${viewMode === 'calendar' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      }`}
                   >
                     <Calendar className="h-3.5 w-3.5" />
                     Kalender
@@ -311,9 +309,8 @@ export default function WidyaswaraDashboard() {
                           return (
                             <Card
                               key={session.id}
-                              className={`bg-white border transition-all duration-200 shadow-sm rounded-xl relative ${
-                                isOwnSession ? 'border-blue-400 ring-1 ring-blue-100 bg-gradient-to-tr from-white to-blue-50/10' : 'border-slate-200'
-                              }`}
+                              className={`bg-white border transition-all duration-200 shadow-sm rounded-xl relative ${isOwnSession ? 'border-blue-400 ring-1 ring-blue-100 bg-gradient-to-tr from-white to-blue-50/10' : 'border-slate-200'
+                                }`}
                             >
                               {isOwnSession && (
                                 <span className="absolute -top-2.5 -right-2.5 bg-blue-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-md">
@@ -323,11 +320,10 @@ export default function WidyaswaraDashboard() {
 
                               <CardHeader className="pb-3 border-b border-slate-50">
                                 <div className="flex justify-between items-start gap-2">
-                                  <Badge className={`font-semibold ${
-                                    session.format === 'Klasikal' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                  <Badge className={`font-semibold ${session.format === 'Klasikal' ? 'bg-blue-100 text-blue-800 border-blue-200' :
                                     session.format === 'Virtual' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                                    'bg-sky-100 text-sky-800 border-sky-200'
-                                  }`}>
+                                      'bg-sky-100 text-sky-800 border-sky-200'
+                                    }`}>
                                     {session.format}
                                   </Badge>
                                   <div className="flex items-center gap-1 text-xs text-slate-500 font-semibold">
