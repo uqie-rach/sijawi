@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  serverExternalPackages: ['bullmq', 'ioredis'],
   webpack: (config) => {
     if (process.env.NODE_ENV === "development") {
       config.module.rules.push({
