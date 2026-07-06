@@ -4,8 +4,15 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  serverExternalPackages: ['bullmq', 'ioredis', 'nodemailer'],
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = [
+        ...(Array.isArray(config.externals) ? config.externals : [config.externals].filter(Boolean)),
+        'bullmq',
+        'ioredis',
+        'nodemailer',
+      ];
+    }
     if (process.env.NODE_ENV === "development") {
       config.module.rules.push({
         test: /\.(jsx|tsx)$/,
