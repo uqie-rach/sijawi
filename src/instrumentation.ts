@@ -1,10 +1,11 @@
-import { sendEmail } from './lib/email';
-
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'edge') return;
 
   const { Worker } = await import(/* webpackIgnore: true */ 'bullmq');
   const { default: Redis } = await import(/* webpackIgnore: true */ 'ioredis');
+
+  // Dynamic import untuk menghindari bundling statis nodemailer oleh webpack
+  const { sendEmail } = await import(/* webpackIgnore: true */ '../lib/email');
 
   const connection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: null,
