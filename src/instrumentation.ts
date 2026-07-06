@@ -1,10 +1,13 @@
+import { Worker } from 'bullmq';
+import { Redis } from 'ioredis';
+import { sendEmail } from './lib/email';
+
 export async function register() {
-  // Only register the worker in non-edge runtimes (edge doesn't support BullMQ workers)
   if (process.env.NEXT_RUNTIME === 'edge') return;
 
-  const { Worker } = await import(/* webpackIgnore: true */ 'bullmq');
-  const { redis } = await import(/* webpackIgnore: true */ './lib/redis');
-  const { sendEmail } = await import(/* webpackIgnore: true */ './lib/email');
+  const connection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+    maxRetriesPerRequest: null,
+  });
 
   const worker = new Worker(
     'email-queue',
@@ -15,7 +18,7 @@ export async function register() {
       console.log(`[Email Worker] Email sent to: ${to}`);
     },
     {
-      connection: redis as any,
+      connection: connection as any,
       concurrency: 4,
     },
   );
