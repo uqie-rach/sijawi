@@ -3,7 +3,7 @@ import Widyaiswara from '@/models/Widyaiswara';
 import { bcrypt } from '@/lib/bcrypt';
 import { cookies } from 'next/headers';
 import { enqueueEmail } from '@/lib/queue';
-import { getWelcomeEmailHtml } from '@/lib/email';
+import { getWelcomeEmailHtml } from '@/lib/email-templates';
 
 async function isAdmin() {
   try {

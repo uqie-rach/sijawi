@@ -2,9 +2,9 @@ export async function register() {
   // Only register the worker in non-edge runtimes (edge doesn't support BullMQ workers)
   if (process.env.NEXT_RUNTIME === 'edge') return;
 
-  const { Worker } = await import('bullmq');
-  const { redis } = await import('@/lib/redis');
-  const { sendEmail } = await import('@/lib/email');
+  const { Worker } = await import(/* webpackIgnore: true */ 'bullmq');
+  const { redis } = await import(/* webpackIgnore: true */ './lib/redis');
+  const { sendEmail } = await import(/* webpackIgnore: true */ './lib/email');
 
   const worker = new Worker(
     'email-queue',
