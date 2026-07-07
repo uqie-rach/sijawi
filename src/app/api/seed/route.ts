@@ -5,6 +5,8 @@ import MataPelatihan from '@/models/MataPelatihan';
 import Lokasi from '@/models/Lokasi';
 import Pelatihan from '@/models/Pelatihan';
 import JadwalSesi from '@/models/JadwalSesi';
+import AdminConfig from '@/models/AdminConfig';
+import { bcrypt } from '@/lib/bcrypt';
 
 export async function POST() {
   try {
@@ -17,7 +19,8 @@ export async function POST() {
       MataPelatihan.deleteMany({}),
       Lokasi.deleteMany({}),
       Pelatihan.deleteMany({}),
-      JadwalSesi.deleteMany({})
+      JadwalSesi.deleteMany({}),
+      AdminConfig.deleteMany({})
     ]);
 
     // 1. Seed Kategori Pelatihan
@@ -32,29 +35,46 @@ export async function POST() {
       await KategoriPelatihan.create(k);
     }
 
-    // 2. Seed Widyaiswara (Master Records)
+    // 2. Seed Widyaiswara (Master Records Lengkap Sesuai Jadwal PKA)
     const widyaswaras = [
-      { _id: 'wi-qurrota', name: 'Qurrota A’yun', gelar: 'S.E., M.Si', email: 'wtms+wi.qurrota@gmail.com', nip: '198205122009032001', jabatan: 'WI Ahli Madya', level: 3, level_label: 'PKP', jp_last_month: 28 },
-      { _id: 'wi-anung', name: 'Mohammad Anung Edy Nugroho', gelar: 'M.SM', email: 'wtms+wi.anung@gmail.com', nip: '198511042010121002', jabatan: 'WI Ahli Madya', level: 3, level_label: 'PKP', jp_last_month: 24 },
-      { _id: 'wi-farid', name: 'Drs. Akhmad Farid Gaftan', gelar: 'M.Si', email: 'wtms+wi.farid@gmail.com', nip: '197604152003121001', jabatan: 'WI Ahli Madya', level: 4, level_label: 'PKA', jp_last_month: 30 },
-      { _id: 'wi-mahariska', name: 'Mahariska Devi P.', gelar: 'S.T., M.PSDM', email: 'wtms+wi.mahariska@gmail.com', nip: '199008242015032002', jabatan: 'WI Ahli Muda', level: 3, level_label: 'PKP', jp_last_month: 16 },
-      { _id: 'wi-randy', name: 'Randy Febriano Ruhyana', gelar: 'S.T., M.MT', email: 'wtms+wi.randy@gmail.com', nip: '199102142018011003', jabatan: 'WI Ahli Muda', level: 3, level_label: 'PKP', jp_last_month: 20 },
-      { _id: 'wi-bpsdm-institutional', name: 'Kepala Badan/Sekretaris/Kabid', gelar: 'BPSDM Prov. Jatim', email: 'wtms+wi.bpsdm@gmail.com', nip: '197001011990031001', jabatan: 'WI Ahli Utama', level: 5, level_label: 'PKN', jp_last_month: 10 }
+      { _id: 'wi-bpsdm-institutional', name: 'Bidang Manajerial / Bidang PPK', gelar: 'BPSDM Prov. Jatim', email: 'wtms+wi.bpsdm@gmail.com', nip: '197001011990031001', jabatan: 'Tim Akademik BPSDM', level: 5, level_label: 'PKN', jp_last_month: 10 },
+      { _id: 'wi-mooc', name: 'Belajar Mandiri / MOOC', gelar: 'LAN RI', email: 'wtms+mooc@lan.go.id', nip: '199001012020011001', jabatan: 'Sistem MOOC', level: 4, level_label: 'PKA', jp_last_month: 0 },
+      { _id: 'wi-juli', name: 'Juli Winarto', gelar: 'AK., M.M., CA', email: 'wtms+wi.juli@gmail.com', nip: '197505122003121002', jabatan: 'WI Ahli Madya', level: 4, level_label: 'PKA', jp_last_month: 32 },
+      { _id: 'wi-suluh', name: 'Moch. Suluh', gelar: 'S.H., M.Si', email: 'wtms+wi.suluh@gmail.com', nip: '197204152002121001', jabatan: 'WI Ahli Madya', level: 4, level_label: 'PKA', jp_last_month: 28 },
+      { _id: 'wi-sitti', name: 'Sitti Sunarsih', gelar: 'S.Pd., M.Pd', email: 'wtms+wi.sitti@gmail.com', nip: '197808242006042003', jabatan: 'WI Ahli Madya', level: 4, level_label: 'PKA', jp_last_month: 24 },
+      { _id: 'wi-dewa', name: 'Dewa Ketut Alit', gelar: 'S.H., M.Si', email: 'wtms+wi.dewa@gmail.com', nip: '197102141998031004', jabatan: 'WI Ahli Utama', level: 4, level_label: 'PKA', jp_last_month: 35 },
+      { _id: 'wi-wahid', name: 'Dr. Ir. Wahid Wahyudi', gelar: 'M.T', email: 'wtms+wi.wahid@gmail.com', nip: '196811041994031002', jabatan: 'WI Ahli Utama', level: 4, level_label: 'PKA', jp_last_month: 40 },
+      { _id: 'wi-makhfudz', name: 'Makhfudz', gelar: 'S.H., M.Si', email: 'wtms+wi.makhfudz@gmail.com', nip: '197409212005011003', jabatan: 'WI Ahli Madya', level: 4, level_label: 'PKA', jp_last_month: 16 },
+      { _id: 'wi-izma', name: 'Izma Fardiana Affanti', gelar: 'S.E., M.IP', email: 'wtms+wi.izma@gmail.com', nip: '198303112009042001', jabatan: 'WI Ahli Muda', level: 4, level_label: 'PKA', jp_last_month: 20 }
     ];
     for (const w of widyaswaras) {
       await Widyaiswara.create(w);
     }
 
-    // 3. Seed Mata Pelatihan
+    // 3. Seed Mata Pelatihan (Berdasarkan Struktur Agenda PKA)
     const mapels = [
-      { _id: 'mapel-pembukaan', name: 'Kebijakan Pengembangan SDA', kategori_id: 'kat-latsar', jp_total: 2 },
-      { _id: 'mapel-dinamika', name: 'Dinamika Kelompok', kategori_id: 'kat-latsar', jp_total: 3 },
-      { _id: 'mapel-sikap-bela-negara', name: 'SYNC: Sikap Perilaku Bela Negara (Agenda 1)', kategori_id: 'kat-latsar', jp_total: 10 },
-      { _id: 'mapel-pembekalan-mentor', name: 'Pembekalan Mentor', kategori_id: 'kat-latsar', jp_total: 2 },
-      { _id: 'mapel-async-tugas', name: 'ASYNC: Tugas Individu / Kelompok', kategori_id: 'kat-latsar', jp_total: 20 },
-      { _id: 'mapel-nilai-dasar', name: 'SYNC: Nilai-Nilai Dasar PNS (Agenda 2)', kategori_id: 'kat-latsar', jp_total: 10 },
-      { _id: 'mapel-kedudukan-pns', name: 'SYNC: Kedudukan & Peran PNS (Agenda 3)', kategori_id: 'kat-latsar', jp_total: 5 },
-      { _id: 'mapel-rancangan-aktualisasi', name: 'SYNC: Pembimbingan Rancangan Aktualisasi', kategori_id: 'kat-latsar', jp_total: 10 }
+      { _id: 'mapel-overview', name: 'Overview Kebijakan Pelatihan & Pemetaan Sikap Perilaku', kategori_id: 'kat-pka', jp_total: 3 },
+      { _id: 'mapel-pretest', name: 'Pre Test Mandiri', kategori_id: 'kat-pka', jp_total: 1 },
+      { _id: 'mapel-kebijakan-blended', name: 'Pembelajaran Mandiri: Kebijakan Blended Learning', kategori_id: 'kat-pka', jp_total: 3 },
+      { _id: 'mapel-pemetaan-potensi', name: 'Pembelajaran Mandiri: Pemetaan Sikap Perilaku & Potensi Diri', kategori_id: 'kat-pka', jp_total: 6 },
+      { _id: 'mapel-agenda1-mooc', name: 'Agenda I: Wawasan Kebangsaan & Bela Negara Kepemimpinan Pancasila', kategori_id: 'kat-pka', jp_total: 5 },
+      { _id: 'mapel-esai-agenda1', name: 'Pembelajaran Mandiri: Pembuatan Esai Isu-isu Agenda I', kategori_id: 'kat-pka', jp_total: 2 },
+      { _id: 'mapel-agenda2-mooc', name: 'Agenda II: Kepemimpinan Transformasional & Jejaring Kerja', kategori_id: 'kat-pka', jp_total: 5 },
+      { _id: 'mapel-smart-gov-egov', name: 'Pembelajaran Mandiri: Sikap Perilaku Agenda Smart Governance (E-Gov)', kategori_id: 'kat-pka', jp_total: 6 },
+      { _id: 'mapel-agenda2-manajemen', name: 'Agenda II: Strategi Komunikasi & Manajemen Perubahan', kategori_id: 'kat-pka', jp_total: 3 },
+      { _id: 'mapel-esai-agenda2', name: 'Pembelajaran Mandiri: Pembuatan Esai Isu-isu Agenda II', kategori_id: 'kat-pka', jp_total: 2 },
+      { _id: 'mapel-agenda3-mooc', name: 'Agenda III: Akuntabilitas, Hubungan Kelembagaan & Organisasi Digital', kategori_id: 'kat-pka', jp_total: 5 },
+      { _id: 'mapel-agenda3-kinerja', name: 'Agenda III: Manajemen Kinerja & Standar Kinerja Pelayanan', kategori_id: 'kat-pka', jp_total: 5 },
+      { _id: 'mapel-smart-gov-mindset', name: 'Pembelajaran Mandiri: Sikap Perilaku Agenda Smart Governance (Mindset)', kategori_id: 'kat-pka', jp_total: 3 },
+      { _id: 'mapel-agenda3-keuangan', name: 'Agenda III: Manajemen Keuangan Negara & Manajemen Risiko', kategori_id: 'kat-pka', jp_total: 4 },
+      { _id: 'mapel-esai-agenda3', name: 'Pembelajaran Mandiri: Pembuatan Esai Isu-isu Agenda III', kategori_id: 'kat-pka', jp_total: 2 },
+      { _id: 'mapel-agenda4-stula', name: 'Agenda IV: Studi Lapangan & Aksi Perubahan Kinerja Organisasi', kategori_id: 'kat-pka', jp_total: 3 },
+      // Elemen E-Learning / Live Session (Sync & Async)
+      { _id: 'mapel-async-kelompok-individu', name: 'AsynC: Tugas Kelompok / Individu / Materi', kategori_id: 'kat-pka', jp_total: 30 },
+      { _id: 'mapel-sync-agenda1', name: 'SynC: Pembelajaran Agenda I', kategori_id: 'kat-pka', jp_total: 4 },
+      { _id: 'mapel-sync-agenda2', name: 'SynC: Pembelajaran Agenda II', kategori_id: 'kat-pka', jp_total: 4 },
+      { _id: 'mapel-sync-agenda3', name: 'SynC: Pembelajaran Agenda III', kategori_id: 'kat-pka', jp_total: 3 },
+      { _id: 'mapel-pembekalan-mentor-pka', name: 'Pembekalan Mentor PKA', kategori_id: 'kat-pka', jp_total: 2 }
     ];
     for (const m of mapels) {
       await MataPelatihan.create(m);
@@ -63,155 +83,394 @@ export async function POST() {
     // 4. Seed Lokasi
     const lokasi = [
       { _id: 'lok-bpsdm-surabaya', name: 'BPSDM Surabaya (Virtual Classroom)' },
-      { _id: 'lok-aula', name: 'Aula Utama Jatim' },
-      { _id: 'lok-kelas-a', name: 'Ruang Kelas A' }
+      { _id: 'lok-zoom-meeting', name: 'E-Learning / WI Pengampu (Zoom Meeting)' },
+      { _id: 'lok-mooc-portal', name: 'Lembaga Administrasi Negara (MOOC Portal)' }
     ];
     for (const l of lokasi) {
       await Lokasi.create(l);
     }
 
-    // 5. Seed Batch
+    // 5. Seed Pelatihan Batch (PKA Angkatan II Tahun 2026)
     const batch = {
-      _id: 'batch-latsar-2026',
-      name: 'Pelatihan Dasar CPNS Golongan II Angkatan II Tahun 2026',
-      kategori_id: 'kat-latsar',
-      pola: 'Kontribusi' as const,
-      start_date: '2026-01-31',
-      end_date: '2026-04-11'
+      _id: 'batch-pka-ii-2026',
+      name: 'Pelatihan Kepemimpinan Administrator (PKA) Angkatan II Tahun 2026',
+      kategori_id: 'kat-pka',
+      pola: 'Fasilitasi' as const,
+      start_date: '2026-04-01',
+      end_date: '2026-04-20'
     };
     await Pelatihan.create(batch);
 
-    // 6. Seed Jadwal Sesi (Multi-WI samples included!)
+    // 6. Seed Jadwal Sesi (Minggu 1, Minggu 2, & Minggu 3)
     const sessions = [
+      // ================= MINGGU KE - 1 =================
       {
-        _id: 'sess-1',
-        batch_id: 'batch-latsar-2026',
-        mapel_id: 'mapel-pembukaan',
+        _id: 'pka2-m1-s1',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-overview',
         wi_ids: ['wi-bpsdm-institutional'],
-        date: '2026-01-31',
+        date: '2026-04-01',
         start_time: '09:00',
-        end_time: '11:00',
+        end_time: '10:30',
         format: 'Klasikal' as const,
         lokasi_id: 'lok-bpsdm-surabaya',
-        jp_ke: '1-2',
-        jp_count: 2
-      },
-      {
-        _id: 'sess-2',
-        batch_id: 'batch-latsar-2026',
-        mapel_id: 'mapel-dinamika',
-        wi_ids: ['wi-qurrota'],
-        date: '2026-01-31',
-        start_time: '14:45',
-        end_time: '17:00',
-        format: 'Klasikal' as const,
-        lokasi_id: 'lok-bpsdm-surabaya',
-        jp_ke: '3-5',
+        jp_ke: '1-3',
         jp_count: 3
       },
       {
-        _id: 'sess-3',
-        batch_id: 'batch-latsar-2026',
-        mapel_id: 'mapel-sikap-bela-negara',
-        wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
-        date: '2026-02-02',
-        start_time: '08:00',
-        end_time: '09:30',
+        _id: 'pka2-m1-s2',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-pretest',
+        wi_ids: ['wi-bpsdm-institutional'],
+        date: '2026-04-01',
+        start_time: '10:30',
+        end_time: '11:15',
         format: 'Virtual' as const,
-        lokasi_id: null,
-        jp_ke: '1-2',
-        jp_count: 2
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '4',
+        jp_count: 1
       },
       {
-        _id: 'sess-4',
-        batch_id: 'batch-latsar-2026',
-        mapel_id: 'mapel-pembekalan-mentor',
-        wi_ids: ['wi-farid'],
-        date: '2026-02-02',
-        start_time: '09:30',
-        end_time: '11:00',
-        format: 'Klasikal' as const,
-        lokasi_id: 'lok-bpsdm-surabaya',
-        jp_ke: '3-4',
-        jp_count: 2
-      },
-      {
-        _id: 'sess-5',
-        batch_id: 'batch-latsar-2026',
-        mapel_id: 'mapel-async-tugas',
-        wi_ids: ['wi-farid'],
-        date: '2026-02-02',
-        start_time: '12:00',
-        end_time: '17:15',
+        _id: 'pka2-m1-s3',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-kebijakan-blended',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-01',
+        start_time: '13:00',
+        end_time: '15:15',
         format: 'Asinkron' as const,
-        lokasi_id: null,
-        jp_ke: '5-11',
-        jp_count: 7
-      },
-      {
-        _id: 'sess-6',
-        batch_id: 'batch-latsar-2026',
-        mapel_id: 'mapel-sikap-bela-negara',
-        wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
-        date: '2026-02-04',
-        start_time: '13:00',
-        end_time: '15:15',
-        format: 'Virtual' as const,
-        lokasi_id: null,
-        jp_ke: '1-3',
+        lokasi_id: 'lok-mooc-portal',
+        jp_ke: '5-7',
         jp_count: 3
       },
       {
-        _id: 'sess-7',
-        batch_id: 'batch-latsar-2026',
-        mapel_id: 'mapel-nilai-dasar',
-        wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
-        date: '2026-02-05',
+        _id: 'pka2-m1-s4',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-pemetaan-potensi',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-02',
         start_time: '08:00',
-        end_time: '09:30',
-        format: 'Virtual' as const,
-        lokasi_id: null,
-        jp_ke: '1-2',
-        jp_count: 2
+        end_time: '12:30',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
+        jp_ke: '1-6',
+        jp_count: 6
       },
       {
-        _id: 'sess-8',
-        batch_id: 'batch-latsar-2026',
-        mapel_id: 'mapel-nilai-dasar',
-        wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
-        date: '2026-02-10',
-        start_time: '13:00',
-        end_time: '15:15',
-        format: 'Virtual' as const,
-        lokasi_id: null,
-        jp_ke: '1-3',
-        jp_count: 3
-      },
-      {
-        _id: 'sess-9',
-        batch_id: 'batch-latsar-2026',
-        mapel_id: 'mapel-kedudukan-pns',
-        wi_ids: ['wi-randy'],
-        date: '2026-02-13',
+        _id: 'pka2-m1-s5',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-agenda1-mooc',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-04',
         start_time: '08:00',
-        end_time: '11:45',
-        format: 'Virtual' as const,
-        lokasi_id: null,
+        end_time: '12:45',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
         jp_ke: '1-5',
         jp_count: 5
       },
       {
-        _id: 'sess-10',
-        batch_id: 'batch-latsar-2026',
-        mapel_id: 'mapel-rancangan-aktualisasi',
-        wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
-        date: '2026-02-13',
-        start_time: '15:30',
-        end_time: '17:00',
-        format: 'Virtual' as const,
-        lokasi_id: null,
+        _id: 'pka2-m1-s6',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-esai-agenda1',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-04',
+        start_time: '14:00',
+        end_time: '16:00',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
         jp_ke: '6-7',
         jp_count: 2
+      },
+      {
+        _id: 'pka2-m1-s7',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-agenda2-mooc',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-06',
+        start_time: '08:00',
+        end_time: '11:45',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
+        jp_ke: '1-5',
+        jp_count: 5
+      },
+      {
+        _id: 'pka2-m1-s8',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-smart-gov-egov',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-06',
+        start_time: '13:30',
+        end_time: '18:00',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
+        jp_ke: '6-11',
+        jp_count: 6
+      },
+      {
+        _id: 'pka2-m1-s9',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-agenda2-manajemen',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-07',
+        start_time: '08:00',
+        end_time: '11:45',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
+        jp_ke: '1-3',
+        jp_count: 3
+      },
+      {
+        _id: 'pka2-m1-s10',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-esai-agenda2',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-07',
+        start_time: '13:30',
+        end_time: '18:00',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
+        jp_ke: '4-5',
+        jp_count: 2
+      },
+      {
+        _id: 'pka2-m1-s11',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-agenda3-mooc',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-08',
+        start_time: '08:00',
+        end_time: '11:45',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
+        jp_ke: '1-5',
+        jp_count: 5
+      },
+
+      // ================= MINGGU KE - 2 =================
+      {
+        _id: 'pka2-m2-s1',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-agenda3-kinerja',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-09',
+        start_time: '08:00',
+        end_time: '11:45',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
+        jp_ke: '1-5',
+        jp_count: 5
+      },
+      {
+        _id: 'pka2-m2-s2',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-smart-gov-mindset',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-10',
+        start_time: '08:00',
+        end_time: '10:15',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
+        jp_ke: '1-3',
+        jp_count: 3
+      },
+      {
+        _id: 'pka2-m2-s3',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-agenda3-keuangan',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-11',
+        start_time: '08:00',
+        end_time: '11:00',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
+        jp_ke: '1-4',
+        jp_count: 4
+      },
+      {
+        _id: 'pka2-m2-s4',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-esai-agenda3',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-11',
+        start_time: '13:30',
+        end_time: '15:00',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
+        jp_ke: '5-6',
+        jp_count: 2
+      },
+      {
+        _id: 'pka2-m2-s5',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-agenda4-stula',
+        wi_ids: ['wi-mooc'],
+        date: '2026-04-13',
+        start_time: '08:00',
+        end_time: '10:15',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-mooc-portal',
+        jp_ke: '1-3',
+        jp_count: 3
+      },
+
+      // ================= MINGGU KE - 3 (E-LEARNING ACTIVE) =================
+      {
+        _id: 'pka2-m3-s1',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-async-kelompok-individu',
+        wi_ids: ['wi-juli', 'wi-suluh', 'wi-sitti'],
+        date: '2026-04-14',
+        start_time: '08:00',
+        end_time: '12:30',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '1-4',
+        jp_count: 4
+      },
+      {
+        _id: 'pka2-m3-s2',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-sync-agenda1',
+        wi_ids: ['wi-dewa'],
+        date: '2026-04-14',
+        start_time: '13:30',
+        end_time: '15:00',
+        format: 'Virtual' as const,
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '5-6',
+        jp_count: 2
+      },
+      {
+        _id: 'pka2-m3-s3',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-sync-agenda1',
+        wi_ids: ['wi-juli', 'wi-suluh', 'wi-sitti', 'wi-dewa'],
+        date: '2026-04-15',
+        start_time: '08:00',
+        end_time: '09:30',
+        format: 'Virtual' as const,
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '1-2',
+        jp_count: 2
+      },
+      {
+        _id: 'pka2-m3-s4',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-async-kelompok-individu',
+        wi_ids: ['wi-juli', 'wi-suluh', 'wi-sitti', 'wi-dewa'],
+        date: '2026-04-15',
+        start_time: '09:30',
+        end_time: '14:45',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '3-8',
+        jp_count: 6
+      },
+      {
+        _id: 'pka2-m3-s5',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-sync-agenda2',
+        wi_ids: ['wi-wahid', 'wi-makhfudz', 'wi-suluh', 'wi-juli'],
+        date: '2026-04-16',
+        start_time: '08:00',
+        end_time: '09:30',
+        format: 'Virtual' as const,
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '1-2',
+        jp_count: 2
+      },
+      {
+        _id: 'pka2-m3-s6',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-async-kelompok-individu',
+        wi_ids: ['wi-wahid', 'wi-makhfudz', 'wi-suluh', 'wi-juli'],
+        date: '2026-04-16',
+        start_time: '09:30',
+        end_time: '14:45',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '3-9',
+        jp_count: 7
+      },
+      {
+        _id: 'pka2-m3-s7',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-async-kelompok-individu',
+        wi_ids: ['wi-wahid', 'wi-makhfudz', 'wi-suluh'],
+        date: '2026-04-17',
+        start_time: '08:00',
+        end_time: '11:00',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '1-7',
+        jp_count: 7
+      },
+      {
+        _id: 'pka2-m3-s8',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-sync-agenda2',
+        wi_ids: ['wi-juli'],
+        date: '2026-04-17',
+        start_time: '13:30',
+        end_time: '14:15',
+        format: 'Virtual' as const,
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '8-9',
+        jp_count: 2
+      },
+      {
+        _id: 'pka2-m3-s9',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-sync-agenda2',
+        wi_ids: ['wi-wahid', 'wi-makhfudz', 'wi-suluh', 'wi-juli'],
+        date: '2026-04-18',
+        start_time: '08:00',
+        end_time: '10:15',
+        format: 'Virtual' as const,
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '1-2',
+        jp_count: 2
+      },
+      {
+        _id: 'pka2-m3-s10',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-pembekalan-mentor-pka',
+        wi_ids: ['wi-juli'], // Perwakilan WI Pembekalan Mentor
+        date: '2026-04-18',
+        start_time: '13:30',
+        end_time: '15:30',
+        format: 'Virtual' as const,
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '3-6',
+        jp_count: 4
+      },
+      {
+        _id: 'pka2-m3-s11',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-sync-agenda3',
+        wi_ids: ['wi-sitti', 'wi-juli', 'wi-dewa', 'wi-izma'],
+        date: '2026-04-20',
+        start_time: '08:00',
+        end_time: '09:30',
+        format: 'Virtual' as const,
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '1-3',
+        jp_count: 3
+      },
+      {
+        _id: 'pka2-m3-s12',
+        batch_id: 'batch-pka-ii-2026',
+        mapel_id: 'mapel-async-kelompok-individu',
+        wi_ids: ['wi-sitti', 'wi-juli', 'wi-dewa', 'wi-izma'],
+        date: '2026-04-20',
+        start_time: '13:30',
+        end_time: '18:00',
+        format: 'Asinkron' as const,
+        lokasi_id: 'lok-zoom-meeting',
+        jp_ke: '4-7',
+        jp_count: 4
       }
     ];
 
@@ -219,7 +478,14 @@ export async function POST() {
       await JadwalSesi.create(s);
     }
 
-    return Response.json({ success: true, message: 'Re-seeding completed with Latsar CPNS 2026 schedule dataset!' });
+    // Seed AdminConfig (reset to default)
+    await AdminConfig.create({
+      _id: 'admin-config',
+      passwordHash: await bcrypt.hash('admin123'),
+      primaryColor: '221 83% 53%',
+    });
+
+    return Response.json({ success: true, message: 'Re-seeding completed with expanded PKA Angkatan II 2026 dataset (Weeks 1-3)!' });
   } catch (error: any) {
     console.error('Seeding error:', error);
     return Response.json({ error: error.message }, { status: 500 });
