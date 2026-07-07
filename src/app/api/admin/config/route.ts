@@ -1,10 +1,24 @@
-import { prisma } from '@/lib/prisma';
+import { connectToDatabase } from '@/lib/mongodb';
+import AdminConfig from '@/models/AdminConfig';
 import { bcrypt } from '@/lib/bcrypt';
+
+async function ensureConfig() {
+  let config = await AdminConfig.findById('admin-config');
+  if (!config) {
+    config = await AdminConfig.create({
+      _id: 'admin-config',
+      passwordHash: await bcrypt.hash('admin123'),
+      primaryColor: '221 83% 53%',
+    });
+  }
+  return config;
+}
 
 export async function GET() {
   try {
-    const config = await prisma.adminConfig.findUnique({ where: { id: 'admin-config' } });
-    return Response.json({ primaryColor: config?.primaryColor ?? '221 83% 53%' });
+    await connectToDatabase();
+    const config = await ensureConfig();
+    return Response.json({ primaryColor: config.primaryColor });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
   }
@@ -12,6 +26,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
+    await connectToDatabase();
     const body = await request.json();
     const updates: Record<string, string> = {};
 
@@ -42,15 +57,11 @@ export async function PATCH(request: Request) {
       );
     }
 
-    await prisma.adminConfig.upsert({
-      where: { id: 'admin-config' },
-      update: updates,
-      create: {
-        id: 'admin-config',
-        passwordHash: updates.passwordHash ?? await bcrypt.hash('admin123'),
-        primaryColor: updates.primaryColor ?? '221 83% 53%',
-      },
-    });
+    await AdminConfig.findByIdAndUpdate(
+      'admin-config',
+      { $set: updates },
+      { upsert: true }
+    );
 
     return Response.json({ success: true });
   } catch (error: any) {

@@ -30,13 +30,15 @@ export const viewport: Viewport = {
 
 async function getDynamicPrimaryCSS(): Promise<string> {
   try {
-    const { prisma } = await import("@/lib/prisma");
-    const config = await prisma.adminConfig.findUnique({ where: { id: "admin-config" } });
+    const { connectToDatabase } = await import("@/lib/mongodb");
+    await connectToDatabase();
+    const AdminConfig = (await import("@/models/AdminConfig")).default;
+    const config = await AdminConfig.findById("admin-config");
     if (config?.primaryColor) {
       return generatePrimaryColorCSS(config.primaryColor);
     }
   } catch {
-    // Fallback to default CSS if DB is not available
+    // Fallback to default CSS if MongoDB is not available
   }
   return "";
 }
@@ -49,13 +51,15 @@ export default async function RootLayout({
   const dynamicCSS = await getDynamicPrimaryCSS();
 
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-slate-700 min-h-screen`}
-      >
+    <html lang="en">
+      <head>
         {dynamicCSS && (
           <style id="dynamic-primary-color" dangerouslySetInnerHTML={{ __html: dynamicCSS }} />
         )}
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-slate-700 min-h-screen`}
+      >
         <WTMSProvider>
           {children}
           <Toaster position="top-right" richColors />

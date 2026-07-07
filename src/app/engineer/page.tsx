@@ -86,8 +86,11 @@ export default function EngineerPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal mengubah warna');
-      // Apply via CSS custom properties on :root — safe, no DOM node manipulation
-      applyColorToRoot(preset.hsl);
+      // Apply directly to DOM
+      const style = document.getElementById('dynamic-primary-color');
+      if (style) {
+        style.textContent = generateCSS(preset.hsl);
+      }
       setActiveColor(preset.hsl);
       toast.success(`Warna primary diubah ke ${preset.name}`);
     } catch (err: any) {
@@ -257,18 +260,21 @@ export default function EngineerPage() {
   );
 }
 
-/** Apply primary color directly to :root CSS custom properties */
-function applyColorToRoot(hsl: string): void {
-  const root = document.documentElement;
+/** Generate CSS for a given HSL value (mirrors lib/color-presets but usable client-side) */
+function generateCSS(hsl: string): string {
   const h = hsl.split(' ')[0];
-  root.style.setProperty('--primary', hsl);
-  root.style.setProperty('--primary-foreground', '0 0% 100%');
-  root.style.setProperty('--ring', hsl);
-  root.style.setProperty('--secondary', `${h} 100% 97%`);
-  root.style.setProperty('--secondary-foreground', hsl);
-  root.style.setProperty('--sidebar-primary', hsl);
-  root.style.setProperty('--sidebar-primary-foreground', '0 0% 100%');
-  root.style.setProperty('--sidebar-accent', `${h} 100% 97%`);
-  root.style.setProperty('--sidebar-accent-foreground', hsl);
-  root.style.setProperty('--sidebar-ring', hsl);
+  return `
+    :root {
+      --primary: ${hsl};
+      --primary-foreground: 0 0% 100%;
+      --ring: ${hsl};
+      --secondary: ${h} 100% 97%;
+      --secondary-foreground: ${hsl};
+      --sidebar-primary: ${hsl};
+      --sidebar-primary-foreground: 0 0% 100%;
+      --sidebar-accent: ${h} 100% 97%;
+      --sidebar-accent-foreground: ${hsl};
+      --sidebar-ring: ${hsl};
+    }
+  `.trim();
 }
