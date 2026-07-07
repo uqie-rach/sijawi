@@ -3,17 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Database, 
-  CalendarDays, 
-  BarChart3, 
-  LogOut, 
-  GraduationCap, 
-  List, 
-  CalendarRange, 
-  Grid2x2, 
-  Columns, 
+import {
+  LayoutDashboard,
+  Database,
+  CalendarDays,
+  BarChart3,
+  LogOut,
+  GraduationCap,
+  List,
+  CalendarRange,
+  Grid2x2,
+  Columns,
   Grid3X3,
   ChevronLeft,
   ChevronRight
@@ -21,6 +21,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useWTMS } from '@/context/wtms-context';
 import { BRANDING, ENABLE_ADVANCED_CALENDAR } from '@/lib/config';
+import Image from 'next/image';
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -67,15 +68,14 @@ export function Sidebar() {
     { href: '/admin/year-view', label: 'Tampilan Tahun', icon: Grid3X3 },
   ];
 
-  const navItems = ENABLE_ADVANCED_CALENDAR 
+  const navItems = ENABLE_ADVANCED_CALENDAR
     ? [...baseNavItems, ...advancedNavItems]
     : baseNavItems;
 
   return (
-    <aside 
-      className={`relative bg-white text-slate-800 flex flex-col justify-between border-r border-slate-200 shrink-0 transition-all duration-300 ${
-        isCollapsed ? 'w-20' : 'w-full md:w-64'
-      } md:h-screen md:sticky md:top-0`}
+    <aside
+      className={`relative bg-white text-slate-800 flex flex-col justify-between border-r border-slate-200 shrink-0 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-full md:w-64'
+        } md:h-screen md:sticky md:top-0`}
     >
       <div>
         {/* Toggle Collapse Button for desktop */}
@@ -88,8 +88,10 @@ export function Sidebar() {
 
         {/* Branding header */}
         <div className={`p-6 border-b border-slate-100 flex items-center gap-3 ${isCollapsed ? 'justify-center p-4' : ''}`}>
-          <div className="bg-blue-600 p-1.5 rounded-lg shadow-md shadow-blue-500/20 shrink-0">
-            <GraduationCap className="h-5 w-5 text-white" />
+          {/* <div className="bg-blue-600 p-1.5 rounded-lg shadow-md shadow-blue-500/20 shrink-0"> */}
+          <div className="p-1.5 rounded-lg shrink-0">
+            {/* <GraduationCap className="h-5 w-5 text-white" /> */}
+            <Image src="/logo.png" alt="Logo" width={32} height={32} className="" />
           </div>
           {!isCollapsed && (
             <div className="animate-in fade-in duration-300">
@@ -108,13 +110,11 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
-                  isCollapsed ? 'justify-center px-0 py-3' : ''
-                } ${
-                  isActive
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${isCollapsed ? 'justify-center px-0 py-3' : ''
+                  } ${isActive
                     ? 'bg-blue-50 text-blue-600 shadow-sm'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+                  }`}
                 title={isCollapsed ? item.label : undefined}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -140,9 +140,8 @@ export function Sidebar() {
         <Button
           variant="destructive"
           onClick={handleLogout}
-          className={`w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 ${
-            isCollapsed ? 'px-0 py-2.5' : ''
-          }`}
+          className={`w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 ${isCollapsed ? 'px-0 py-2.5' : ''
+            }`}
           title={isCollapsed ? "Keluar Mode Admin" : undefined}
         >
           <LogOut className="h-4 w-4 shrink-0" />

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { BRANDING } from "@/lib/config";
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function LoginPage() {
     // 1. Check for Super Admin
     if (email === 'admin@wtms.com' && password === 'admin123') {
       document.cookie = "sessionToken=admin-session-token; path=/; max-age=86400; SameSite=Lax";
-      
+
       setIsAuthenticated(true);
       setUserRole('admin');
       setSelectedWiId(null);
@@ -56,8 +57,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 text-slate-800">
       <header className="container mx-auto px-6 py-6 flex justify-between items-center border-b border-slate-200/60">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
-          <div className="bg-blue-600 p-2 rounded-xl shadow-md shadow-blue-500/20">
-            <GraduationCap className="h-6 w-6 text-white" />
+          <div className="p-1.5 rounded-lg shrink-0">
+            {/* <GraduationCap className="h-5 w-5 text-white" /> */}
+            <Image src="/logo.png" alt="Logo" width={32} height={32} className="" />
           </div>
           <div>
             <h1 className="font-black text-2xl tracking-tight text-blue-600">{BRANDING.name}</h1>
@@ -96,14 +98,14 @@ export default function LoginPage() {
                 <Label htmlFor="email" className="text-slate-700 font-semibold">Email Address</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="admin@wtms.com atau email WI" 
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="admin@wtms.com atau email WI"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     className="pl-10 bg-slate-50 border-slate-200 text-slate-800 focus:ring-blue-500 focus:border-blue-500 rounded-xl"
-                    required 
+                    required
                   />
                 </div>
               </div>
@@ -112,14 +114,14 @@ export default function LoginPage() {
                 <Label htmlFor="password" className="text-slate-700 font-semibold">Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    placeholder="admin123 atau wi123" 
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="admin123 atau wi123"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     className="pl-10 bg-slate-50 border-slate-200 text-slate-800 focus:ring-blue-500 focus:border-blue-500 rounded-xl"
-                    required 
+                    required
                   />
                 </div>
               </div>

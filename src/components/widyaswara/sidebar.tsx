@@ -6,6 +6,7 @@ import { LayoutDashboard, LogOut, GraduationCap, ChevronLeft, ChevronRight } fro
 import { Button } from '@/components/ui/button';
 import { useWTMS } from '@/context/wtms-context';
 import { BRANDING } from '@/lib/config';
+import Image from 'next/image';
 
 interface WidyaswaraSidebarProps {
   activeWiName: string;
@@ -41,10 +42,9 @@ export function WidyaswaraSidebar({ activeWiName }: WidyaswaraSidebarProps) {
   };
 
   return (
-    <aside 
-      className={`relative bg-white text-slate-800 flex flex-col justify-between border-r border-slate-200 shrink-0 transition-all duration-300 hidden md:flex ${
-        isCollapsed ? 'w-20' : 'w-64'
-      } h-screen sticky top-0`}
+    <aside
+      className={`relative bg-white text-slate-800 flex flex-col justify-between border-r border-slate-200 shrink-0 transition-all duration-300 hidden md:flex ${isCollapsed ? 'w-20' : 'w-64'
+        } h-screen sticky top-0`}
     >
       <div>
         {/* Toggle Collapse Button */}
@@ -57,8 +57,9 @@ export function WidyaswaraSidebar({ activeWiName }: WidyaswaraSidebarProps) {
 
         {/* Branding header */}
         <div className={`p-6 border-b border-slate-100 flex items-center gap-3 ${isCollapsed ? 'justify-center p-4' : ''}`}>
-          <div className="bg-blue-600 p-1.5 rounded-xl shadow-md shadow-blue-500/20 shrink-0">
-            <GraduationCap className="h-5 w-5 text-white" />
+          <div className="p-1.5 rounded-lg shrink-0">
+            {/* <GraduationCap className="h-5 w-5 text-white" /> */}
+            <Image src="/logo.png" alt="Logo" width={32} height={32} className="" />
           </div>
           {!isCollapsed && (
             <div className="animate-in fade-in duration-300">
@@ -70,9 +71,8 @@ export function WidyaswaraSidebar({ activeWiName }: WidyaswaraSidebarProps) {
 
         {/* Navigation Items */}
         <nav className={`p-4 space-y-1 ${isCollapsed ? 'p-2' : ''}`}>
-          <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-blue-50 text-blue-600 shadow-sm ${
-            isCollapsed ? 'justify-center px-0' : ''
-          }`}>
+          <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-blue-50 text-blue-600 shadow-sm ${isCollapsed ? 'justify-center px-0' : ''
+            }`}>
             <LayoutDashboard className="h-4 w-4 shrink-0" />
             {!isCollapsed && <span className="animate-in fade-in duration-300">Ikhtisar</span>}
           </button>
@@ -94,9 +94,8 @@ export function WidyaswaraSidebar({ activeWiName }: WidyaswaraSidebarProps) {
         <Button
           variant="destructive"
           onClick={handleLogout}
-          className={`w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-2.5 text-xs font-bold transition-all rounded-xl ${
-            isCollapsed ? 'px-0' : ''
-          }`}
+          className={`w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-2.5 text-xs font-bold transition-all rounded-xl ${isCollapsed ? 'px-0' : ''
+            }`}
           title={isCollapsed ? "Keluar Portal" : undefined}
         >
           <LogOut className="h-3.5 w-3.5 shrink-0" />
