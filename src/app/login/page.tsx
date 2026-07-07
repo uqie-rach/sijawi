@@ -20,52 +20,37 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    // 1. Check for Super Admin
+    if (email === 'admin@wtms.com' && password === 'admin123') {
+      document.cookie = "sessionToken=admin-session-token; path=/; max-age=86400; SameSite=Lax";
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || 'Invalid email or password.');
-        toast.error('Authentication failed.');
-        setLoading(false);
-        return;
-      }
-
-      // Successful login via API
-      if (data.user.role === 'admin') {
-        document.cookie = "sessionToken=admin-session-token; path=/; max-age=86400; SameSite=Lax";
-        setIsAuthenticated(true);
-        setUserRole('admin');
-        setSelectedWiId(null);
-        toast.success('Logged in successfully as Super Admin!');
-        router.push('/admin');
-      } else {
-        // Widyaswara login
-        document.cookie = "sessionToken=wi-session-token; path=/; max-age=86400; SameSite=Lax";
-        setIsAuthenticated(true);
-        setUserRole('wi');
-        setSelectedWiId(data.user.id);
-        toast.success(`Logged in successfully as ${data.user.name}!`);
-        router.push('/widyaswara');
-      }
-    } catch (err) {
-      setError('Unable to connect to server. Please try again.');
-      toast.error('Connection error.');
-    } finally {
-      setLoading(false);
+      setIsAuthenticated(true);
+      setUserRole('admin');
+      setSelectedWiId(null);
+      toast.success('Logged in successfully as Super Admin!');
+      router.push('/admin');
+      return;
     }
+
+    // 2. Check for Widyaswara
+    const matchedWi = widyaswaras.find(w => w.email.toLowerCase() === email.toLowerCase());
+    if (matchedWi && password === 'wi123') {
+      document.cookie = "sessionToken=wi-session-token; path=/; max-age=86400; SameSite=Lax";
+
+      setIsAuthenticated(true);
+      setUserRole('wi');
+      setSelectedWiId(matchedWi.id);
+      toast.success(`Logged in successfully as ${matchedWi.name}!`);
+      router.push('/widyaswara');
+      return;
+    }
+
+    setError('Invalid email or password. Use admin@wtms.com / admin123 or a Widyaswara email / wi123.');
+    toast.error('Authentication failed.');
   };
 
   return (
@@ -143,13 +128,13 @@ export default function LoginPage() {
 
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
                 <p className="font-bold text-blue-600">💡 Quick Demo Credentials:</p>
-                <p>• Admin: <span className="font-mono text-blue-600 font-semibold">admin@wtms.com</span></p>
+                <p>• Admin: <span className="font-mono text-blue-600 font-semibold">admin@wtms.com</span> / <span className="font-mono text-blue-600 font-semibold">admin123</span></p>
                 <p>• Widyaiswara: <span className="font-mono text-blue-600 font-semibold">wtms+wi.uqie@gmail.com</span> / <span className="font-mono text-blue-600 font-semibold">wi123</span></p>
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 text-base shadow-lg shadow-blue-500/20 rounded-xl">
-                {loading ? 'Memproses...' : 'Masuk Portal'}
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 text-base shadow-lg shadow-blue-500/20 rounded-xl">
+                Masuk Portal
               </Button>
             </CardFooter>
           </form>

@@ -5,7 +5,6 @@ import { Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { BRANDING } from "@/lib/config";
-import { generatePrimaryColorCSS } from "@/lib/color-presets";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,37 +27,16 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-async function getDynamicPrimaryCSS(): Promise<string> {
-  try {
-    const { connectToDatabase } = await import("@/lib/mongodb");
-    await connectToDatabase();
-    const AdminConfig = (await import("@/models/AdminConfig")).default;
-    const config = await AdminConfig.findById("admin-config");
-    if (config?.primaryColor) {
-      return generatePrimaryColorCSS(config.primaryColor);
-    }
-  } catch {
-    // Fallback to default CSS if MongoDB is not available
-  }
-  return "";
-}
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const dynamicCSS = await getDynamicPrimaryCSS();
-
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-slate-700 min-h-screen`}
       >
-        <style
-          id="dynamic-primary-color"
-          dangerouslySetInnerHTML={{ __html: dynamicCSS || '' }}
-        />
         <WTMSProvider>
           {children}
           <Toaster position="top-right" richColors />

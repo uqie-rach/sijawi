@@ -1,13 +1,7 @@
 import { connectToDatabase } from '@/lib/mongodb';
 import Widyaiswara from '@/models/Widyaiswara';
-import AdminConfig from '@/models/AdminConfig';
 import { bcrypt } from '@/lib/bcrypt';
 import { cookies } from 'next/headers';
-
-async function getAdminPasswordHash(): Promise<string | null> {
-  const config = await AdminConfig.findById('admin-config');
-  return config?.passwordHash || null;
-}
 
 export async function POST(request: Request) {
   try {
@@ -22,39 +16,22 @@ export async function POST(request: Request) {
     }
 
     // Check for Super Admin
-    if (email === 'admin@wtms.com') {
-      const adminHash = await getAdminPasswordHash();
-      let passwordValid = false;
+    if (email === 'admin@wtms.com' && password === 'admin123') {
+      const cookieStore = await cookies();
+      cookieStore.set('sessionToken', 'admin-session-token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24, // 24 hours
+      });
 
-      if (adminHash) {
-        passwordValid = await bcrypt.compare(password, adminHash);
-      } else {
-        // First run: fallback to default password
-        passwordValid = password === 'admin123';
-      }
-
-      if (passwordValid) {
-        const cookieStore = await cookies();
-        cookieStore.set('sessionToken', 'admin-session-token', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24, // 24 hours
-        });
-
-        return new Response(JSON.stringify({
-          user: { name: 'Super Admin', email: 'admin@wtms.com', role: 'admin' },
-          token: 'admin-session-token'
-        }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      } else {
-        return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
+      return new Response(JSON.stringify({ 
+        user: { name: 'Super Admin', email: 'admin@wtms.com', role: 'admin' }, 
+        token: 'admin-session-token' 
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Find user in MongoDB
