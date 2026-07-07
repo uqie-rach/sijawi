@@ -49,7 +49,7 @@ export default async function RootLayout({
   const dynamicCSS = await getDynamicPrimaryCSS();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-slate-700 min-h-screen`}
       >
