@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWTMS } from '@/context/wtms-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Combobox } from '@/components/ui/combobox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Calendar, Clock, MapPin, UserCheck, Plus, Trash2, Edit, CalendarDays, TableProperties, Layers, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import { Calendar, Clock, MapPin, UserCheck, Plus, Trash2, Edit, CalendarDays, TableProperties, Layers, ChevronLeft, ChevronRight, Zap, Filter, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
 
 interface SchedulingWorkspaceClientProps {
   batchId?: string;
@@ -25,6 +25,10 @@ interface SchedulingWorkspaceClientProps {
   initialSessions: any[];
   allBatches: any[];
 }
+
+// Enum untuk field sorting
+type SortField = 'date' | 'startTime' | 'jpCount' | 'mapelName' | 'format';
+type SortDirection = 'asc' | 'desc';
 
 export function SchedulingWorkspaceClient({
   batchId,
@@ -64,10 +68,184 @@ export function SchedulingWorkspaceClient({
     ? activeSessions.filter(s => s.batchId === batchId)
     : activeSessions;
 
+  // =================== FILTER & SORT STATE ===================
+  const [filterDateStart, setFilterDateStart] = useState<string>('');
+  const [filterDateEnd, setFilterDateEnd] = useState<string>('');
+  const [filterFormats, setFilterFormats] = useState<string[]>([]);
+  const [filterWIIds, setFilterWIIds] = useState<string[]>([]);
+  const [filterMapelIds, setFilterMapelIds] = useState<string[]>([]);
+  const [filterLokasiIds, setFilterLokasiIds] = useState<string[]>([]);
+  const [filterJpMin, setFilterJpMin] = useState<string>('');
+  const [filterJpMax, setFilterJpMax] = useState<string>('');
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [showFilterBar, setShowFilterBar] = useState(false);
+
+  // Toggle format filter
+  const toggleFormatFilter = (format: string) => {
+    setFilterFormats(prev =>
+      prev.includes(format) ? prev.filter(f => f !== format) : [...prev, format]
+    );
+  };
+
+  // Toggle WI filter
+  const toggleWIFilter = (wiId: string) => {
+    setFilterWIIds(prev =>
+      prev.includes(wiId) ? prev.filter(id => id !== wiId) : [...prev, wiId]
+    );
+  };
+
+  // Toggle Mapel filter
+  const toggleMapelFilter = (mapelId: string) => {
+    setFilterMapelIds(prev =>
+      prev.includes(mapelId) ? prev.filter(id => id !== mapelId) : [...prev, mapelId]
+    );
+  };
+
+  // Toggle Lokasi filter
+  const toggleLokasiFilter = (lokId: string) => {
+    setFilterLokasiIds(prev =>
+      prev.includes(lokId) ? prev.filter(id => id !== lokId) : [...prev, lokId]
+    );
+  };
+
+  // Reset semua filter
+  const resetAllFilters = () => {
+    setFilterDateStart('');
+    setFilterDateEnd('');
+    setFilterFormats([]);
+    setFilterWIIds([]);
+    setFilterMapelIds([]);
+    setFilterLokasiIds([]);
+    setFilterJpMin('');
+    setFilterJpMax('');
+    setSortField('date');
+    setSortDirection('asc');
+  };
+
+  // Hitung jumlah filter aktif
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filterDateStart) count++;
+    if (filterDateEnd) count++;
+    if (filterFormats.length > 0) count++;
+    if (filterWIIds.length > 0) count++;
+    if (filterMapelIds.length > 0) count++;
+    if (filterLokasiIds.length > 0) count++;
+    if (filterJpMin) count++;
+    if (filterJpMax) count++;
+    return count;
+  }, [filterDateStart, filterDateEnd, filterFormats, filterWIIds, filterMapelIds, filterLokasiIds, filterJpMin, filterJpMax]);
+
+  // Handle sort toggle
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Render sort icon
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-3 w-3 text-slate-400 ml-1" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-3 w-3 text-blue-600 ml-1" />
+      : <ArrowDown className="h-3 w-3 text-blue-600 ml-1" />;
+  };
+
+  // Filtered & Sorted Sessions
+  const filteredAndSortedSessions = useMemo(() => {
+    let result = [...batchSessions];
+
+    // Filter by date start
+    if (filterDateStart) {
+      result = result.filter(s => s.date >= filterDateStart);
+    }
+
+    // Filter by date end
+    if (filterDateEnd) {
+      result = result.filter(s => s.date <= filterDateEnd);
+    }
+
+    // Filter by formats
+    if (filterFormats.length > 0) {
+      result = result.filter(s => filterFormats.includes(s.format));
+    }
+
+    // Filter by Widyaiswara IDs
+    if (filterWIIds.length > 0) {
+      result = result.filter(s => 
+        (s.wiIds || []).some(id => filterWIIds.includes(id))
+      );
+    }
+
+    // Filter by Mapel IDs
+    if (filterMapelIds.length > 0) {
+      result = result.filter(s => filterMapelIds.includes(s.mapelId));
+    }
+
+    // Filter by Lokasi IDs
+    if (filterLokasiIds.length > 0) {
+      result = result.filter(s => filterLokasiIds.includes(s.lokasiId || ''));
+    }
+
+    // Filter by JP min
+    if (filterJpMin) {
+      const min = parseInt(filterJpMin);
+      if (!isNaN(min)) {
+        result = result.filter(s => s.jpCount >= min);
+      }
+    }
+
+    // Filter by JP max
+    if (filterJpMax) {
+      const max = parseInt(filterJpMax);
+      if (!isNaN(max)) {
+        result = result.filter(s => s.jpCount <= max);
+      }
+    }
+
+    // Sorting
+    result.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortField) {
+        case 'date':
+          comparison = a.date.localeCompare(b.date);
+          break;
+        case 'startTime':
+          comparison = a.startTime.localeCompare(b.startTime);
+          break;
+        case 'jpCount':
+          comparison = a.jpCount - b.jpCount;
+          break;
+        case 'mapelName': {
+          const mapelA = activeMapels.find(m => m.id === a.mapelId);
+          const mapelB = activeMapels.find(m => m.id === b.mapelId);
+          const nameA = mapelA?.name || '';
+          const nameB = mapelB?.name || '';
+          comparison = nameA.localeCompare(nameB);
+          break;
+        }
+        case 'format':
+          comparison = a.format.localeCompare(b.format);
+          break;
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [batchSessions, filterDateStart, filterDateEnd, filterFormats, filterWIIds, filterMapelIds, filterLokasiIds, filterJpMin, filterJpMax, sortField, sortDirection, activeMapels]);
+
   const [sessionForm, setSessionForm] = useState({
     batchId: batchId || '',
     mapelId: '',
-    wiIds: [] as string[], // array of selected WI IDs
+    wiIds: [] as string[],
     date: activeBatch?.startDate || '2026-01-31',
     startTime: '08:00',
     endTime: '09:30',
@@ -163,16 +341,11 @@ export function SchedulingWorkspaceClient({
     }
 
     const performSave = () => {
-      // Loop through all selected WIs for database operations
-      // Wait, let's serialize them correctly or run validations for each.
-      // Since the server DB requires 'wiId' in the payload, but our rule says we change the model to 'wi_id: String' or 'wiIds'.
-      // Our Mongoose JadwalSesi schema was written to take 'wi_id: String' to map with single string for seed, but also we can save as wi_id. Let's make sure the client saves 'wiId: sessionForm.wiIds[0]' or maps them. Wait, since the user explicitly asked to change the model to contain 'widyaiswara_id' and we support multi-WI, let's pass 'wiIds: sessionForm.wiIds' to our API payload, and also fallback to `wiId: sessionForm.wiIds[0]` to keep backward compatible if needed!
-
       const payload = {
         batchId: targetBatchId,
         mapelId: sessionForm.mapelId,
-        wiIds: sessionForm.wiIds, // multi-select pengajar
-        wiId: sessionForm.wiIds[0], // fallback
+        wiIds: sessionForm.wiIds,
+        wiId: sessionForm.wiIds[0],
         date: sessionForm.date,
         startTime: sessionForm.startTime,
         endTime: sessionForm.endTime,
@@ -711,31 +884,294 @@ export function SchedulingWorkspaceClient({
         {viewMode === 'table' && (
           <Card className="shadow-sm border-slate-200 bg-white">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-              <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
-                <TableProperties className="h-4.5 w-4.5 text-blue-600" />
-                Matriks Tabel Jadwal Sesi
-              </CardTitle>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
+                  <TableProperties className="h-4.5 w-4.5 text-blue-600" />
+                  Matriks Tabel Jadwal Sesi
+                </CardTitle>
+
+                {/* Filter Toggle Button */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={showFilterBar ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowFilterBar(!showFilterBar)}
+                    className={`text-xs font-semibold gap-1.5 ${showFilterBar ? 'bg-blue-600 text-white' : 'border-slate-200 text-slate-600'}`}
+                  >
+                    <Filter className="h-3.5 w-3.5" />
+                    Filter {activeFilterCount > 0 && <span className="bg-white text-blue-600 rounded-full h-4.5 w-4.5 text-[10px] flex items-center justify-center font-bold">{activeFilterCount}</span>}
+                  </Button>
+
+                  {activeFilterCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetAllFilters}
+                      className="text-xs text-red-500 hover:text-red-600 font-semibold gap-1"
+                    >
+                      <X className="h-3 w-3" />
+                      Reset
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Advanced Filter Bar */}
+              {showFilterBar && (
+                <div className="mt-4 p-4 bg-slate-50/80 border border-slate-200 rounded-xl space-y-4 animate-in slide-in-from-top-2 duration-200">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {/* Rentang Tanggal */}
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Tanggal Mulai</Label>
+                      <Input
+                        type="date"
+                        min={activeBatch?.startDate}
+                        max={activeBatch?.endDate}
+                        value={filterDateStart}
+                        onChange={e => setFilterDateStart(e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Tanggal Akhir</Label>
+                      <Input
+                        type="date"
+                        min={activeBatch?.startDate}
+                        max={activeBatch?.endDate}
+                        value={filterDateEnd}
+                        onChange={e => setFilterDateEnd(e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+
+                    {/* Filter Format */}
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Format</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['Klasikal', 'Virtual', 'Asinkron'].map(format => {
+                          const isActive = filterFormats.includes(format);
+                          return (
+                            <button
+                              key={format}
+                              onClick={() => toggleFormatFilter(format)}
+                              className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${
+                                isActive
+                                  ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm'
+                                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                              }`}
+                            >
+                              {format}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Filter JP Range */}
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Rentang JP</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          min="1"
+                          max="10"
+                          value={filterJpMin}
+                          onChange={e => setFilterJpMin(e.target.value)}
+                          className="h-8 w-16 text-xs"
+                        />
+                        <span className="text-xs text-slate-400">-</span>
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          min="1"
+                          max="10"
+                          value={filterJpMax}
+                          onChange={e => setFilterJpMax(e.target.value)}
+                          className="h-8 w-16 text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Filter Lokasi */}
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Lokasi</Label>
+                      <div className="flex flex-wrap gap-1 max-h-[60px] overflow-y-auto">
+                        {activeLokasis.map(lok => {
+                          const isActive = filterLokasiIds.includes(lok.id);
+                          return (
+                            <button
+                              key={lok.id}
+                              onClick={() => toggleLokasiFilter(lok.id)}
+                              className={`px-2 py-0.5 text-[9px] font-bold rounded border transition-all ${
+                                isActive
+                                  ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm'
+                                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                              }`}
+                              title={lok.name}
+                            >
+                              {lok.name.length > 12 ? lok.name.substring(0, 12) + '...' : lok.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Filter Widyaiswara */}
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Widyaiswara</Label>
+                      <div className="flex flex-wrap gap-1 max-h-[60px] overflow-y-auto">
+                        {activeWis.map(wi => {
+                          const isActive = filterWIIds.includes(wi.id);
+                          return (
+                            <button
+                              key={wi.id}
+                              onClick={() => toggleWIFilter(wi.id)}
+                              className={`px-2 py-0.5 text-[9px] font-bold rounded border transition-all ${
+                                isActive
+                                  ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm'
+                                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                              }`}
+                              title={wi.name}
+                            >
+                              {wi.name.length > 15 ? wi.name.substring(0, 15) + '...' : wi.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Filter Mapel */}
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Mata Pelajaran</Label>
+                      <div className="flex flex-wrap gap-1 max-h-[60px] overflow-y-auto">
+                        {activeMapels.map(mapel => {
+                          const isActive = filterMapelIds.includes(mapel.id);
+                          return (
+                            <button
+                              key={mapel.id}
+                              onClick={() => toggleMapelFilter(mapel.id)}
+                              className={`px-2 py-0.5 text-[9px] font-bold rounded border transition-all ${
+                                isActive
+                                  ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm'
+                                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                              }`}
+                              title={mapel.name}
+                            >
+                              {mapel.name.length > 15 ? mapel.name.substring(0, 15) + '...' : mapel.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Active Filter Badges */}
+                  {activeFilterCount > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200">
+                      <span className="text-[9px] font-bold text-slate-400">Filter Aktif:</span>
+                      {filterDateStart && (
+                        <Badge variant="secondary" className="text-[9px] bg-blue-50 text-blue-600 border-blue-200">
+                          Dari {filterDateStart}
+                        </Badge>
+                      )}
+                      {filterDateEnd && (
+                        <Badge variant="secondary" className="text-[9px] bg-blue-50 text-blue-600 border-blue-200">
+                          Sampai {filterDateEnd}
+                        </Badge>
+                      )}
+                      {filterFormats.map(f => (
+                        <Badge key={f} variant="secondary" className="text-[9px] bg-purple-50 text-purple-600 border-purple-200">
+                          {f}
+                        </Badge>
+                      ))}
+                      {filterWIIds.length > 0 && (
+                        <Badge variant="secondary" className="text-[9px] bg-emerald-50 text-emerald-600 border-emerald-200">
+                          {filterWIIds.length} WI
+                        </Badge>
+                      )}
+                      {filterMapelIds.length > 0 && (
+                        <Badge variant="secondary" className="text-[9px] bg-amber-50 text-amber-600 border-amber-200">
+                          {filterMapelIds.length} Mapel
+                        </Badge>
+                      )}
+                      {filterLokasiIds.length > 0 && (
+                        <Badge variant="secondary" className="text-[9px] bg-sky-50 text-sky-600 border-sky-200">
+                          {filterLokasiIds.length} Lokasi
+                        </Badge>
+                      )}
+                      {(filterJpMin || filterJpMax) && (
+                        <Badge variant="secondary" className="text-[9px] bg-rose-50 text-rose-600 border-rose-200">
+                          JP: {filterJpMin || '1'}-{filterJpMax || '10'}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Hasil Filter Counter */}
+              {showFilterBar && (
+                <div className="mt-3 text-[10px] font-bold text-slate-500">
+                  Menampilkan {filteredAndSortedSessions.length} dari {batchSessions.length} sesi
+                  {activeFilterCount > 0 && ' (difilter)'}
+                </div>
+              )}
             </CardHeader>
             <CardContent className="p-0">
-              {batchSessions.length === 0 ? (
+              {filteredAndSortedSessions.length === 0 ? (
                 <div className="text-center py-12 text-slate-400">
-                  <Calendar className="h-10 w-10 mx-auto text-slate-300 mb-2" />
-                  <p className="text-xs font-semibold">Belum ada sesi yang dialokasikan.</p>
+                  <Filter className="h-10 w-10 mx-auto text-slate-300 mb-2" />
+                  <p className="text-xs font-semibold">
+                    {showFilterBar && activeFilterCount > 0
+                      ? 'Tidak ada sesi yang cocok dengan filter yang diterapkan.'
+                      : 'Belum ada sesi yang dialokasikan.'}
+                  </p>
+                  {showFilterBar && activeFilterCount > 0 && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={resetAllFilters}
+                      className="text-blue-600 text-xs mt-2"
+                    >
+                      Reset Semua Filter
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-slate-50/40">
-                      <TableHead className="pl-6 text-xs font-bold uppercase text-slate-500">Tanggal</TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-slate-500">Mata Pelajaran (Mapel)</TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-slate-500">Widyaiswara</TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-slate-500">Format & Ruangan</TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-slate-500">JP Ke & Jumlah JP</TableHead>
+                      <TableHead className="pl-6 text-xs font-bold uppercase text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('date')}>
+                        <div className="flex items-center gap-1">
+                          Tanggal <SortIcon field="date" />
+                        </div>
+                      </TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('mapelName')}>
+                        <div className="flex items-center gap-1">
+                          Mata Pelajaran (Mapel) <SortIcon field="mapelName" />
+                        </div>
+                      </TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-slate-500">
+                        Widyaiswara
+                      </TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('format')}>
+                        <div className="flex items-center gap-1">
+                          Format & Ruangan <SortIcon field="format" />
+                        </div>
+                      </TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('jpCount')}>
+                        <div className="flex items-center gap-1">
+                          JP Ke & Jumlah JP <SortIcon field="jpCount" />
+                        </div>
+                      </TableHead>
                       <TableHead className="pr-6 text-right text-xs font-bold uppercase text-slate-500">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {batchSessions.map(session => {
+                    {filteredAndSortedSessions.map(session => {
                       const mapel = activeMapels.find(m => m.id === session.mapelId);
 
                       // Unpack multiple Widyaiswaras with titles
@@ -746,7 +1182,11 @@ export function SchedulingWorkspaceClient({
 
                       return (
                         <TableRow key={session.id} className="hover:bg-slate-50/30 transition-colors">
-                          <TableCell className="pl-6 font-semibold text-slate-900 text-xs">{session.date}</TableCell>
+                          <TableCell className="pl-6 font-semibold text-slate-900 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              {new Date(session.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                          </TableCell>
                           <TableCell className="font-semibold text-slate-900 text-xs">{mapel?.name}</TableCell>
                           <TableCell className="text-xs text-slate-600 font-medium max-w-[200px] truncate" title={wiNames}>
                             {wiNames}
