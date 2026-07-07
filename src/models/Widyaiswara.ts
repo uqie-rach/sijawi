@@ -33,10 +33,11 @@ const WidyaiswaraSchema: Schema = new Schema(
     toJSON: {
       virtuals: true,
       transform: (doc, ret) => {
-        ret.id = ret._id;
-        delete ret._id;
-        delete ret.__v;
-        return ret;
+        const r = ret as any;
+        r.id = r._id;
+        delete r._id;
+        delete r.__v;
+        return r;
       },
     },
   }

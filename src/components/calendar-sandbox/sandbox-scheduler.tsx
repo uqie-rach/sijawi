@@ -22,7 +22,8 @@ export function SandboxScheduler() {
   // Map real sessions from context to CalendarEvent format
   const events: CalendarEvent[] = sessions.map((s) => {
     const mapel = mapelList.find((m) => m.id === s.mapelId);
-    const wi = widyaswaras.find((w) => w.id === s.wiId);
+    // Use first Widyaiswara in wiIds array for display
+    const wi = widyaswaras.find((w) => s.wiIds && s.wiIds.length > 0 && w.id === s.wiIds[0]);
     const lokasi = lokasiList.find((l) => l.id === s.lokasiId);
 
     const title = `${mapel ? mapel.name : 'Subject'} - ${wi ? wi.name : 'WI'} (${lokasi ? lokasi.name : s.format})`;
@@ -67,8 +68,13 @@ export function SandboxScheduler() {
     return true;
   };
 
-  // Handle event creation
-  const handleEventCreate = async (newEvent: CalendarEvent) => {
+  // Handle event creation – adapted to match Scheduler's expected type
+  const handleEventCreate = (newEvent: Partial<CalendarEvent>) => {
+    // Ensure required fields are present
+    if (!newEvent.start || !newEvent.end) {
+      toast.error("Invalid event: missing start or end.");
+      return;
+    }
     const isValid = validateSessionConstraints(newEvent.start, newEvent.end);
     if (!isValid) return;
 
@@ -89,7 +95,7 @@ export function SandboxScheduler() {
     const res = addSession({
       batchId: defaultBatch.id,
       mapelId: defaultMapel.id,
-      wiId: defaultWi.id,
+      wiIds: [defaultWi.id],
       date: formatDate(newEvent.start),
       startTime: formatTime(newEvent.start),
       endTime: formatTime(newEvent.end),
@@ -105,7 +111,7 @@ export function SandboxScheduler() {
   };
 
   // Handle event drop/move
-  const handleEventDrop = async (event: CalendarEvent, newStart: Date, newEnd: Date) => {
+  const handleEventDrop = (event: CalendarEvent, newStart: Date, newEnd: Date) => {
     const isValid = validateSessionConstraints(newStart, newEnd, event.id);
     if (!isValid) return;
 
@@ -121,7 +127,7 @@ export function SandboxScheduler() {
     const res = updateSession(event.id, {
       batchId: originalSession.batchId,
       mapelId: originalSession.mapelId,
-      wiId: originalSession.wiId,
+      wiIds: originalSession.wiIds,
       date: formatDate(newStart),
       startTime: formatTime(newStart),
       endTime: formatTime(newEnd),

@@ -82,7 +82,7 @@ export function useScheduling(batchId?: string) {
     const mapel = mapelList.find(m => m.id === session.mapelId);
     
     // Unpack multiple Widyaiswara details
-    const resolvedWis = (session.wiIds || []).map(id => widyaswaras.find(w => w.id === id)).filter(Boolean);
+    const resolvedWis = (session.wiIds || []).map(id => widyaswaras.find(w => w.id === id)).filter((w): w is NonNullable<typeof w> => Boolean(w));
     const wiName = resolvedWis.map(w => `${w.name}, ${w.gelar}`).join(', ');
 
     const lokasi = lokasiList.find(l => l.id === session.lokasiId);
