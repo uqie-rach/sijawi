@@ -1,15 +1,5 @@
-import { connectToDatabase } from '@/lib/mongodb';
-import JadwalSesi from '@/models/JadwalSesi';
-import Pelatihan from '@/models/Pelatihan';
-import MataPelatihan from '@/models/MataPelatihan';
-import Widyaiswara from '@/models/Widyaiswara';
-import { cookies } from 'next/headers';
-
-async function isAdmin() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('sessionToken')?.value;
-  return token === 'admin-session-token';
-}
+import { prisma } from '@/lib/prisma';
+import { isAdmin } from '@/lib/auth-utils';
 
 export async function GET(request: Request) {
   if (!(await isAdmin())) {
@@ -17,7 +7,6 @@ export async function GET(request: Request) {
   }
 
   try {
-    await connectToDatabase();
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get('page') || '1');
     const pageSize = parseInt(url.searchParams.get('pageSize') || '10');
@@ -27,27 +16,26 @@ export async function GET(request: Request) {
     const pola = url.searchParams.get('pola') || '';
 
     const [sessions, batches, mapels, wis] = await Promise.all([
-      JadwalSesi.find(),
-      Pelatihan.find(),
-      MataPelatihan.find(),
-      Widyaiswara.find()
+      prisma.jadwalSesi.findMany(),
+      prisma.pelatihan.findMany(),
+      prisma.mataPelatihan.findMany(),
+      prisma.widyaiswara.findMany(),
     ]);
 
-    const batchMap = new Map(batches.map(b => [b._id, b]));
-    const mapelMap = new Map(mapels.map(m => [m._id, m]));
-    const wiMap = new Map(wis.map(w => [w._id, w]));
+    const batchMap = new Map(batches.map(b => [b.id, b]));
+    const mapelMap = new Map(mapels.map(m => [m.id, m]));
+    const wiMap = new Map(wis.map(w => [w.id, w]));
 
-    // Join details (Multi-WI format supported!)
     const joinedSessions = sessions.map(s => {
       const batch = batchMap.get(s.batch_id);
       const mapel = mapelMap.get(s.mapel_id);
 
-      const resolvedWis = (s.wi_ids || []).map((id: any) => wiMap.get(id)).filter(Boolean);
-      const wiNames = resolvedWis.map((w: { name: any; gelar: any; }) => `${w.name}, ${w.gelar}`).join(', ');
-      const wiEmails = resolvedWis.map((w: { email: any; }) => w.email).join(', ');
+      const resolvedWis = (s.wi_ids || []).map(id => wiMap.get(id)).filter(Boolean);
+      const wiNames = resolvedWis.map((w: any) => `${w.name}, ${w.gelar}`).join(', ');
+      const wiEmails = resolvedWis.map((w: any) => w.email).join(', ');
 
       return {
-        id: s._id,
+        id: s.id,
         batchId: s.batch_id,
         mapelId: s.mapel_id,
         wiIds: s.wi_ids,
@@ -62,11 +50,10 @@ export async function GET(request: Request) {
         pola: batch ? batch.pola : 'APBD',
         mapelName: mapel ? mapel.name : 'Unknown Subject',
         wiName: wiNames || 'Unknown WI',
-        wiEmail: wiEmails || ''
+        wiEmail: wiEmails || '',
       };
     });
 
-    // Filter
     let filtered = joinedSessions;
 
     if (startDate) {
@@ -104,7 +91,9 @@ export async function GET(request: Request) {
       polaBreakdown[s.pola] = (polaBreakdown[s.pola] || 0) + s.jpCount;
     });
 
-    const wiNames = Array.from(new Set(filtered.flatMap(s => (s.wiName ? s.wiName.split(', ') : [])))).map(name => ({ name }));
+    const wiNames = Array.from(
+      new Set(filtered.flatMap(s => (s.wiName ? s.wiName.split(', ') : [])))
+    ).map(name => ({ name }));
 
     return Response.json({
       sessions: paginatedSessions,

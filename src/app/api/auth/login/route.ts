@@ -1,17 +1,9 @@
-import { connectToDatabase } from '@/lib/mongodb';
-import Widyaiswara from '@/models/Widyaiswara';
-import AdminConfig from '@/models/AdminConfig';
+import { prisma } from '@/lib/prisma';
 import { bcrypt } from '@/lib/bcrypt';
 import { cookies } from 'next/headers';
 
-async function getAdminPasswordHash(): Promise<string | null> {
-  const config = await AdminConfig.findById('admin-config');
-  return config?.passwordHash || null;
-}
-
 export async function POST(request: Request) {
   try {
-    await connectToDatabase();
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -23,13 +15,12 @@ export async function POST(request: Request) {
 
     // Check for Super Admin
     if (email === 'admin@wtms.com') {
-      const adminHash = await getAdminPasswordHash();
+      const config = await prisma.adminConfig.findUnique({ where: { id: 'admin-config' } });
       let passwordValid = false;
 
-      if (adminHash) {
-        passwordValid = await bcrypt.compare(password, adminHash);
+      if (config?.passwordHash) {
+        passwordValid = await bcrypt.compare(password, config.passwordHash);
       } else {
-        // First run: fallback to default password
         passwordValid = password === 'admin123';
       }
 
@@ -39,7 +30,7 @@ export async function POST(request: Request) {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
-          maxAge: 60 * 60 * 24, // 24 hours
+          maxAge: 60 * 60 * 24,
         });
 
         return new Response(JSON.stringify({
@@ -57,8 +48,10 @@ export async function POST(request: Request) {
       }
     }
 
-    // Find user in MongoDB
-    const user = await Widyaiswara.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+    // Find Widyaiswara
+    const user = await prisma.widyaiswara.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+    });
 
     if (!user) {
       return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
@@ -87,18 +80,18 @@ export async function POST(request: Request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24,
     });
 
     const userMetadata = {
-      id: user._id,
+      id: user.id,
       name: user.name,
       gelar: user.gelar,
       email: user.email,
       nip: user.nip,
       jabatan: user.jabatan,
       level: user.level,
-      levelLabel: user.level_label
+      levelLabel: user.level_label,
     };
 
     return new Response(JSON.stringify({ user: userMetadata, token: sessionToken }), {

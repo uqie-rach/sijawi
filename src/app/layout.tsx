@@ -30,15 +30,13 @@ export const viewport: Viewport = {
 
 async function getDynamicPrimaryCSS(): Promise<string> {
   try {
-    const { connectToDatabase } = await import("@/lib/mongodb");
-    await connectToDatabase();
-    const AdminConfig = (await import("@/models/AdminConfig")).default;
-    const config = await AdminConfig.findById("admin-config");
+    const { prisma } = await import("@/lib/prisma");
+    const config = await prisma.adminConfig.findUnique({ where: { id: "admin-config" } });
     if (config?.primaryColor) {
       return generatePrimaryColorCSS(config.primaryColor);
     }
   } catch {
-    // Fallback to default CSS if MongoDB is not available
+    // Fallback to default CSS if DB is not available
   }
   return "";
 }
