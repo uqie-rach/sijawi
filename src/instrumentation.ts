@@ -5,7 +5,7 @@ export async function register() {
   const { default: Redis } = await import(/* webpackIgnore: true */ 'ioredis');
 
   // Dynamic import untuk menghindari bundling statis nodemailer oleh webpack
-  const { sendEmail } = await import(/* webpackIgnore: true */ '../lib/email');
+  const { sendEmail } = await import(/* webpackIgnore: true */ './src/lib/email');
 
   const connection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: null,
