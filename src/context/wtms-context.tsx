@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 export interface Widyaiswara {
@@ -156,43 +156,71 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [selectedWiId, setSelectedWiId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
+  // Ref untuk mencegah seeding ganda
+  const isSeeding = useRef(false);
+
+  // Fungsi untuk memuat semua data dari API
+  const loadAllData = async () => {
+    try {
+      const [resWi, resKat, resMapel, resLok, resBatches, resSessions] = await Promise.all([
+        fetch('/api/widyaswara').then(r => r.ok ? r.json() : []),
+        fetch('/api/kategori-pelatihan').then(r => r.ok ? r.json() : []),
+        fetch('/api/mata-pelatihan').then(r => r.ok ? r.json() : []),
+        fetch('/api/lokasi').then(r => r.ok ? r.json() : []),
+        fetch('/api/batches').then(r => r.ok ? r.json() : []),
+        fetch('/api/sessions').then(r => r.ok ? r.json() : [])
+      ]);
+
+      // Cek apakah database masih kosong (fresh start)
+      if (Array.isArray(resWi) && resWi.length === 0 &&
+          Array.isArray(resKat) && resKat.length === 0 &&
+          !isSeeding.current) {
+        isSeeding.current = true;
+        try {
+          const seedRes = await fetch('/api/seed', { method: 'POST' }).then(r => r.json());
+          if (seedRes.success) {
+            // Setelah seeding berhasil, fetch ulang data tanpa reload
+            const newData = await Promise.all([
+              fetch('/api/widyaswara').then(r => r.ok ? r.json() : []),
+              fetch('/api/kategori-pelatihan').then(r => r.ok ? r.json() : []),
+              fetch('/api/mata-pelatihan').then(r => r.ok ? r.json() : []),
+              fetch('/api/lokasi').then(r => r.ok ? r.json() : []),
+              fetch('/api/batches').then(r => r.ok ? r.json() : []),
+              fetch('/api/sessions').then(r => r.ok ? r.json() : [])
+            ]);
+            setWidyaswaras(newData[0] || []);
+            setKategoriList(newData[1] || []);
+            setMapelList(newData[2] || []);
+            setLokasiList(newData[3] || []);
+            setBatches(newData[4] || []);
+            setSessions(newData[5] || []);
+            toast.success('Data awal berhasil dimuat!');
+          } else {
+            toast.error('Gagal memuat data awal. Silakan muat ulang halaman.');
+          }
+        } catch (seedError) {
+          console.error('Seeding failed:', seedError);
+          toast.error('Gagal memuat data awal.');
+        } finally {
+          isSeeding.current = false;
+        }
+        return;
+      }
+
+      if (Array.isArray(resWi)) setWidyaswaras(resWi);
+      if (Array.isArray(resKat)) setKategoriList(resKat);
+      if (Array.isArray(resMapel)) setMapelList(resMapel);
+      if (Array.isArray(resLok)) setLokasiList(resLok);
+      if (Array.isArray(resBatches)) setBatches(resBatches);
+      if (Array.isArray(resSessions)) setSessions(resSessions);
+    } catch (err) {
+      console.error("Failed to load data from API:", err);
+    }
+  };
+
   // Load from API on mount
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [resWi, resKat, resMapel, resLok, resBatches, resSessions] = await Promise.all([
-          fetch('/api/widyaswara').then(r => r.ok ? r.json() : []),
-          fetch('/api/kategori-pelatihan').then(r => r.ok ? r.json() : []),
-          fetch('/api/mata-pelatihan').then(r => r.ok ? r.json() : []),
-          fetch('/api/lokasi').then(r => r.ok ? r.json() : []),
-          fetch('/api/batches').then(r => r.ok ? r.json() : []),
-          fetch('/api/sessions').then(r => r.ok ? r.json() : [])
-        ]);
-
-        if (Array.isArray(resWi) && resWi.length === 0 && Array.isArray(resKat) && resKat.length === 0) {
-          const seedRes = await fetch('/api/seed', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          }).then(r => r.json());
-
-          if (seedRes.success) {
-            window.location.reload();
-          }
-          return;
-        }
-
-        if (Array.isArray(resWi)) setWidyaswaras(resWi);
-        if (Array.isArray(resKat)) setKategoriList(resKat);
-        if (Array.isArray(resMapel)) setMapelList(resMapel);
-        if (Array.isArray(resLok)) setLokasiList(resLok);
-        if (Array.isArray(resBatches)) setBatches(resBatches);
-        if (Array.isArray(resSessions)) setSessions(resSessions);
-      } catch (err) {
-        console.error("Failed to load data from API:", err);
-      }
-    };
-
-    loadData();
+    loadAllData();
 
     const storedAuth = localStorage.getItem('wtms_auth');
     const storedRole = localStorage.getItem('wtms_role');
@@ -224,7 +252,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ======================== WIDYAISWARA CRUD ========================
   const addWidyaswara = async (wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>): Promise<{ success: boolean; error?: string }> => {
-    // Validasi duplikasi NIP / email di klien
     if (widyaswaras.some(w => w.nip === wi.nip)) {
       const msg = `Widyaiswara dengan NIP ${wi.nip} sudah terdaftar.`;
       toast.error(msg);
@@ -239,7 +266,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newWi = { ...wi, id: `wi-${Date.now()}`, jpLastMonth: 0 };
 
     try {
-      // POST ke server – server juga akan memvalidasi duplikasi lebih lanjut
       await fetchJSON('/api/widyaswara', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -255,7 +281,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateWidyaswara = async (id: string, wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>): Promise<{ success: boolean; error?: string }> => {
-    // Cek duplikasi di klien, kecuali data milik sendiri
     if (widyaswaras.some(w => w.nip === wi.nip && w.id !== id)) {
       const msg = `NIP ${wi.nip} sudah digunakan oleh Widyaiswara lain.`;
       toast.error(msg);
