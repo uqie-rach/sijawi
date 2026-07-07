@@ -26,7 +26,6 @@ interface SchedulingWorkspaceClientProps {
   allBatches: any[];
 }
 
-// Enum untuk field sorting
 type SortField = 'date' | 'startTime' | 'jpCount' | 'mapelName' | 'format';
 type SortDirection = 'asc' | 'desc';
 
@@ -68,55 +67,27 @@ export function SchedulingWorkspaceClient({
     ? activeSessions.filter(s => s.batchId === batchId)
     : activeSessions;
 
-  // =================== FILTER & SORT STATE ===================
+  // =================== FILTER & SORT STATE (cleaned with simple selects) ===================
   const [filterDateStart, setFilterDateStart] = useState<string>('');
   const [filterDateEnd, setFilterDateEnd] = useState<string>('');
-  const [filterFormats, setFilterFormats] = useState<string[]>([]);
-  const [filterWIIds, setFilterWIIds] = useState<string[]>([]);
-  const [filterMapelIds, setFilterMapelIds] = useState<string[]>([]);
-  const [filterLokasiIds, setFilterLokasiIds] = useState<string[]>([]);
+  const [filterFormat, setFilterFormat] = useState<string>('ALL');
+  const [filterWIId, setFilterWIId] = useState<string>('ALL');
+  const [filterMapelId, setFilterMapelId] = useState<string>('ALL');
+  const [filterLokasiId, setFilterLokasiId] = useState<string>('ALL');
   const [filterJpMin, setFilterJpMin] = useState<string>('');
   const [filterJpMax, setFilterJpMax] = useState<string>('');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showFilterBar, setShowFilterBar] = useState(false);
 
-  // Toggle format filter
-  const toggleFormatFilter = (format: string) => {
-    setFilterFormats(prev =>
-      prev.includes(format) ? prev.filter(f => f !== format) : [...prev, format]
-    );
-  };
-
-  // Toggle WI filter
-  const toggleWIFilter = (wiId: string) => {
-    setFilterWIIds(prev =>
-      prev.includes(wiId) ? prev.filter(id => id !== wiId) : [...prev, wiId]
-    );
-  };
-
-  // Toggle Mapel filter
-  const toggleMapelFilter = (mapelId: string) => {
-    setFilterMapelIds(prev =>
-      prev.includes(mapelId) ? prev.filter(id => id !== mapelId) : [...prev, mapelId]
-    );
-  };
-
-  // Toggle Lokasi filter
-  const toggleLokasiFilter = (lokId: string) => {
-    setFilterLokasiIds(prev =>
-      prev.includes(lokId) ? prev.filter(id => id !== lokId) : [...prev, lokId]
-    );
-  };
-
   // Reset semua filter
   const resetAllFilters = () => {
     setFilterDateStart('');
     setFilterDateEnd('');
-    setFilterFormats([]);
-    setFilterWIIds([]);
-    setFilterMapelIds([]);
-    setFilterLokasiIds([]);
+    setFilterFormat('ALL');
+    setFilterWIId('ALL');
+    setFilterMapelId('ALL');
+    setFilterLokasiId('ALL');
     setFilterJpMin('');
     setFilterJpMax('');
     setSortField('date');
@@ -128,16 +99,15 @@ export function SchedulingWorkspaceClient({
     let count = 0;
     if (filterDateStart) count++;
     if (filterDateEnd) count++;
-    if (filterFormats.length > 0) count++;
-    if (filterWIIds.length > 0) count++;
-    if (filterMapelIds.length > 0) count++;
-    if (filterLokasiIds.length > 0) count++;
+    if (filterFormat !== 'ALL') count++;
+    if (filterWIId !== 'ALL') count++;
+    if (filterMapelId !== 'ALL') count++;
+    if (filterLokasiId !== 'ALL') count++;
     if (filterJpMin) count++;
     if (filterJpMax) count++;
     return count;
-  }, [filterDateStart, filterDateEnd, filterFormats, filterWIIds, filterMapelIds, filterLokasiIds, filterJpMin, filterJpMax]);
+  }, [filterDateStart, filterDateEnd, filterFormat, filterWIId, filterMapelId, filterLokasiId, filterJpMin, filterJpMax]);
 
-  // Handle sort toggle
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -147,7 +117,6 @@ export function SchedulingWorkspaceClient({
     }
   };
 
-  // Render sort icon
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) {
       return <ArrowUpDown className="h-3 w-3 text-slate-400 ml-1" />;
@@ -161,39 +130,30 @@ export function SchedulingWorkspaceClient({
   const filteredAndSortedSessions = useMemo(() => {
     let result = [...batchSessions];
 
-    // Filter by date start
     if (filterDateStart) {
       result = result.filter(s => s.date >= filterDateStart);
     }
 
-    // Filter by date end
     if (filterDateEnd) {
       result = result.filter(s => s.date <= filterDateEnd);
     }
 
-    // Filter by formats
-    if (filterFormats.length > 0) {
-      result = result.filter(s => filterFormats.includes(s.format));
+    if (filterFormat !== 'ALL') {
+      result = result.filter(s => s.format === filterFormat);
     }
 
-    // Filter by Widyaiswara IDs
-    if (filterWIIds.length > 0) {
-      result = result.filter(s => 
-        (s.wiIds || []).some(id => filterWIIds.includes(id))
-      );
+    if (filterWIId !== 'ALL') {
+      result = result.filter(s => (s.wiIds || []).includes(filterWIId));
     }
 
-    // Filter by Mapel IDs
-    if (filterMapelIds.length > 0) {
-      result = result.filter(s => filterMapelIds.includes(s.mapelId));
+    if (filterMapelId !== 'ALL') {
+      result = result.filter(s => s.mapelId === filterMapelId);
     }
 
-    // Filter by Lokasi IDs
-    if (filterLokasiIds.length > 0) {
-      result = result.filter(s => filterLokasiIds.includes(s.lokasiId || ''));
+    if (filterLokasiId !== 'ALL') {
+      result = result.filter(s => s.lokasiId === filterLokasiId);
     }
 
-    // Filter by JP min
     if (filterJpMin) {
       const min = parseInt(filterJpMin);
       if (!isNaN(min)) {
@@ -201,7 +161,6 @@ export function SchedulingWorkspaceClient({
       }
     }
 
-    // Filter by JP max
     if (filterJpMax) {
       const max = parseInt(filterJpMax);
       if (!isNaN(max)) {
@@ -209,7 +168,6 @@ export function SchedulingWorkspaceClient({
       }
     }
 
-    // Sorting
     result.sort((a, b) => {
       let comparison = 0;
       
@@ -240,7 +198,7 @@ export function SchedulingWorkspaceClient({
     });
 
     return result;
-  }, [batchSessions, filterDateStart, filterDateEnd, filterFormats, filterWIIds, filterMapelIds, filterLokasiIds, filterJpMin, filterJpMax, sortField, sortDirection, activeMapels]);
+  }, [batchSessions, filterDateStart, filterDateEnd, filterFormat, filterWIId, filterMapelId, filterLokasiId, filterJpMin, filterJpMax, sortField, sortDirection, activeMapels]);
 
   const [sessionForm, setSessionForm] = useState({
     batchId: batchId || '',
@@ -824,11 +782,8 @@ export function SchedulingWorkspaceClient({
                 <div className="space-y-4">
                   {batchSessions.filter(s => s.date === selectedDayDate).map(session => {
                     const mapel = activeMapels.find(m => m.id === session.mapelId);
-
-                    // Unpack multi-WI names
                     const resolvedWis = (session.wiIds || []).map((id: any) => activeWis.find(w => w.id === id)).filter(Boolean);
                     const wiNames = resolvedWis.map((w: { name: any; gelar: any; }) => `${w.name}, ${w.gelar}`).join(', ');
-
                     const lok = activeLokasis.find(l => l.id === session.lokasiId);
 
                     return (
@@ -883,23 +838,29 @@ export function SchedulingWorkspaceClient({
 
         {viewMode === 'table' && (
           <Card className="shadow-sm border-slate-200 bg-white">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
+            <CardHeader className="border-b border-slate-200 py-4 px-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
                   <TableProperties className="h-4.5 w-4.5 text-blue-600" />
                   Matriks Tabel Jadwal Sesi
                 </CardTitle>
 
-                {/* Filter Toggle Button */}
                 <div className="flex items-center gap-2">
                   <Button
                     variant={showFilterBar ? "default" : "outline"}
                     size="sm"
                     onClick={() => setShowFilterBar(!showFilterBar)}
-                    className={`text-xs font-semibold gap-1.5 ${showFilterBar ? 'bg-blue-600 text-white' : 'border-slate-200 text-slate-600'}`}
+                    className={`text-xs font-semibold gap-1.5 ${
+                      showFilterBar ? 'bg-blue-600 text-white' : 'border-slate-200 text-slate-600'
+                    }`}
                   >
                     <Filter className="h-3.5 w-3.5" />
-                    Filter {activeFilterCount > 0 && <span className="bg-white text-blue-600 rounded-full h-4.5 w-4.5 text-[10px] flex items-center justify-center font-bold">{activeFilterCount}</span>}
+                    Filter
+                    {activeFilterCount > 0 && (
+                      <span className="bg-white text-blue-600 rounded-full h-4 w-4 text-[10px] flex items-center justify-center font-bold">
+                        {activeFilterCount}
+                      </span>
+                    )}
                   </Button>
 
                   {activeFilterCount > 0 && (
@@ -916,60 +877,49 @@ export function SchedulingWorkspaceClient({
                 </div>
               </div>
 
-              {/* Advanced Filter Bar */}
+              {/* Clean Filter Bar */}
               {showFilterBar && (
-                <div className="mt-4 p-4 bg-slate-50/80 border border-slate-200 rounded-xl space-y-4 animate-in slide-in-from-top-2 duration-200">
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                    {/* Rentang Tanggal */}
+                <div className="mt-4 p-4 bg-white border border-slate-200 rounded-xl space-y-4 animate-in slide-in-from-top-2 duration-200 shadow-sm">
+                  {/* Baris Pertama: Tanggal & Format */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500">Tanggal Mulai</Label>
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Tanggal Mulai</Label>
                       <Input
                         type="date"
                         min={activeBatch?.startDate}
                         max={activeBatch?.endDate}
                         value={filterDateStart}
                         onChange={e => setFilterDateStart(e.target.value)}
-                        className="h-8 text-xs"
+                        className="h-9 text-xs bg-slate-50 border-slate-200"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500">Tanggal Akhir</Label>
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Tanggal Akhir</Label>
                       <Input
                         type="date"
                         min={activeBatch?.startDate}
                         max={activeBatch?.endDate}
                         value={filterDateEnd}
                         onChange={e => setFilterDateEnd(e.target.value)}
-                        className="h-8 text-xs"
+                        className="h-9 text-xs bg-slate-50 border-slate-200"
                       />
                     </div>
-
-                    {/* Filter Format */}
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500">Format</Label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {['Klasikal', 'Virtual', 'Asinkron'].map(format => {
-                          const isActive = filterFormats.includes(format);
-                          return (
-                            <button
-                              key={format}
-                              onClick={() => toggleFormatFilter(format)}
-                              className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${
-                                isActive
-                                  ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm'
-                                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                              }`}
-                            >
-                              {format}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Format</Label>
+                      <Select value={filterFormat} onValueChange={setFilterFormat}>
+                        <SelectTrigger className="h-9 text-xs bg-slate-50 border-slate-200">
+                          <SelectValue placeholder="Semua Format" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-slate-200">
+                          <SelectItem value="ALL">Semua Format</SelectItem>
+                          <SelectItem value="Klasikal">Klasikal</SelectItem>
+                          <SelectItem value="Virtual">Virtual</SelectItem>
+                          <SelectItem value="Asinkron">Asinkron</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-
-                    {/* Filter JP Range */}
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500">Rentang JP</Label>
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Rentang JP</Label>
                       <div className="flex items-center gap-1.5">
                         <Input
                           type="number"
@@ -978,7 +928,7 @@ export function SchedulingWorkspaceClient({
                           max="10"
                           value={filterJpMin}
                           onChange={e => setFilterJpMin(e.target.value)}
-                          className="h-8 w-16 text-xs"
+                          className="h-9 w-16 text-xs bg-slate-50 border-slate-200"
                         />
                         <span className="text-xs text-slate-400">-</span>
                         <Input
@@ -988,122 +938,109 @@ export function SchedulingWorkspaceClient({
                           max="10"
                           value={filterJpMax}
                           onChange={e => setFilterJpMax(e.target.value)}
-                          className="h-8 w-16 text-xs"
+                          className="h-9 w-16 text-xs bg-slate-50 border-slate-200"
                         />
-                      </div>
-                    </div>
-
-                    {/* Filter Lokasi */}
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500">Lokasi</Label>
-                      <div className="flex flex-wrap gap-1 max-h-[60px] overflow-y-auto">
-                        {activeLokasis.map(lok => {
-                          const isActive = filterLokasiIds.includes(lok.id);
-                          return (
-                            <button
-                              key={lok.id}
-                              onClick={() => toggleLokasiFilter(lok.id)}
-                              className={`px-2 py-0.5 text-[9px] font-bold rounded border transition-all ${
-                                isActive
-                                  ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm'
-                                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                              }`}
-                              title={lok.name}
-                            >
-                              {lok.name.length > 12 ? lok.name.substring(0, 12) + '...' : lok.name}
-                            </button>
-                          );
-                        })}
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Filter Widyaiswara */}
+                  {/* Baris Kedua: Widyaiswara, Mapel, Lokasi */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500">Widyaiswara</Label>
-                      <div className="flex flex-wrap gap-1 max-h-[60px] overflow-y-auto">
-                        {activeWis.map(wi => {
-                          const isActive = filterWIIds.includes(wi.id);
-                          return (
-                            <button
-                              key={wi.id}
-                              onClick={() => toggleWIFilter(wi.id)}
-                              className={`px-2 py-0.5 text-[9px] font-bold rounded border transition-all ${
-                                isActive
-                                  ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm'
-                                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                              }`}
-                              title={wi.name}
-                            >
-                              {wi.name.length > 15 ? wi.name.substring(0, 15) + '...' : wi.name}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Widyaiswara</Label>
+                      <Select value={filterWIId} onValueChange={setFilterWIId}>
+                        <SelectTrigger className="h-9 text-xs bg-slate-50 border-slate-200">
+                          <SelectValue placeholder="Semua Widyaiswara" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-slate-200 max-h-52">
+                          <SelectItem value="ALL">Semua Widyaiswara</SelectItem>
+                          {activeWis.map(wi => (
+                            <SelectItem key={wi.id} value={wi.id} className="text-xs">
+                              {wi.name}, {wi.gelar}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    {/* Filter Mapel */}
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500">Mata Pelajaran</Label>
-                      <div className="flex flex-wrap gap-1 max-h-[60px] overflow-y-auto">
-                        {activeMapels.map(mapel => {
-                          const isActive = filterMapelIds.includes(mapel.id);
-                          return (
-                            <button
-                              key={mapel.id}
-                              onClick={() => toggleMapelFilter(mapel.id)}
-                              className={`px-2 py-0.5 text-[9px] font-bold rounded border transition-all ${
-                                isActive
-                                  ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm'
-                                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                              }`}
-                              title={mapel.name}
-                            >
-                              {mapel.name.length > 15 ? mapel.name.substring(0, 15) + '...' : mapel.name}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Mata Pelajaran</Label>
+                      <Select value={filterMapelId} onValueChange={setFilterMapelId}>
+                        <SelectTrigger className="h-9 text-xs bg-slate-50 border-slate-200">
+                          <SelectValue placeholder="Semua Mapel" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-slate-200 max-h-52">
+                          <SelectItem value="ALL">Semua Mapel</SelectItem>
+                          {activeMapels.map(mapel => (
+                            <SelectItem key={mapel.id} value={mapel.id} className="text-xs">
+                              {mapel.name} ({mapel.jpTotal} JP)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Lokasi</Label>
+                      <Select value={filterLokasiId} onValueChange={setFilterLokasiId}>
+                        <SelectTrigger className="h-9 text-xs bg-slate-50 border-slate-200">
+                          <SelectValue placeholder="Semua Lokasi" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-slate-200 max-h-52">
+                          <SelectItem value="ALL">Semua Lokasi</SelectItem>
+                          {activeLokasis.map(lok => (
+                            <SelectItem key={lok.id} value={lok.id} className="text-xs">
+                              {lok.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
                   {/* Active Filter Badges */}
                   {activeFilterCount > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200">
-                      <span className="text-[9px] font-bold text-slate-400">Filter Aktif:</span>
+                    <div className="flex flex-wrap items-center gap-1.5 pt-3 border-t border-slate-100">
+                      <span className="text-[9px] font-bold text-slate-400 mr-1">Filter Aktif:</span>
                       {filterDateStart && (
-                        <Badge variant="secondary" className="text-[9px] bg-blue-50 text-blue-600 border-blue-200">
+                        <Badge variant="secondary" className="text-[9px] bg-white text-slate-600 border-slate-200 font-medium">
+                          <button onClick={() => setFilterDateStart('')} className="mr-1 hover:text-red-500"><X className="h-2.5 w-2.5 inline" /></button>
                           Dari {filterDateStart}
                         </Badge>
                       )}
                       {filterDateEnd && (
-                        <Badge variant="secondary" className="text-[9px] bg-blue-50 text-blue-600 border-blue-200">
+                        <Badge variant="secondary" className="text-[9px] bg-white text-slate-600 border-slate-200 font-medium">
+                          <button onClick={() => setFilterDateEnd('')} className="mr-1 hover:text-red-500"><X className="h-2.5 w-2.5 inline" /></button>
                           Sampai {filterDateEnd}
                         </Badge>
                       )}
-                      {filterFormats.map(f => (
-                        <Badge key={f} variant="secondary" className="text-[9px] bg-purple-50 text-purple-600 border-purple-200">
-                          {f}
-                        </Badge>
-                      ))}
-                      {filterWIIds.length > 0 && (
-                        <Badge variant="secondary" className="text-[9px] bg-emerald-50 text-emerald-600 border-emerald-200">
-                          {filterWIIds.length} WI
+                      {filterFormat !== 'ALL' && (
+                        <Badge variant="secondary" className="text-[9px] bg-white text-slate-600 border-slate-200 font-medium">
+                          <button onClick={() => setFilterFormat('ALL')} className="mr-1 hover:text-red-500"><X className="h-2.5 w-2.5 inline" /></button>
+                          {filterFormat}
                         </Badge>
                       )}
-                      {filterMapelIds.length > 0 && (
-                        <Badge variant="secondary" className="text-[9px] bg-amber-50 text-amber-600 border-amber-200">
-                          {filterMapelIds.length} Mapel
+                      {filterWIId !== 'ALL' && (
+                        <Badge variant="secondary" className="text-[9px] bg-white text-slate-600 border-slate-200 font-medium">
+                          <button onClick={() => setFilterWIId('ALL')} className="mr-1 hover:text-red-500"><X className="h-2.5 w-2.5 inline" /></button>
+                          {activeWis.find(w => w.id === filterWIId)?.name || 'WI'}
                         </Badge>
                       )}
-                      {filterLokasiIds.length > 0 && (
-                        <Badge variant="secondary" className="text-[9px] bg-sky-50 text-sky-600 border-sky-200">
-                          {filterLokasiIds.length} Lokasi
+                      {filterMapelId !== 'ALL' && (
+                        <Badge variant="secondary" className="text-[9px] bg-white text-slate-600 border-slate-200 font-medium">
+                          <button onClick={() => setFilterMapelId('ALL')} className="mr-1 hover:text-red-500"><X className="h-2.5 w-2.5 inline" /></button>
+                          {activeMapels.find(m => m.id === filterMapelId)?.name || 'Mapel'}
+                        </Badge>
+                      )}
+                      {filterLokasiId !== 'ALL' && (
+                        <Badge variant="secondary" className="text-[9px] bg-white text-slate-600 border-slate-200 font-medium">
+                          <button onClick={() => setFilterLokasiId('ALL')} className="mr-1 hover:text-red-500"><X className="h-2.5 w-2.5 inline" /></button>
+                          {activeLokasis.find(l => l.id === filterLokasiId)?.name || 'Lokasi'}
                         </Badge>
                       )}
                       {(filterJpMin || filterJpMax) && (
-                        <Badge variant="secondary" className="text-[9px] bg-rose-50 text-rose-600 border-rose-200">
+                        <Badge variant="secondary" className="text-[9px] bg-white text-slate-600 border-slate-200 font-medium">
+                          <button onClick={() => { setFilterJpMin(''); setFilterJpMax(''); }} className="mr-1 hover:text-red-500"><X className="h-2.5 w-2.5 inline" /></button>
                           JP: {filterJpMin || '1'}-{filterJpMax || '10'}
                         </Badge>
                       )}
@@ -1112,30 +1049,24 @@ export function SchedulingWorkspaceClient({
                 </div>
               )}
 
-              {/* Hasil Filter Counter */}
               {showFilterBar && (
-                <div className="mt-3 text-[10px] font-bold text-slate-500">
-                  Menampilkan {filteredAndSortedSessions.length} dari {batchSessions.length} sesi
-                  {activeFilterCount > 0 && ' (difilter)'}
+                <div className="mt-3 text-[10px] font-medium text-slate-500">
+                  {filteredAndSortedSessions.length} dari {batchSessions.length} sesi
+                  {activeFilterCount > 0 && ' • difilter'}
                 </div>
               )}
             </CardHeader>
             <CardContent className="p-0">
               {filteredAndSortedSessions.length === 0 ? (
-                <div className="text-center py-12 text-slate-400">
-                  <Filter className="h-10 w-10 mx-auto text-slate-300 mb-2" />
-                  <p className="text-xs font-semibold">
-                    {showFilterBar && activeFilterCount > 0
-                      ? 'Tidak ada sesi yang cocok dengan filter yang diterapkan.'
+                <div className="text-center py-16 text-slate-400">
+                  <Filter className="h-10 w-10 mx-auto text-slate-200 mb-3" />
+                  <p className="text-xs font-semibold mb-2">
+                    {activeFilterCount > 0
+                      ? 'Tidak ada sesi yang cocok dengan filter.'
                       : 'Belum ada sesi yang dialokasikan.'}
                   </p>
-                  {showFilterBar && activeFilterCount > 0 && (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      onClick={resetAllFilters}
-                      className="text-blue-600 text-xs mt-2"
-                    >
+                  {activeFilterCount > 0 && (
+                    <Button variant="link" size="sm" onClick={resetAllFilters} className="text-blue-600 text-xs">
                       Reset Semua Filter
                     </Button>
                   )}
@@ -1143,68 +1074,60 @@ export function SchedulingWorkspaceClient({
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50/40">
-                      <TableHead className="pl-6 text-xs font-bold uppercase text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('date')}>
-                        <div className="flex items-center gap-1">
+                    <TableRow className="bg-slate-50/30">
+                      <TableHead className="pl-6 font-bold text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('date')}>
+                        <div className="flex items-center gap-1 text-[11px]">
                           Tanggal <SortIcon field="date" />
                         </div>
                       </TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('mapelName')}>
-                        <div className="flex items-center gap-1">
-                          Mata Pelajaran (Mapel) <SortIcon field="mapelName" />
+                      <TableHead className="font-bold text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('mapelName')}>
+                        <div className="flex items-center gap-1 text-[11px]">
+                          Mata Pelajaran <SortIcon field="mapelName" />
                         </div>
                       </TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-slate-500">
-                        Widyaiswara
-                      </TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('format')}>
-                        <div className="flex items-center gap-1">
+                      <TableHead className="font-bold text-slate-500 text-[11px]">Widyaiswara</TableHead>
+                      <TableHead className="font-bold text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('format')}>
+                        <div className="flex items-center gap-1 text-[11px]">
                           Format & Ruangan <SortIcon field="format" />
                         </div>
                       </TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('jpCount')}>
-                        <div className="flex items-center gap-1">
-                          JP Ke & Jumlah JP <SortIcon field="jpCount" />
+                      <TableHead className="font-bold text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('jpCount')}>
+                        <div className="flex items-center gap-1 text-[11px]">
+                          JP <SortIcon field="jpCount" />
                         </div>
                       </TableHead>
-                      <TableHead className="pr-6 text-right text-xs font-bold uppercase text-slate-500">Aksi</TableHead>
+                      <TableHead className="pr-6 text-right font-bold text-slate-500 text-[11px]">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredAndSortedSessions.map(session => {
                       const mapel = activeMapels.find(m => m.id === session.mapelId);
-
-                      // Unpack multiple Widyaiswaras with titles
                       const resolvedWis = (session.wiIds || []).map((id: any) => activeWis.find(w => w.id === id)).filter(Boolean);
                       const wiNames = resolvedWis.map((w: { name: any; gelar: any; }) => `${w.name}, ${w.gelar}`).join(', ');
-
                       const lok = activeLokasis.find(l => l.id === session.lokasiId);
 
                       return (
                         <TableRow key={session.id} className="hover:bg-slate-50/30 transition-colors">
-                          <TableCell className="pl-6 font-semibold text-slate-900 text-xs">
-                            <div className="flex items-center gap-1.5">
-                              {new Date(session.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                            </div>
+                          <TableCell className="pl-6 font-semibold text-slate-800 text-xs py-3">
+                            {new Date(session.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                           </TableCell>
-                          <TableCell className="font-semibold text-slate-900 text-xs">{mapel?.name}</TableCell>
-                          <TableCell className="text-xs text-slate-600 font-medium max-w-[200px] truncate" title={wiNames}>
-                            {wiNames}
-                          </TableCell>
-                          <TableCell>
+                          <TableCell className="font-semibold text-slate-800 text-xs py-3">{mapel?.name}</TableCell>
+                          <TableCell className="text-xs text-slate-600 font-medium max-w-[200px] truncate py-3" title={wiNames}>{wiNames}</TableCell>
+                          <TableCell className="py-3">
                             <div className="space-y-1">
-                              <Badge className={`text-[9px] font-bold ${session.format === 'Klasikal' ? 'bg-blue-100 text-blue-800' :
+                              <Badge className={`text-[9px] font-bold ${
+                                session.format === 'Klasikal' ? 'bg-blue-100 text-blue-800' :
                                 session.format === 'Virtual' ? 'bg-purple-100 text-purple-800' :
-                                  'bg-amber-100 text-amber-800'
-                                }`}>{session.format}</Badge>
+                                'bg-amber-100 text-amber-800'
+                              }`}>{session.format}</Badge>
                               {session.format === 'Klasikal' && <p className="text-[10px] text-slate-500 font-medium">{lok?.name || 'Ruangan'}</p>}
                             </div>
                           </TableCell>
-                          <TableCell className="text-xs">
+                          <TableCell className="text-xs py-3">
                             <span className="font-semibold text-slate-700">{session.jpCount} JP</span>
-                            <span className="text-slate-400 text-[10px] ml-1">(JP Ke: {session.jpKe})</span>
+                            <span className="text-slate-400 text-[10px] ml-1">({session.jpKe})</span>
                           </TableCell>
-                          <TableCell className="pr-6 text-right">
+                          <TableCell className="pr-6 text-right py-3">
                             <div className="flex justify-end gap-1.5">
                               <Button size="icon" variant="ghost" onClick={() => triggerEdit(session)} className="text-blue-600 h-8 w-8"><Edit className="h-4 w-4" /></Button>
                               <Button size="icon" variant="ghost" onClick={() => {
