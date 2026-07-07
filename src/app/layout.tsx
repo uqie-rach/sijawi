@@ -52,14 +52,13 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <head>
-        {dynamicCSS && (
-          <style id="dynamic-primary-color" dangerouslySetInnerHTML={{ __html: dynamicCSS }} />
-        )}
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-slate-700 min-h-screen`}
       >
+        <style
+          id="dynamic-primary-color"
+          dangerouslySetInnerHTML={{ __html: dynamicCSS || '' }}
+        />
         <WTMSProvider>
           {children}
           <Toaster position="top-right" richColors />
