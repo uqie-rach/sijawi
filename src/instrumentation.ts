@@ -1,11 +1,12 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'edge') return;
 
-  const { Worker } = await import(/* webpackIgnore: true */ 'bullmq');
-  const { default: Redis } = await import(/* webpackIgnore: true */ 'ioredis');
+  const { Worker } = await import('bullmq');
+  const { default: Redis } = await import('ioredis');
 
-  // Dynamic import untuk menghindari bundling statis nodemailer oleh webpack
-  const { sendEmail } = await import(/* webpackIgnore: true */ './src/lib/email');
+  // Dynamic import agar webpack memproses path dengan benar,
+  // sementara nodemailer akan di-externalize oleh serverExternalPackages.
+  const { sendEmail } = await import('./lib/email');
 
   const connection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: null,
