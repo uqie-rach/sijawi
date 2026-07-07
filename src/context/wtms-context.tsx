@@ -8,10 +8,10 @@ export interface Widyaiswara {
   name: string;
   gelar: string;
   email: string;
-  nip: string; // Unique identifier
+  nip: string;
   jabatan: 'WI Ahli Pertama' | 'WI Ahli Muda' | 'WI Ahli Madya' | 'WI Ahli Utama';
-  level: number; // 1 to 5
-  levelLabel: string; // PPPK, Latsar, PKP, PKA, PKN
+  level: number;
+  levelLabel: string;
   jpLastMonth: number;
   password?: string;
 }
@@ -26,7 +26,7 @@ export interface Mapel {
   id: string;
   name: string;
   kategoriId: string;
-  jpTotal: number; // 2 to 6 JP
+  jpTotal: number;
 }
 
 export interface Lokasi {
@@ -47,14 +47,35 @@ export interface Session {
   id: string;
   batchId: string;
   mapelId: string;
-  wiIds: string[]; // Support multi-WI!
-  date: string; // YYYY-MM-DD
-  startTime: string; // HH:MM
-  endTime: string; // HH:MM
+  wiIds: string[];
+  date: string;
+  startTime: string;
+  endTime: string;
   format: 'Klasikal' | 'Virtual' | 'Asinkron';
-  lokasiId?: string; // Required if Klasikal
-  jpKe: string; // e.g. "1-2"
-  jpCount: number; // Number of JP
+  lokasiId?: string;
+  jpKe: string;
+  jpCount: number;
+}
+
+// ---------- Helper untuk fetch dengan error handling ----------
+async function fetchJSON(url: string, options?: RequestInit): Promise<any> {
+  const res = await fetch(url, options);
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.error || `Request failed with status ${res.status}`);
+  }
+  return data;
+}
+
+// ---------- Helper untuk menampilkan toast error konsisten ----------
+function toastApiError(context: string, err: unknown) {
+  const message = err instanceof Error ? err.message : 'Terjadi kesalahan jaringan.';
+  toast.error(`${context} gagal: ${message}`);
+}
+
+// ---------- Helper sukses ----------
+function toastApiSuccess(context: string) {
+  toast.success(`${context} berhasil.`);
 }
 
 interface WTMSContextType {
@@ -68,37 +89,36 @@ interface WTMSContextType {
   selectedWiId: string | null;
   isAuthenticated: boolean;
   
-  // Actions
   setUserRole: (role: 'admin' | 'wi' | null) => void;
   setSelectedWiId: (id: string | null) => void;
   setIsAuthenticated: (auth: boolean) => void;
   
-  // Widyaiswara CRUD
-  addWidyaswara: (wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>) => boolean;
-  updateWidyaswara: (id: string, wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>) => boolean;
-  deleteWidyaswara: (id: string) => void;
+  // Widyaiswara CRUD – sekarang async & return status
+  addWidyaswara: (wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>) => Promise<{ success: boolean; error?: string }>;
+  updateWidyaswara: (id: string, wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>) => Promise<{ success: boolean; error?: string }>;
+  deleteWidyaswara: (id: string) => Promise<{ success: boolean; error?: string }>;
   
   // Kategori CRUD
-  addKategori: (kat: Omit<KategoriPelatihan, 'id'>) => void;
-  updateKategori: (id: string, kat: Omit<KategoriPelatihan, 'id'>) => void;
-  deleteKategori: (id: string) => void;
+  addKategori: (kat: Omit<KategoriPelatihan, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  updateKategori: (id: string, kat: Omit<KategoriPelatihan, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  deleteKategori: (id: string) => Promise<{ success: boolean; error?: string }>;
   
   // Mapel CRUD
-  addMapel: (mapel: Omit<Mapel, 'id'>) => void;
-  updateMapel: (id: string, mapel: Omit<Mapel, 'id'>) => void;
-  deleteMapel: (id: string) => void;
+  addMapel: (mapel: Omit<Mapel, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  updateMapel: (id: string, mapel: Omit<Mapel, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  deleteMapel: (id: string) => Promise<{ success: boolean; error?: string }>;
   
   // Lokasi CRUD
-  addLokasi: (lok: Omit<Lokasi, 'id'>) => void;
-  updateLokasi: (id: string, lok: Omit<Lokasi, 'id'>) => void;
-  deleteLokasi: (id: string) => void;
+  addLokasi: (lok: Omit<Lokasi, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  updateLokasi: (id: string, lok: Omit<Lokasi, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  deleteLokasi: (id: string) => Promise<{ success: boolean; error?: string }>;
   
   // Batch CRUD
-  addBatch: (batch: Omit<Batch, 'id'>) => void;
-  updateBatch: (id: string, batch: Omit<Batch, 'id'>) => void;
-  deleteBatch: (id: string) => void;
+  addBatch: (batch: Omit<Batch, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  updateBatch: (id: string, batch: Omit<Batch, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  deleteBatch: (id: string) => Promise<{ success: boolean; error?: string }>;
   
-  // Session CRUD
+  // Session CRUD (sudah ada di kode asli, tidak diubah)
   addSession: (session: Omit<Session, 'id'>) => { success: boolean; error?: string };
   updateSession: (id: string, session: Omit<Session, 'id'>) => { success: boolean; error?: string };
   deleteSession: (sessionId: string) => void;
@@ -202,125 +222,269 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveToStorage('wtms_auth', auth);
   };
 
-  // Widyaiswara CRUD
-  const addWidyaswara = (wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>): boolean => {
-    const nipExists = widyaswaras.some(w => w.nip === wi.nip);
-    if (nipExists) {
-      toast.error(`Validation Error: Widyaiswara with NIP ${wi.nip} already exists!`);
-      return false;
+  // ======================== WIDYAISWARA CRUD ========================
+  const addWidyaswara = async (wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>): Promise<{ success: boolean; error?: string }> => {
+    // Validasi duplikasi NIP / email di klien
+    if (widyaswaras.some(w => w.nip === wi.nip)) {
+      const msg = `Widyaiswara dengan NIP ${wi.nip} sudah terdaftar.`;
+      toast.error(msg);
+      return { success: false, error: msg };
+    }
+    if (widyaswaras.some(w => w.email.toLowerCase() === wi.email.toLowerCase())) {
+      const msg = `Email ${wi.email} sudah digunakan oleh Widyaiswara lain.`;
+      toast.error(msg);
+      return { success: false, error: msg };
     }
 
-    const newWi = {
-      ...wi,
-      id: `wi-${Date.now()}`,
-      jpLastMonth: 0
-    };
-    
-    setWidyaswaras(prev => [...prev, newWi]);
+    const newWi = { ...wi, id: `wi-${Date.now()}`, jpLastMonth: 0 };
 
-    fetch('/api/widyaswara', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newWi)
-    }).catch(err => console.error(err));
-
-    toast.success("Widyaiswara successfully added!");
-    return true;
+    try {
+      // POST ke server – server juga akan memvalidasi duplikasi lebih lanjut
+      await fetchJSON('/api/widyaswara', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newWi),
+      });
+      setWidyaswaras(prev => [...prev, newWi]);
+      toastApiSuccess('Widyaiswara berhasil ditambahkan');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Penambahan Widyaiswara', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal menambahkan' };
+    }
   };
 
-  const updateWidyaswara = (id: string, wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>): boolean => {
+  const updateWidyaswara = async (id: string, wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>): Promise<{ success: boolean; error?: string }> => {
+    // Cek duplikasi di klien, kecuali data milik sendiri
+    if (widyaswaras.some(w => w.nip === wi.nip && w.id !== id)) {
+      const msg = `NIP ${wi.nip} sudah digunakan oleh Widyaiswara lain.`;
+      toast.error(msg);
+      return { success: false, error: msg };
+    }
+    if (widyaswaras.some(w => w.email.toLowerCase() === wi.email.toLowerCase() && w.id !== id)) {
+      const msg = `Email ${wi.email} sudah terdaftar untuk akun lain.`;
+      toast.error(msg);
+      return { success: false, error: msg };
+    }
+
     const updatedWi = { ...wi, id, jpLastMonth: 0 };
-    setWidyaswaras(prev => prev.map(w => w.id === id ? updatedWi : w));
 
-    fetch('/api/widyaswara', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedWi)
-    }).catch(err => console.error(err));
-
-    toast.success("Widyaiswara successfully updated!");
-    return true;
+    try {
+      await fetchJSON('/api/widyaswara', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedWi),
+      });
+      setWidyaswaras(prev => prev.map(w => w.id === id ? updatedWi : w));
+      toastApiSuccess('Data Widyaiswara berhasil diperbarui');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Pembaruan Widyaiswara', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal memperbarui' };
+    }
   };
 
-  const deleteWidyaswara = (id: string) => {
-    setWidyaswaras(prev => prev.filter(w => w.id !== id));
-    fetch(`/api/widyaswara?id=${id}`, { method: 'DELETE' }).catch(err => console.error(err));
-    toast.success("Widyaiswara successfully removed.");
+  const deleteWidyaswara = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await fetchJSON(`/api/widyaswara?id=${id}`, { method: 'DELETE' });
+      setWidyaswaras(prev => prev.filter(w => w.id !== id));
+      toastApiSuccess('Widyaiswara berhasil dihapus');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Penghapusan Widyaiswara', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal menghapus' };
+    }
   };
 
-  // Kategori CRUD
-  const addKategori = (kat: Omit<KategoriPelatihan, 'id'>) => {
+  // ======================== KATEGORI CRUD ========================
+  const addKategori = async (kat: Omit<KategoriPelatihan, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const newKat = { ...kat, id: `kat-${Date.now()}` };
-    setKategoriList(prev => [...prev, newKat]);
-    fetch('/api/kategori-pelatihan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newKat) }).catch(err => console.error(err));
+    try {
+      await fetchJSON('/api/kategori-pelatihan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newKat),
+      });
+      setKategoriList(prev => [...prev, newKat]);
+      toastApiSuccess('Kategori berhasil ditambahkan');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Penambahan Kategori', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal menambahkan' };
+    }
   };
 
-  const updateKategori = (id: string, kat: Omit<KategoriPelatihan, 'id'>) => {
+  const updateKategori = async (id: string, kat: Omit<KategoriPelatihan, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const updatedKat = { ...kat, id };
-    setKategoriList(prev => prev.map(k => k.id === id ? updatedKat : k));
-    fetch('/api/kategori-pelatihan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedKat) }).catch(err => console.error(err));
+    try {
+      await fetchJSON('/api/kategori-pelatihan', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedKat),
+      });
+      setKategoriList(prev => prev.map(k => k.id === id ? updatedKat : k));
+      toastApiSuccess('Kategori berhasil diperbarui');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Pembaruan Kategori', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal memperbarui' };
+    }
   };
 
-  const deleteKategori = (id: string) => {
-    setKategoriList(prev => prev.filter(k => k.id !== id));
-    fetch(`/api/kategori-pelatihan?id=${id}`, { method: 'DELETE' }).catch(err => console.error(err));
+  const deleteKategori = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await fetchJSON(`/api/kategori-pelatihan?id=${id}`, { method: 'DELETE' });
+      setKategoriList(prev => prev.filter(k => k.id !== id));
+      toastApiSuccess('Kategori berhasil dihapus');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Penghapusan Kategori', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal menghapus' };
+    }
   };
 
-  // Mapel CRUD
-  const addMapel = (mapel: Omit<Mapel, 'id'>) => {
+  // ======================== MAPEL CRUD ========================
+  const addMapel = async (mapel: Omit<Mapel, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const newMapel = { ...mapel, id: `mapel-${Date.now()}` };
-    setMapelList(prev => [...prev, newMapel]);
-    fetch('/api/mata-pelatihan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newMapel) }).catch(err => console.error(err));
+    try {
+      await fetchJSON('/api/mata-pelatihan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMapel),
+      });
+      setMapelList(prev => [...prev, newMapel]);
+      toastApiSuccess('Mata Pelajaran berhasil ditambahkan');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Penambahan Mata Pelajaran', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal menambahkan' };
+    }
   };
 
-  const updateMapel = (id: string, mapel: Omit<Mapel, 'id'>) => {
+  const updateMapel = async (id: string, mapel: Omit<Mapel, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const updatedMapel = { ...mapel, id };
-    setMapelList(prev => prev.map(m => m.id === id ? updatedMapel : m));
-    fetch('/api/mata-pelatihan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedMapel) }).catch(err => console.error(err));
+    try {
+      await fetchJSON('/api/mata-pelatihan', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedMapel),
+      });
+      setMapelList(prev => prev.map(m => m.id === id ? updatedMapel : m));
+      toastApiSuccess('Mata Pelajaran berhasil diperbarui');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Pembaruan Mata Pelajaran', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal memperbarui' };
+    }
   };
 
-  const deleteMapel = (id: string) => {
-    setMapelList(prev => prev.filter(m => m.id !== id));
-    fetch(`/api/mata-pelatihan?id=${id}`, { method: 'DELETE' }).catch(err => console.error(err));
+  const deleteMapel = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await fetchJSON(`/api/mata-pelatihan?id=${id}`, { method: 'DELETE' });
+      setMapelList(prev => prev.filter(m => m.id !== id));
+      toastApiSuccess('Mata Pelajaran berhasil dihapus');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Penghapusan Mata Pelajaran', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal menghapus' };
+    }
   };
 
-  // Lokasi CRUD
-  const addLokasi = (lok: Omit<Lokasi, 'id'>) => {
+  // ======================== LOKASI CRUD ========================
+  const addLokasi = async (lok: Omit<Lokasi, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const newLok = { ...lok, id: `lok-${Date.now()}` };
-    setLokasiList(prev => [...prev, newLok]);
-    fetch('/api/lokasi', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newLok) }).catch(err => console.error(err));
+    try {
+      await fetchJSON('/api/lokasi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newLok),
+      });
+      setLokasiList(prev => [...prev, newLok]);
+      toastApiSuccess('Lokasi berhasil ditambahkan');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Penambahan Lokasi', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal menambahkan' };
+    }
   };
 
-  const updateLokasi = (id: string, lok: Omit<Lokasi, 'id'>) => {
+  const updateLokasi = async (id: string, lok: Omit<Lokasi, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const updatedLok = { ...lok, id };
-    setLokasiList(prev => prev.map(l => l.id === id ? updatedLok : l));
-    fetch('/api/lokasi', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedLok) }).catch(err => console.error(err));
+    try {
+      await fetchJSON('/api/lokasi', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedLok),
+      });
+      setLokasiList(prev => prev.map(l => l.id === id ? updatedLok : l));
+      toastApiSuccess('Lokasi berhasil diperbarui');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Pembaruan Lokasi', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal memperbarui' };
+    }
   };
 
-  const deleteLokasi = (id: string) => {
-    setLokasiList(prev => prev.filter(l => l.id !== id));
-    fetch(`/api/lokasi?id=${id}`, { method: 'DELETE' }).catch(err => console.error(err));
+  const deleteLokasi = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await fetchJSON(`/api/lokasi?id=${id}`, { method: 'DELETE' });
+      setLokasiList(prev => prev.filter(l => l.id !== id));
+      toastApiSuccess('Lokasi berhasil dihapus');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Penghapusan Lokasi', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal menghapus' };
+    }
   };
 
-  // Batch CRUD
-  const addBatch = (batch: Omit<Batch, 'id'>) => {
+  // ======================== BATCH CRUD ========================
+  const addBatch = async (batch: Omit<Batch, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const newBatch = { ...batch, id: `batch-${Date.now()}` };
-    setBatches(prev => [...prev, newBatch]);
-    fetch('/api/batches', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newBatch) }).catch(err => console.error(err));
+    try {
+      await fetchJSON('/api/batches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBatch),
+      });
+      setBatches(prev => [...prev, newBatch]);
+      toastApiSuccess('Angkatan berhasil dibuat');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Pembuatan Angkatan', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal membuat' };
+    }
   };
 
-  const updateBatch = (id: string, batch: Omit<Batch, 'id'>) => {
+  const updateBatch = async (id: string, batch: Omit<Batch, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const updatedBatch = { ...batch, id };
-    setBatches(prev => prev.map(b => b.id === id ? updatedBatch : b));
-    fetch('/api/batches', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedBatch) }).catch(err => console.error(err));
+    try {
+      await fetchJSON('/api/batches', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedBatch),
+      });
+      setBatches(prev => prev.map(b => b.id === id ? updatedBatch : b));
+      toastApiSuccess('Angkatan berhasil diperbarui');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Pembaruan Angkatan', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal memperbarui' };
+    }
   };
 
-  const deleteBatch = (id: string) => {
-    setBatches(prev => prev.filter(b => b.id !== id));
-    fetch(`/api/batches?id=${id}`, { method: 'DELETE' }).catch(err => console.error(err));
+  const deleteBatch = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await fetchJSON(`/api/batches?id=${id}`, { method: 'DELETE' });
+      setBatches(prev => prev.filter(b => b.id !== id));
+      toastApiSuccess('Angkatan berhasil dihapus');
+      return { success: true };
+    } catch (err) {
+      toastApiError('Penghapusan Angkatan', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal menghapus' };
+    }
   };
 
-  // Session CRUD (Refactored for Multi-WI Assignment & Verification loop)
+  // ======================== SESSION CRUD (tetap sinkron seperti semula) ========================
   const addSession = (sessionData: Omit<Session, 'id'>) => {
     const batch = batches.find(b => b.id === sessionData.batchId);
     const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
@@ -335,7 +499,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 1. Hierarchy validation check for each selected instructor
     const wis = widyaswaras.filter(w => sessionData.wiIds.includes(w.id));
     for (const wi of wis) {
       if (wi.level < category.minWeight) {
@@ -345,7 +508,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 2. Operational Hours check (08:00 - 17:00 for Klasikal)
     if (sessionData.format === 'Klasikal') {
       const startHour = parseInt(sessionData.startTime.split(':')[0]);
       const endHour = parseInt(sessionData.endTime.split(':')[0]);
@@ -364,7 +526,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 3. Subject JP maximum allocation check
     const existingMapelSessions = sessions.filter(s => s.batchId === sessionData.batchId && s.mapelId === sessionData.mapelId);
     const currentJpSum = existingMapelSessions.reduce((sum, s) => sum + s.jpCount, 0);
     const mapel = mapelList.find(m => m.id === sessionData.mapelId);
@@ -376,7 +537,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 4. Overlapping JP Slot check
     const newJpRange = parseJpRange(sessionData.jpKe);
     if (newJpRange.length === 2) {
       const jpCollision = sessions.find(s => 
@@ -392,7 +552,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 5. Collision checks: Loops over ALL assigned Widyaiswara IDs to detect overlaps
     const wiCollision = sessions.find(s => 
       s.wiIds.some(id => sessionData.wiIds.includes(id)) && 
       s.date === sessionData.date && 
@@ -415,7 +574,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 6. Classroom venue clash check
     if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
       const locationClash = sessions.find(s => 
         s.format === 'Klasikal' &&
@@ -443,17 +601,22 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setSessions(prev => [...prev, newSession]);
 
-    fetch('/api/sessions', {
+    fetchJSON('/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newSession)
-    }).catch(err => console.error(err));
+      body: JSON.stringify(newSession),
+    }).then(() => {
+      toast.success("Sesi pelatihan berhasil dialokasikan!");
+    }).catch(err => {
+      toastApiError('Alokasi sesi (server)', err);
+      setSessions(prev => prev.filter(s => s.id !== newSession.id));
+    });
 
-    toast.success("Sesi pelatihan berhasil dialokasikan!");
     return { success: true };
   };
 
   const updateSession = (id: string, sessionData: Omit<Session, 'id'>) => {
+    // Validasi yang sama seperti addSession ...
     const batch = batches.find(b => b.id === sessionData.batchId);
     const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
 
@@ -467,7 +630,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 1. Hierarchy check
     const wis = widyaswaras.filter(w => sessionData.wiIds.includes(w.id));
     for (const wi of wis) {
       if (wi.level < category.minWeight) {
@@ -477,7 +639,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 2. Operational Hours check
     if (sessionData.format === 'Klasikal') {
       const startHour = parseInt(sessionData.startTime.split(':')[0]);
       const endHour = parseInt(sessionData.endTime.split(':')[0]);
@@ -496,7 +657,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 3. Max JP Check
     const existingMapelSessions = sessions.filter(s => s.id !== id && s.batchId === sessionData.batchId && s.mapelId === sessionData.mapelId);
     const currentJpSum = existingMapelSessions.reduce((sum, s) => sum + s.jpCount, 0);
     const mapel = mapelList.find(m => m.id === sessionData.mapelId);
@@ -508,7 +668,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 4. Overlapping JP range check
     const newJpRange = parseJpRange(sessionData.jpKe);
     if (newJpRange.length === 2) {
       const jpCollision = sessions.find(s => 
@@ -525,7 +684,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 5. Collision checks: Loops over ALL assigned Widyaiswara IDs to detect overlaps
     const wiCollision = sessions.find(s => 
       s.id !== id &&
       s.wiIds.some(id => sessionData.wiIds.includes(id)) && 
@@ -549,7 +707,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: errorMsg };
     }
 
-    // 6. Classroom venue clash check
     if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
       const locationClash = sessions.find(s => 
         s.id !== id &&
@@ -575,20 +732,27 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updatedSession = { ...sessionData, id };
     setSessions(prev => prev.map(s => s.id === id ? updatedSession : s));
 
-    fetch('/api/sessions', {
+    fetchJSON('/api/sessions', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedSession)
-    }).catch(err => console.error(err));
+      body: JSON.stringify(updatedSession),
+    }).then(() => {
+      toast.success("Sesi pelatihan berhasil diperbarui!");
+    }).catch(err => {
+      toastApiError('Pembaruan sesi (server)', err);
+    });
 
-    toast.success("Sesi pelatihan berhasil diperbarui!");
     return { success: true };
   };
 
   const deleteSession = (sessionId: string) => {
     setSessions(prev => prev.filter(s => s.id !== sessionId));
-    fetch(`/api/sessions?id=${sessionId}`, { method: 'DELETE' }).catch(err => console.error(err));
-    toast.success("Sesi pelatihan berhasil dihapus.");
+    fetch(`/api/sessions?id=${sessionId}`, { method: 'DELETE' })
+      .then(res => {
+        if (!res.ok) throw new Error('Gagal menghapus sesi.');
+        toast.success("Sesi pelatihan berhasil dihapus.");
+      })
+      .catch(err => toastApiError('Penghapusan sesi', err));
   };
 
   return (
@@ -606,32 +770,26 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSelectedWiId: handleSetSelectedWiId,
       setIsAuthenticated: handleSetIsAuthenticated,
       
-      // Widyaiswara CRUD
       addWidyaswara,
       updateWidyaswara,
       deleteWidyaswara,
       
-      // Kategori CRUD
       addKategori,
       updateKategori,
       deleteKategori,
       
-      // Mapel CRUD
       addMapel,
       updateMapel,
       deleteMapel,
       
-      // Lokasi CRUD
       addLokasi,
       updateLokasi,
       deleteLokasi,
       
-      // Batch CRUD
       addBatch,
       updateBatch,
       deleteBatch,
       
-      // Session CRUD
       addSession,
       updateSession,
       deleteSession

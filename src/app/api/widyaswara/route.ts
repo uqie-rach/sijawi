@@ -50,9 +50,15 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const body = await request.json();
     const { id, name, gelar, email, nip, jabatan, level, levelLabel, jpLastMonth, password } = body;
-    
+
+    const isExist = await Widyaiswara.findOne({ $or: [{ email }, { nip }] });
+    if (isExist) {
+      return Response.json({ error: 'Email or NIP already exists' }, { status: 400 });
+    }
+
     const plainPassword = password || 'wi123';
     const passwordHash = await bcrypt.hash(plainPassword);
+
 
     const newWi = new Widyaiswara({
       _id: id,
@@ -92,7 +98,7 @@ export async function PUT(request: Request) {
     await connectToDatabase();
     const body = await request.json();
     const { id, name, gelar, email, nip, jabatan, level, levelLabel, jpLastMonth, password } = body;
-    
+
     const updateData: any = {
       name,
       gelar: gelar || '',
@@ -125,7 +131,7 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return Response.json({ error: 'ID is required' }, { status: 400 });
-    
+
     await Widyaiswara.findByIdAndDelete(id);
     return Response.json({ success: true });
   } catch (error: any) {
