@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MiniPieChart } from '@/components/admin/scheduling/mini-pie-chart';
+import { ProgressBar } from '@/components/admin/scheduling/progress-bar';
 import type { TrackingMapelStatus } from '@/hooks/use-jp-tracking';
 
 interface JpTrackerWidgetProps {
@@ -25,21 +25,23 @@ export function JpTrackerWidget({ trackingMapelStatus }: JpTrackerWidgetProps) {
             const percentage = m.jpTotal > 0 ? Math.round((m.scheduledJp / m.jpTotal) * 100) : 0;
             return (
               <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50/50 transition-colors">
-                <MiniPieChart scheduled={m.scheduledJp} total={m.jpTotal} size={44} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-slate-700 truncate" title={m.name}>
-                    {m.name}
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] font-bold text-slate-500">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-semibold text-slate-700 truncate" title={m.name}>
+                      {m.name}
+                    </p>
+                    <span className="text-[10px] font-bold text-slate-500 ml-2 shrink-0">
                       {m.scheduledJp}/{m.jpTotal} JP
                     </span>
+                  </div>
+                  <ProgressBar scheduled={m.scheduledJp} total={m.jpTotal} width={140} height={6} showLabel={false} />
+                  <div className="flex items-center gap-1.5 mt-1">
                     {m.isFullyScheduled ? (
                       <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[9px] font-bold">
                         Selesai
                       </Badge>
                     ) : (
-                      <span className="text-[9px] font-bold text-amber-600">sisa {m.remainingJp}</span>
+                      <span className="text-[9px] font-bold text-amber-600">sisa {m.remainingJp} JP</span>
                     )}
                   </div>
                 </div>

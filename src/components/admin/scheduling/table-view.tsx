@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,10 @@ import { formatDateId } from '@/lib/utils';
 
 interface TableViewProps {
   filteredSessions: Session[];
-  batchSessions: Session[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
   activeMapels: Mapel[];
   activeWis: Widyaiswara[];
   activeLokasis: Lokasi[];
@@ -27,8 +30,6 @@ interface TableViewProps {
   resetAllFilters: () => void;
   children?: React.ReactNode;
 }
-
-const PAGE_SIZE = 10;
 
 function SortIcon({
   field,
@@ -50,23 +51,25 @@ function SortIcon({
 }
 
 export function TableView({
-  filteredSessions, batchSessions,
-  activeMapels, activeWis, activeLokasis,
-  sortField, sortDirection, onSort,
-  onEditSession, onDeleteSession,
-  showFilterBar, setShowFilterBar, activeFilterCount, resetAllFilters,
+  filteredSessions,
+  totalCount,
+  page,
+  totalPages,
+  onPageChange,
+  activeMapels,
+  activeWis,
+  activeLokasis,
+  sortField,
+  sortDirection,
+  onSort,
+  onEditSession,
+  onDeleteSession,
+  showFilterBar,
+  setShowFilterBar,
+  activeFilterCount,
+  resetAllFilters,
   children,
 }: TableViewProps) {
-  const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(filteredSessions.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const paginatedSessions = filteredSessions.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-  // Reset page when filtered data changes
-  React.useEffect(() => {
-    setPage(1);
-  }, [filteredSessions.length]);
-
   return (
     <Card className="shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-200 bg-white rounded-lg">
       <CardHeader className="border-b border-slate-200 py-4 px-6">
@@ -178,7 +181,7 @@ export function TableView({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedSessions.map(session => {
+                {filteredSessions.map(session => {
                   const mapel = activeMapels.find(m => m.id === session.mapelId);
                   const resolvedWis = (session.wiIds || [])
                     .map((id: string) => activeWis.find(w => w.id === id))
@@ -254,14 +257,14 @@ export function TableView({
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-slate-50/30">
                 <span className="text-xs text-slate-500 font-medium">
-                  Halaman {safePage} dari {totalPages} ({filteredSessions.length} sesi)
+                  Halaman {page} dari {totalPages} ({totalCount} sesi)
                 </span>
                 <div className="flex items-center gap-1">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={safePage <= 1}
+                    onClick={() => onPageChange(Math.max(1, page - 1))}
+                    disabled={page <= 1}
                     className="h-8 w-8 p-0"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -270,21 +273,21 @@ export function TableView({
                     let pageNum: number;
                     if (totalPages <= 7) {
                       pageNum = i + 1;
-                    } else if (safePage <= 4) {
+                    } else if (page <= 4) {
                       pageNum = i + 1;
-                    } else if (safePage >= totalPages - 3) {
+                    } else if (page >= totalPages - 3) {
                       pageNum = totalPages - 6 + i;
                     } else {
-                      pageNum = safePage - 3 + i;
+                      pageNum = page - 3 + i;
                     }
                     return (
                       <Button
                         key={pageNum}
-                        variant={pageNum === safePage ? 'default' : 'outline'}
+                        variant={pageNum === page ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => setPage(pageNum)}
+                        onClick={() => onPageChange(pageNum)}
                         className={`h-8 w-8 p-0 text-xs font-semibold ${
-                          pageNum === safePage ? 'bg-blue-600 text-white' : 'text-slate-600'
+                          pageNum === page ? 'bg-blue-600 text-white' : 'text-slate-600'
                         }`}
                       >
                         {pageNum}
@@ -294,8 +297,8 @@ export function TableView({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={safePage >= totalPages}
+                    onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+                    disabled={page >= totalPages}
                     className="h-8 w-8 p-0"
                   >
                     <ChevronRight className="h-4 w-4" />

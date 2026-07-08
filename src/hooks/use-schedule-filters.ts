@@ -1,153 +1,125 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import type { Session, Mapel } from '@/context/wtms-context';
+import { useMemo, useCallback } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import type { FilterState } from '@/components/admin/scheduling/filter-bar';
 
 export type SortField = 'date' | 'startTime' | 'jpCount' | 'mapelName' | 'format';
 export type SortDirection = 'asc' | 'desc';
 
-export function useScheduleFilters(
-  batchSessions: Session[],
-  activeMapels: Mapel[]
-) {
-  const [filterDateStart, setFilterDateStart] = useState<string>('');
-  const [filterDateEnd, setFilterDateEnd] = useState<string>('');
-  const [filterFormat, setFilterFormat] = useState<string>('ALL');
-  const [filterWIId, setFilterWIId] = useState<string>('ALL');
-  const [filterMapelId, setFilterMapelId] = useState<string>('ALL');
-  const [filterLokasiId, setFilterLokasiId] = useState<string>('ALL');
-  const [filterJpMin, setFilterJpMin] = useState<string>('');
-  const [filterJpMax, setFilterJpMax] = useState<string>('');
-  const [sortField, setSortField] = useState<SortField>('date');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [showFilterBar, setShowFilterBar] = useState(false);
+export function useScheduleFilters() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
+  // Read filters from URL
+  const filters: FilterState = {
+    year: searchParams.get('year') || 'ALL',
+    format: searchParams.get('format') || 'ALL',
+    wiId: searchParams.get('wiId') || 'ALL',
+    mapelId: searchParams.get('mapelId') || 'ALL',
+    lokasiId: searchParams.get('lokasiId') || 'ALL',
+  };
+
+  const sortField = (searchParams.get('sortField') || 'date') as SortField;
+  const sortDirection = (searchParams.get('sortDirection') || 'asc') as SortDirection;
+  const page = parseInt(searchParams.get('page') || '1');
+  const pageSize = parseInt(searchParams.get('pageSize') || '10');
+  const showFilterBar = searchParams.get('showFilters') === 'true';
+
+  // Count active filters
   const activeFilterCount = useMemo(() => {
     let count = 0;
-    if (filterDateStart) count++;
-    if (filterDateEnd) count++;
-    if (filterFormat !== 'ALL') count++;
-    if (filterWIId !== 'ALL') count++;
-    if (filterMapelId !== 'ALL') count++;
-    if (filterLokasiId !== 'ALL') count++;
-    if (filterJpMin) count++;
-    if (filterJpMax) count++;
+    if (filters.year !== 'ALL') count++;
+    if (filters.format !== 'ALL') count++;
+    if (filters.wiId !== 'ALL') count++;
+    if (filters.mapelId !== 'ALL') count++;
+    if (filters.lokasiId !== 'ALL') count++;
     return count;
-  }, [filterDateStart, filterDateEnd, filterFormat, filterWIId, filterMapelId, filterLokasiId, filterJpMin, filterJpMax]);
+  }, [filters]);
 
-  const resetAllFilters = () => {
-    setFilterDateStart('');
-    setFilterDateEnd('');
-    setFilterFormat('ALL');
-    setFilterWIId('ALL');
-    setFilterMapelId('ALL');
-    setFilterLokasiId('ALL');
-    setFilterJpMin('');
-    setFilterJpMax('');
-    setSortField('date');
-    setSortDirection('asc');
-  };
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const filteredAndSortedSessions = useMemo(() => {
-    let result = [...batchSessions];
-
-    if (filterDateStart) {
-      result = result.filter(s => s.date >= filterDateStart);
-    }
-    if (filterDateEnd) {
-      result = result.filter(s => s.date <= filterDateEnd);
-    }
-    if (filterFormat !== 'ALL') {
-      result = result.filter(s => s.format === filterFormat);
-    }
-    if (filterWIId !== 'ALL') {
-      result = result.filter(s => (s.wiIds || []).includes(filterWIId));
-    }
-    if (filterMapelId !== 'ALL') {
-      result = result.filter(s => s.mapelId === filterMapelId);
-    }
-    if (filterLokasiId !== 'ALL') {
-      result = result.filter(s => s.lokasiId === filterLokasiId);
-    }
-    if (filterJpMin) {
-      const min = parseInt(filterJpMin);
-      if (!isNaN(min)) {
-        result = result.filter(s => s.jpCount >= min);
-      }
-    }
-    if (filterJpMax) {
-      const max = parseInt(filterJpMax);
-      if (!isNaN(max)) {
-        result = result.filter(s => s.jpCount <= max);
-      }
-    }
-
-    result.sort((a, b) => {
-      let comparison = 0;
-
-      switch (sortField) {
-        case 'date':
-          comparison = a.date.localeCompare(b.date);
-          break;
-        case 'startTime':
-          comparison = a.startTime.localeCompare(b.startTime);
-          break;
-        case 'jpCount':
-          comparison = a.jpCount - b.jpCount;
-          break;
-        case 'mapelName': {
-          const mapelA = activeMapels.find(m => m.id === a.mapelId);
-          const mapelB = activeMapels.find(m => m.id === b.mapelId);
-          const nameA = mapelA?.name || '';
-          const nameB = mapelB?.name || '';
-          comparison = nameA.localeCompare(nameB);
-          break;
+  // Push filter changes to URL
+  const pushParams = useCallback(
+    (updates: Record<string, string>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, val] of Object.entries(updates)) {
+        if (val && val !== 'ALL') {
+          params.set(key, val);
+        } else {
+          params.delete(key);
         }
-        case 'format':
-          comparison = a.format.localeCompare(b.format);
-          break;
       }
+      // Reset page when filters change
+      if (!('page' in updates)) {
+        params.delete('page');
+      }
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [searchParams, router, pathname]
+  );
 
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
+  const handleFilterChange = useCallback(
+    (partial: Partial<FilterState>) => {
+      const updates: Record<string, string> = {};
+      if (partial.year !== undefined) updates.year = partial.year;
+      if (partial.format !== undefined) updates.format = partial.format;
+      if (partial.wiId !== undefined) updates.wiId = partial.wiId;
+      if (partial.mapelId !== undefined) updates.mapelId = partial.mapelId;
+      if (partial.lokasiId !== undefined) updates.lokasiId = partial.lokasiId;
+      pushParams(updates);
+    },
+    [pushParams]
+  );
 
-    return result;
-  }, [
-    batchSessions,
-    filterDateStart, filterDateEnd, filterFormat, filterWIId, filterMapelId,
-    filterLokasiId, filterJpMin, filterJpMax,
-    sortField, sortDirection,
-    activeMapels,
-  ]);
+  const setShowFilterBar = useCallback(
+    (show: boolean) => {
+      pushParams({ showFilters: show ? 'true' : '' });
+    },
+    [pushParams]
+  );
+
+  const handleSort = useCallback(
+    (field: SortField) => {
+      const updates: Record<string, string> = { sortField: field };
+      if (sortField === field) {
+        updates.sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        updates.sortDirection = 'asc';
+      }
+      pushParams(updates);
+    },
+    [sortField, sortDirection, pushParams]
+  );
+
+  const resetAllFilters = useCallback(() => {
+    router.push(pathname, { scroll: false });
+  }, [router, pathname]);
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      pushParams({ page: String(newPage) });
+    },
+    [pushParams]
+  );
 
   return {
-    // Filter state
-    filterDateStart, setFilterDateStart,
-    filterDateEnd, setFilterDateEnd,
-    filterFormat, setFilterFormat,
-    filterWIId, setFilterWIId,
-    filterMapelId, setFilterMapelId,
-    filterLokasiId, setFilterLokasiId,
-    filterJpMin, setFilterJpMin,
-    filterJpMax, setFilterJpMax,
-    // Sort state
-    sortField, sortDirection,
+    // Filter state (from URL)
+    filters,
+    // Sort state (from URL)
+    sortField,
+    sortDirection,
+    // Pagination (from URL)
+    page,
+    pageSize,
     // UI state
-    showFilterBar, setShowFilterBar,
+    showFilterBar,
+    setShowFilterBar,
     // Computed
     activeFilterCount,
-    filteredAndSortedSessions,
     // Handlers
     handleSort,
+    handleFilterChange,
+    handlePageChange,
     resetAllFilters,
   };
 }

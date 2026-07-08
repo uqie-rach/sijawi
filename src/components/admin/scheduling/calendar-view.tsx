@@ -18,13 +18,12 @@ interface CalendarViewProps {
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onDayClick: (dateStr: string) => void;
-  onEditSession: (session: Session) => void;
 }
 
 export function CalendarView({
   year, month, monthName, calendarDaysList,
   batchSessions, activeMapels, activeBatch, batchId,
-  onPrevMonth, onNextMonth, onDayClick, onEditSession,
+  onPrevMonth, onNextMonth, onDayClick,
 }: CalendarViewProps) {
   return (
     <Card className="shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-200 bg-white rounded-lg">
@@ -97,7 +96,7 @@ export function CalendarView({
                         key={ev.id}
                         onClick={e => {
                           e.stopPropagation();
-                          onEditSession(ev);
+                          onDayClick(dateStr);
                         }}
                         className={`text-[9px] px-1 py-0.5 rounded truncate font-medium border ${
                           ev.format === 'Klasikal'

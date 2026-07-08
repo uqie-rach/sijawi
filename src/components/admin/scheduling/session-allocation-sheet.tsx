@@ -11,10 +11,9 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SessionFormPanel } from '@/components/admin/scheduling/session-form-panel';
 import { JpTrackerWidget } from '@/components/admin/scheduling/jp-tracker-widget';
-import { WiAssignmentPanel } from '@/components/admin/scheduling/wi-assignment-panel';
 import { WiDailyScheduleCard } from '@/components/admin/scheduling/wi-daily-schedule-card';
 import type { SessionFormState } from '@/hooks/use-session-form';
-import type { Widyaiswara } from '@/context/wtms-context';
+import type { Widyaiswara, Session } from '@/context/wtms-context';
 import type { TrackingMapelStatus } from '@/hooks/use-jp-tracking';
 import type { BusyWiDetail } from '@/hooks/use-wi-availability';
 
@@ -47,6 +46,9 @@ interface SessionAllocationSheetProps {
   onCloseWiDetail: () => void;
   onEditSession: (session: any) => void;
   onDeleteSession: (sessionId: string) => void;
+
+  // All sessions for JP tracking
+  allSessions: Session[];
 }
 
 export function SessionAllocationSheet({
@@ -74,14 +76,8 @@ export function SessionAllocationSheet({
   onCloseWiDetail,
   onEditSession,
   onDeleteSession,
+  allSessions,
 }: SessionAllocationSheetProps) {
-  const handleSubmit = (e: React.FormEvent) => {
-    onSubmit(e);
-    if (!editingSessionId) {
-      // Close sheet only for new sessions on success (handled by parent via onOpenChange)
-    }
-  };
-
   const handleToggleWi = (wiId: string, checked: boolean) => {
     const newVal = checked
       ? [...sessionForm.wiIds.filter(id => id !== wiId), wiId]
@@ -93,7 +89,7 @@ export function SessionAllocationSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-3xl p-0 flex flex-col bg-white border-l border-slate-200"
+        className="w-full sm:max-w-2xl p-0 flex flex-col bg-white border-l border-slate-200"
       >
         <SheetHeader className="px-4 pt-4 pb-2 border-b border-slate-100 shrink-0">
           <SheetTitle className="text-base font-bold text-blue-600">
@@ -106,12 +102,12 @@ export function SessionAllocationSheet({
 
         <ScrollArea className="flex-1">
           <div className="p-4 space-y-4">
-            {/* Session Form */}
+            {/* Session Form (includes JP slot selector + WI assignment) */}
             <SessionFormPanel
               editingSessionId={editingSessionId}
               sessionForm={sessionForm}
               updateForm={updateForm}
-              onSubmit={handleSubmit}
+              onSubmit={onSubmit}
               openNewForm={openNewForm}
               batchId={batchId}
               batchOptions={batchOptions}
@@ -121,24 +117,19 @@ export function SessionAllocationSheet({
               trackingMapelStatus={trackingMapelStatus}
               activeWis={activeWis}
               activeBatch={activeBatch}
+              date={date}
+              availableWis={availableWis}
+              busyWis={busyWis}
+              onToggleWi={handleToggleWi}
+              onViewWiDetail={onViewWiDetail}
+              selectedWiId={selectedWiId}
+              allSessions={allSessions}
             />
 
             {/* JP Tracker */}
             {sessionForm.batchId && (
               <JpTrackerWidget trackingMapelStatus={trackingMapelStatus} />
             )}
-
-            {/* WI Assignment — merged availability + daftar pengajar */}
-            <WiAssignmentPanel
-              date={date}
-              availableWis={availableWis}
-              busyWis={busyWis}
-              filteredWisList={filteredWisList}
-              selectedWiIds={sessionForm.wiIds}
-              onToggleWi={handleToggleWi}
-              onViewWiDetail={onViewWiDetail}
-              selectedWiId={selectedWiId}
-            />
 
             {/* WI Daily Schedule Card */}
             {selectedWiDetail && (

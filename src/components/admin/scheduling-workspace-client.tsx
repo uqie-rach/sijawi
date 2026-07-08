@@ -18,6 +18,7 @@ import { TableView } from '@/components/admin/scheduling/table-view';
 import { SessionAllocationSheet } from '@/components/admin/scheduling/session-allocation-sheet';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Session } from '@/context/wtms-context';
 
 // ---------------------------------------------------------------------------
 // Public props
@@ -50,7 +51,7 @@ export function SchedulingWorkspaceClient({
     mapelList,
     lokasiList,
     batches,
-    sessions,
+    sessions: contextSessions,
     addSession,
     updateSession,
     deleteSession,
@@ -62,7 +63,13 @@ export function SchedulingWorkspaceClient({
   // ---- Sheet open state -------------------------------------------------
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // ---- Year filter ------------------------------------------------------
+  // ---- Server-fetched table sessions ------------------------------------
+  const [tableSessions, setTableSessions] = useState<Session[]>([]);
+  const [tableTotal, setTableTotal] = useState(0);
+  const [tableTotalPages, setTableTotalPages] = useState(1);
+  const [tableLoading, setTableLoading] = useState(false);
+
+  // ---- Year filter (local for top bar) ----------------------------------
   const availableYears = useMemo(() => {
     return Array.from(
       new Set(allBatches.map((b: any) => new Date(b.startDate).getFullYear().toString()))
@@ -74,6 +81,9 @@ export function SchedulingWorkspaceClient({
 
   const isReadOnlyYear = selectedYear !== currentYear;
 
+  // ---- Filter hook (URL-driven) -----------------------------------------
+  const filterHook = useScheduleFilters();
+
   // ---- Derived data ------------------------------------------------------
   const activeBatch = batchId ? (batches.find(b => b.id === batchId) || initialBatch) : null;
   const batchStartDate = activeBatch ? new Date(activeBatch.startDate) : new Date(2026, 0, 31);
@@ -81,9 +91,9 @@ export function SchedulingWorkspaceClient({
   const activeMapels = mapelList.length ? mapelList : initialMapels;
   const activeWis = widyaswaras.length ? widyaswaras : initialWis;
   const activeLokasis = lokasiList.length ? lokasiList : initialLokasis;
-  const activeSessions = sessions.length ? sessions : initialSessions;
+  const activeSessions = contextSessions.length ? contextSessions : initialSessions;
 
-  // Filter sessions by year
+  // Filter sessions by year AND batch (for calendar/day views)
   const yearFilteredSessions = useMemo(() => {
     return activeSessions.filter((s: any) => {
       const sYear = new Date(s.date).getFullYear().toString();
@@ -91,16 +101,60 @@ export function SchedulingWorkspaceClient({
     });
   }, [activeSessions, selectedYear]);
 
-  // Filter sessions by year AND batch
   const batchSessions = batchId
     ? yearFilteredSessions.filter((s: any) => s.batchId === batchId)
     : yearFilteredSessions;
+
+  // ---- Fetch table sessions from API ------------------------------------
+  useEffect(() => {
+    if (viewMode !== 'table') return;
+
+    setTableLoading(true);
+
+    const params = new URLSearchParams();
+    // Use selectedYear from top bar for the table
+    if (selectedYear) params.set('year', selectedYear);
+    if (batchId) params.set('batchId', batchId);
+    if (filterHook.filters.format !== 'ALL') params.set('format', filterHook.filters.format);
+    if (filterHook.filters.wiId !== 'ALL') params.set('wiId', filterHook.filters.wiId);
+    if (filterHook.filters.mapelId !== 'ALL') params.set('mapelId', filterHook.filters.mapelId);
+    if (filterHook.filters.lokasiId !== 'ALL') params.set('lokasiId', filterHook.filters.lokasiId);
+    params.set('page', String(filterHook.page));
+    params.set('pageSize', String(filterHook.pageSize));
+    params.set('sortField', filterHook.sortField);
+    params.set('sortDirection', filterHook.sortDirection);
+
+    fetch(`/api/sessions?${params.toString()}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          toast.error(data.error);
+        } else {
+          setTableSessions(data.sessions || []);
+          setTableTotal(data.total || 0);
+          setTableTotalPages(data.totalPages || 1);
+        }
+      })
+      .catch(() => toast.error('Gagal memuat data sesi.'))
+      .finally(() => setTableLoading(false));
+  }, [
+    viewMode,
+    selectedYear,
+    batchId,
+    filterHook.filters.format,
+    filterHook.filters.wiId,
+    filterHook.filters.mapelId,
+    filterHook.filters.lokasiId,
+    filterHook.page,
+    filterHook.pageSize,
+    filterHook.sortField,
+    filterHook.sortDirection,
+  ]);
 
   // ---- Sidebar collapse on sheet open ----------------------------------
   useEffect(() => {
     if (sheetOpen) {
       localStorage.setItem('sidebar_admin_collapsed', 'true');
-      // Dispatch a custom event so the sidebar can listen
       window.dispatchEvent(new CustomEvent('sidebar:toggle', { detail: { collapsed: true } }));
     } else {
       localStorage.setItem('sidebar_admin_collapsed', 'false');
@@ -117,8 +171,6 @@ export function SchedulingWorkspaceClient({
   const currentBatchSelectionId = batchId || sessionForm.batchId;
   const currentBatchObj = batches.find(b => b.id === currentBatchSelectionId) ||
     (currentBatchSelectionId === initialBatch?.id ? initialBatch : null);
-
-  const filterHook = useScheduleFilters(batchSessions, activeMapels);
 
   const jpTracking = useJpTracking(
     currentBatchSelectionId, currentBatchObj, kategoriList,
@@ -322,7 +374,6 @@ export function SchedulingWorkspaceClient({
           onPrevMonth={calendarNav.goToPrevMonth}
           onNextMonth={calendarNav.goToNextMonth}
           onDayClick={handleCalendarDayClick}
-          onEditSession={handleEditSession}
         />
       )}
 
@@ -341,11 +392,14 @@ export function SchedulingWorkspaceClient({
         />
       )}
 
-      {/* Table View */}
+      {/* Table View — server-driven */}
       {viewMode === 'table' && (
         <TableView
-          filteredSessions={filterHook.filteredAndSortedSessions}
-          batchSessions={batchSessions}
+          filteredSessions={tableSessions}
+          totalCount={tableTotal}
+          page={filterHook.page}
+          totalPages={tableTotalPages}
+          onPageChange={filterHook.handlePageChange}
           activeMapels={activeMapels}
           activeWis={activeWis}
           activeLokasis={activeLokasis}
@@ -361,30 +415,15 @@ export function SchedulingWorkspaceClient({
         >
           {filterHook.showFilterBar && (
             <FilterBar
-              filterDateStart={filterHook.filterDateStart}
-              setFilterDateStart={filterHook.setFilterDateStart}
-              filterDateEnd={filterHook.filterDateEnd}
-              setFilterDateEnd={filterHook.setFilterDateEnd}
-              filterFormat={filterHook.filterFormat}
-              setFilterFormat={filterHook.setFilterFormat}
-              filterWIId={filterHook.filterWIId}
-              setFilterWIId={filterHook.setFilterWIId}
-              filterMapelId={filterHook.filterMapelId}
-              setFilterMapelId={filterHook.setFilterMapelId}
-              filterLokasiId={filterHook.filterLokasiId}
-              setFilterLokasiId={filterHook.setFilterLokasiId}
-              filterJpMin={filterHook.filterJpMin}
-              setFilterJpMin={filterHook.setFilterJpMin}
-              filterJpMax={filterHook.filterJpMax}
-              setFilterJpMax={filterHook.setFilterJpMax}
+              filters={filterHook.filters}
+              onFilterChange={filterHook.handleFilterChange}
+              availableYears={availableYears}
               activeWis={activeWis}
               activeMapels={activeMapels}
               activeLokasis={activeLokasis}
-              batchStartDate={activeBatch?.startDate}
-              batchEndDate={activeBatch?.endDate}
               activeFilterCount={filterHook.activeFilterCount}
-              totalFiltered={filterHook.filteredAndSortedSessions.length}
-              totalSessions={batchSessions.length}
+              totalFiltered={tableTotal}
+              totalSessions={yearFilteredSessions.length}
             />
           )}
         </TableView>
@@ -419,6 +458,7 @@ export function SchedulingWorkspaceClient({
         }}
         onEditSession={handleEditSession}
         onDeleteSession={handleDeleteSession}
+        allSessions={yearFilteredSessions}
       />
 
       {/* Global Confirmation Dialog */}

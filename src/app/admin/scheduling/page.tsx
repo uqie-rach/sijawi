@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Calendar, Layers, MapPin, ArrowUpRight } from 'lucide-react';
 import { SchedulingWorkspaceClient } from '@/components/admin/scheduling-workspace-client';
-import { MiniPieChart } from '@/components/admin/scheduling/mini-pie-chart';
+import { ProgressBar } from '@/components/admin/scheduling/progress-bar';
 import { YearFilterSelect } from '@/components/admin/scheduling/year-filter-select';
 import { formatDateId } from '@/lib/utils';
 import { BRANDING } from '@/lib/config';
@@ -234,9 +234,9 @@ export default async function SchedulingIndexPage({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="w-[140px]">
-                      <div className="flex items-center gap-3">
-                        <MiniPieChart scheduled={b.totalJpScheduled} total={b.totalJpRequired} size={48} />
+                    <TableCell className="w-[160px]">
+                      <div className="space-y-1.5">
+                        <ProgressBar scheduled={b.totalJpScheduled} total={b.totalJpRequired} width={100} height={8} />
                         <div className="text-xs">
                           <span className="font-semibold text-blue-900">{b.totalJpScheduled}/{b.totalJpRequired}</span>
                           <span className="text-slate-400 ml-0.5">JP</span>

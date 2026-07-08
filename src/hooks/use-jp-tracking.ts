@@ -10,6 +10,48 @@ export interface TrackingMapelStatus extends Mapel {
   isFullyScheduled: boolean;
 }
 
+export interface JpRange {
+  start: number;
+  end: number;
+}
+
+function parseJpRange(jpKe: string): JpRange | null {
+  if (!jpKe) return null;
+  const parts = jpKe.split('-');
+  if (parts.length !== 2) return null;
+  const start = parseInt(parts[0]);
+  const end = parseInt(parts[1]);
+  if (isNaN(start) || isNaN(end) || start > end) return null;
+  return { start, end };
+}
+
+export function getAllocatedJpRanges(
+  mapelId: string,
+  batchId: string,
+  sessions: Session[],
+  editingSessionId?: string | null
+): JpRange[] {
+  const ranges: JpRange[] = [];
+  for (const s of sessions) {
+    if (s.batchId === batchId && s.mapelId === mapelId) {
+      // Skip the currently editing session
+      if (editingSessionId && s.id === editingSessionId) continue;
+      const range = parseJpRange(s.jpKe);
+      if (range) ranges.push(range);
+    }
+  }
+  return ranges.sort((a, b) => a.start - b.start);
+}
+
+export function checkJpOverlap(
+  newRange: JpRange,
+  existingRanges: JpRange[]
+): boolean {
+  return existingRanges.some(
+    r => newRange.start <= r.end && newRange.end >= r.start
+  );
+}
+
 export function useJpTracking(
   currentBatchSelectionId: string,
   currentBatchObj: Batch | null | undefined,
