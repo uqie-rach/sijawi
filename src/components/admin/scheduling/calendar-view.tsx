@@ -27,12 +27,12 @@ export function CalendarView({
   onPrevMonth, onNextMonth, onDayClick, onEditSession,
 }: CalendarViewProps) {
   return (
-    <Card className="shadow-sm border-slate-200 bg-white">
+    <Card className="shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-200 bg-white rounded-lg">
       <CardHeader className="border-b border-slate-100 flex flex-row justify-between items-center bg-slate-50/50 px-6 py-4">
         <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
           <CalendarDays className="h-4.5 w-4.5 text-blue-600" />
-          Tampilan Kalender Bulanan Aktif{' '}
-          {batchId ? `(Angkatan: ${activeBatch?.name || ''})` : '(Semua Angkatan)'}
+          Tampilan Kalender Bulanan{' '}
+          {batchId ? `(${activeBatch?.name || ''})` : '(Semua Angkatan)'}
         </CardTitle>
         <div className="flex items-center gap-3">
           <button
@@ -78,7 +78,7 @@ export function CalendarView({
                 onClick={() => onDayClick(dateStr)}
                 className={`min-h-[75px] border rounded p-1.5 flex flex-col justify-between transition-all cursor-pointer ${
                   isDayInBatchRange
-                    ? 'bg-white border-slate-200 hover:border-blue-400 hover:bg-slate-50/30'
+                    ? 'bg-white border-slate-200 hover:border-blue-400 hover:bg-blue-50/30'
                     : 'bg-slate-50/50 border-slate-100 opacity-40 hover:bg-slate-100/40'
                 }`}
               >

@@ -11,13 +11,13 @@ interface OverviewChartsProps {
 
 export function OverviewCharts({ barChartData, pieChartData }: OverviewChartsProps) {
   return (
-    <div className="grid md:grid-cols-3 gap-6">
-      <Card className="md:col-span-2 shadow-sm border-slate-200 bg-white">
-        <CardHeader>
+    <div className="grid md:grid-cols-5 gap-6">
+      <Card className="md:col-span-3 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-200 bg-white rounded-lg">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
           <CardTitle className="text-base font-bold text-blue-900">Penyeimbangan Beban Widyaiswara (JP Bulan Berjalan)</CardTitle>
           <CardDescription>Identifikasi dengan mudah instruktur yang kurang dimanfaatkan atau kelebihan beban mengajar.</CardDescription>
         </CardHeader>
-        <CardContent className="h-80">
+        <CardContent className="h-80 pt-4">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={barChartData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -31,12 +31,12 @@ export function OverviewCharts({ barChartData, pieChartData }: OverviewChartsPro
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm border-slate-200 bg-white">
-        <CardHeader>
+      <Card className="md:col-span-2 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-200 bg-white rounded-lg">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
           <CardTitle className="text-base font-bold text-blue-900">Distribusi Pola Pelaksanaan Anggaran</CardTitle>
           <CardDescription>Rasio alokasi jam pelatihan berdasarkan pola pendanaan.</CardDescription>
         </CardHeader>
-        <CardContent className="h-80 flex flex-col justify-between">
+        <CardContent className="h-80 flex flex-col justify-between pt-4">
           <div className="h-60">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -57,7 +57,7 @@ export function OverviewCharts({ barChartData, pieChartData }: OverviewChartsPro
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex justify-around text-xs font-semibold">
+          <div className="flex justify-around text-xs font-semibold pt-2">
             <span className="flex items-center gap-1">
               <span className="h-3 w-3 rounded-full bg-blue-600"></span> APBD
             </span>

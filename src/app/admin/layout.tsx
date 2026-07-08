@@ -40,7 +40,7 @@ export default async function AdminLayout({
   const totalJp = await getTotalScheduledJp();
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50">
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#F5F5F5]">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <header className="bg-white border-b border-slate-200 px-8 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
@@ -61,8 +61,10 @@ export default async function AdminLayout({
             </div>
           </div>
         </header>
-        <main className="flex-1 p-8 overflow-y-auto bg-white">
-          {children}
+        <main className="flex-1 p-8 overflow-y-auto">
+          <div className="mx-auto max-w-[1280px]">
+            {children}
+          </div>
         </main>
       </div>
     </div>

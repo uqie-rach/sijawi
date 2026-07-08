@@ -1,23 +1,27 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useWTMS } from '@/context/wtms-context';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useSessionForm } from '@/hooks/use-session-form';
 import { useScheduleFilters } from '@/hooks/use-schedule-filters';
 import { useJpTracking } from '@/hooks/use-jp-tracking';
+import { useWiAvailability } from '@/hooks/use-wi-availability';
 import { useCalendarNavigation } from '@/hooks/use-calendar-navigation';
 import { BatchNavigation } from '@/components/admin/scheduling/batch-navigation';
 import { JpTrackerWidget } from '@/components/admin/scheduling/jp-tracker-widget';
 import { ViewSwitcher } from '@/components/admin/scheduling/view-switcher';
-import { SessionFormDialog } from '@/components/admin/scheduling/session-form-dialog';
+import { SessionFormPanel } from '@/components/admin/scheduling/session-form-panel';
 import { FilterBar } from '@/components/admin/scheduling/filter-bar';
 import { CalendarView } from '@/components/admin/scheduling/calendar-view';
 import { DayView } from '@/components/admin/scheduling/day-view';
 import { TableView } from '@/components/admin/scheduling/table-view';
+import { WiAvailabilityWidget } from '@/components/admin/scheduling/wi-availability-widget';
+import { WiDailyScheduleCard } from '@/components/admin/scheduling/wi-daily-schedule-card';
+import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
-// Public props — kept identical to avoid breaking page consumers
+// Public props
 // ---------------------------------------------------------------------------
 interface SchedulingWorkspaceClientProps {
   batchId?: string;
@@ -89,6 +93,19 @@ export function SchedulingWorkspaceClient({
 
   const calendarNav = useCalendarNavigation(batchStartDate, activeBatch?.startDate);
 
+  // ---- WI Availability ---------------------------------------------------
+  const wiAvailability = useWiAvailability(
+    sessionForm.date,
+    activeSessions,
+    jpTracking.filteredWisList,
+    activeMapels,
+    activeWis,
+    batches.length ? batches : allBatches,
+    activeLokasis,
+  );
+
+  const [availabilitySelectedWiId, setAvailabilitySelectedWiId] = useState<string | null>(null);
+
   // ---- Confirm dialog ----------------------------------------------------
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean; title: string; description: string; onConfirm: () => void;
@@ -100,6 +117,13 @@ export function SchedulingWorkspaceClient({
 
   // ---- Batch options -----------------------------------------------------
   const batchOptions = allBatches.map((b: any) => ({ value: b.id, label: b.name }));
+
+  // ---- Day click handler (from calendar) ---------------------------------
+  const handleCalendarDayClick = useCallback((dateStr: string) => {
+    updateForm({ date: dateStr });
+    calendarNav.setSelectedDayDate(dateStr);
+    setViewMode('day');
+  }, [updateForm, calendarNav]);
 
   // ---- Submit handler ----------------------------------------------------
   const handleSubmit = (e: React.FormEvent) => {
@@ -154,47 +178,96 @@ export function SchedulingWorkspaceClient({
     );
   };
 
+  // ---- Edit handler (from child components) ------------------------------
+  const handleEditSession = useCallback((session: Session) => {
+    triggerEdit(session);
+    setIsDialogOpen(true);
+  }, [triggerEdit, setIsDialogOpen]);
+
   // ---- Day sessions ------------------------------------------------------
   const daySessions = useMemo(
     () => batchSessions.filter((s: any) => s.date === calendarNav.selectedDayDate),
     [batchSessions, calendarNav.selectedDayDate]
   );
 
+  // ---- Assign WI from availability widget --------------------------------
+  const handleAssignWi = useCallback((wiId: string) => {
+    if (!sessionForm.wiIds.includes(wiId)) {
+      updateForm({ wiIds: [...sessionForm.wiIds, wiId] });
+      toast.success('Widyaiswara ditambahkan ke form.');
+    }
+  }, [sessionForm.wiIds, updateForm]);
+
+  // ---- View WI detail from availability ----------------------------------
+  const handleViewWiDetail = useCallback((wiId: string) => {
+    if (availabilitySelectedWiId === wiId) {
+      setAvailabilitySelectedWiId(null);
+      wiAvailability.selectWi(null);
+    } else {
+      setAvailabilitySelectedWiId(wiId);
+      wiAvailability.selectWi(wiId);
+    }
+  }, [availabilitySelectedWiId, wiAvailability]);
+
   // ---- Render ------------------------------------------------------------
   return (
-    <div className="grid lg:grid-cols-4 gap-8 animate-in fade-in duration-200">
-      {/* Sidebar */}
-      <div className="space-y-6 lg:col-span-1">
+    <div className="grid lg:grid-cols-12 gap-6 animate-in fade-in duration-200">
+      {/* ---- LEFT PANEL (4 cols) ---- */}
+      <div className="lg:col-span-4 space-y-4">
         <BatchNavigation batches={allBatches} currentBatchId={batchId} />
+
+        {/* Inline Session Form */}
+        <SessionFormPanel
+          editingSessionId={editingSessionId}
+          sessionForm={sessionForm}
+          updateForm={updateForm}
+          onSubmit={handleSubmit}
+          openNewForm={openNewForm}
+          batchId={batchId}
+          batchOptions={batchOptions}
+          mapelOptions={jpTracking.mapelOptions}
+          filteredWisList={jpTracking.filteredWisList}
+          lokasiOptions={jpTracking.lokasiOptions}
+          trackingMapelStatus={jpTracking.trackingMapelStatus}
+          activeWis={activeWis}
+          activeBatch={activeBatch}
+        />
 
         {currentBatchSelectionId && (
           <JpTrackerWidget trackingMapelStatus={jpTracking.trackingMapelStatus} />
         )}
+
+        {/* WI Availability Widget */}
+        <WiAvailabilityWidget
+          date={sessionForm.date}
+          availableWis={wiAvailability.availableWis}
+          busyWis={wiAvailability.busyWis}
+          onAssignWi={handleAssignWi}
+          onViewWiDetail={handleViewWiDetail}
+          selectedWiId={availabilitySelectedWiId}
+        />
+
+        {/* WI Daily Schedule Card (conditional) */}
+        {wiAvailability.selectedWiDetail && (
+          <WiDailyScheduleCard
+            wi={wiAvailability.selectedWiDetail.wi}
+            sessions={wiAvailability.selectedWiDetail.sessions}
+            date={sessionForm.date}
+            onClose={() => {
+              setAvailabilitySelectedWiId(null);
+              wiAvailability.selectWi(null);
+            }}
+            onEditSession={handleEditSession}
+            onDeleteSession={handleDeleteSession}
+          />
+        )}
       </div>
 
-      {/* Main Workspace */}
-      <div className="lg:col-span-3 space-y-6">
+      {/* ---- RIGHT PANEL (8 cols) ---- */}
+      <div className="lg:col-span-8 space-y-6">
         {/* Top bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border border-slate-200 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
           <ViewSwitcher viewMode={viewMode} onViewModeChange={setViewMode} />
-
-          <SessionFormDialog
-            isOpen={isDialogOpen}
-            onOpenChange={setIsDialogOpen}
-            editingSessionId={editingSessionId}
-            sessionForm={sessionForm}
-            updateForm={updateForm}
-            onSubmit={handleSubmit}
-            openNewForm={openNewForm}
-            batchId={batchId}
-            batchOptions={batchOptions}
-            mapelOptions={jpTracking.mapelOptions}
-            filteredWisList={jpTracking.filteredWisList}
-            lokasiOptions={jpTracking.lokasiOptions}
-            trackingMapelStatus={jpTracking.trackingMapelStatus}
-            activeWis={activeWis}
-            activeBatch={activeBatch}
-          />
         </div>
 
         {/* Calendar View */}
@@ -210,15 +283,12 @@ export function SchedulingWorkspaceClient({
             batchId={batchId}
             onPrevMonth={calendarNav.goToPrevMonth}
             onNextMonth={calendarNav.goToNextMonth}
-            onDayClick={(dateStr) => {
-              calendarNav.setSelectedDayDate(dateStr);
-              setViewMode('day');
-            }}
-            onEditSession={triggerEdit}
+            onDayClick={handleCalendarDayClick}
+            onEditSession={handleEditSession}
           />
         )}
 
-        {/* Day View */}
+        {/* Day View with Timeline */}
         {viewMode === 'day' && (
           <DayView
             selectedDayDate={calendarNav.selectedDayDate}
@@ -228,7 +298,7 @@ export function SchedulingWorkspaceClient({
             activeWis={activeWis}
             activeLokasis={activeLokasis}
             activeBatch={activeBatch}
-            onEditSession={triggerEdit}
+            onEditSession={handleEditSession}
             onDeleteSession={handleDeleteSession}
           />
         )}
@@ -244,7 +314,7 @@ export function SchedulingWorkspaceClient({
             sortField={filterHook.sortField}
             sortDirection={filterHook.sortDirection}
             onSort={filterHook.handleSort}
-            onEditSession={triggerEdit}
+            onEditSession={handleEditSession}
             onDeleteSession={handleDeleteSession}
             showFilterBar={filterHook.showFilterBar}
             setShowFilterBar={filterHook.setShowFilterBar}

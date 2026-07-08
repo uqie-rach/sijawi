@@ -20,12 +20,10 @@ interface TableViewProps {
   onSort: (field: SortField) => void;
   onEditSession: (session: Session) => void;
   onDeleteSession: (sessionId: string) => void;
-  // Filter bar toggle
   showFilterBar: boolean;
   setShowFilterBar: (show: boolean) => void;
   activeFilterCount: number;
   resetAllFilters: () => void;
-  // Render filter bar content via children
   children?: React.ReactNode;
 }
 
@@ -57,7 +55,7 @@ export function TableView({
   children,
 }: TableViewProps) {
   return (
-    <Card className="shadow-sm border-slate-200 bg-white">
+    <Card className="shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-200 bg-white rounded-lg">
       <CardHeader className="border-b border-slate-200 py-4 px-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-600">
@@ -97,7 +95,6 @@ export function TableView({
           </div>
         </div>
 
-        {/* Filter bar rendered via children slot */}
         {children}
       </CardHeader>
       <CardContent className="p-0">
@@ -167,7 +164,7 @@ export function TableView({
                 const lok = activeLokasis.find(l => l.id === session.lokasiId);
 
                 return (
-                  <TableRow key={session.id} className="hover:bg-slate-50/30 transition-colors">
+                  <TableRow key={session.id} className="hover:bg-slate-50/50 transition-colors">
                     <TableCell className="pl-6 font-semibold text-slate-800 text-xs py-3">
                       {new Date(session.date).toLocaleDateString('id-ID', {
                         weekday: 'short',

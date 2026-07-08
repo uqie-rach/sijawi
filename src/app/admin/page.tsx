@@ -103,7 +103,7 @@ export default async function OverviewPage() {
     <div className="space-y-8 animate-in fade-in duration-200">
       <OverviewCharts barChartData={barChartData} pieChartData={pieChartData} />
 
-      <Card className="shadow-sm border-slate-200 bg-white">
+      <Card className="shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-200 bg-white rounded-lg">
         <CardHeader className="border-b border-slate-100 bg-slate-50/50">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>

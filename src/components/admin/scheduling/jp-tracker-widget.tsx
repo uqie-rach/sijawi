@@ -12,12 +12,12 @@ interface JpTrackerWidgetProps {
 
 export function JpTrackerWidget({ trackingMapelStatus }: JpTrackerWidgetProps) {
   return (
-    <Card className="shadow-sm border-slate-200 bg-white">
-      <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-3">
+    <Card className="shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-200 bg-white rounded-lg">
+      <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-3 px-4">
         <CardTitle className="text-sm font-bold text-blue-600">Pelacak Alokasi JP</CardTitle>
-        <CardDescription>Sisa kapasitas untuk kategori terpilih.</CardDescription>
+        <CardDescription className="text-[11px]">Sisa kapasitas untuk kategori terpilih.</CardDescription>
       </CardHeader>
-      <CardContent className="p-4 space-y-3 max-h-[300px] overflow-y-auto">
+      <CardContent className="p-4 space-y-3 max-h-[240px] overflow-y-auto">
         {trackingMapelStatus.length === 0 ? (
           <p className="text-xs text-slate-500 text-center py-4">Tidak ada mata pelajaran terdaftar.</p>
         ) : (
