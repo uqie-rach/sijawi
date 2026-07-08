@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Label } from 'recharts';
 
 interface OverviewChartsProps {
   barChartData: Array<{ name: string; 'Total JP': number }>;
@@ -52,6 +52,12 @@ export function OverviewCharts({ barChartData, pieChartData }: OverviewChartsPro
                   {pieChartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
+                  <Label
+                    value={pieChartData.reduce((sum, d) => sum + d.value, 0)}
+                    position="center"
+                    className="text-lg font-bold fill-blue-900"
+                    formatter={(val: number) => `${val} JP`}
+                  />
                 </Pie>
                 <Tooltip cursor={{ fill: '#f1f5f9' }} />
               </PieChart>

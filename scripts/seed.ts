@@ -18,34 +18,61 @@ import {
   sessions,
 } from '../src/lib/seed-data';
 
-// ---- Model schemas (lightweight, no Next.js imports) -----------------------
+// ---- Model schemas (lightweight, must match actual Mongoose models) --------
 const KategoriSchema = new mongoose.Schema({
-  _id: String, name: String, min_weight: Number,
+  _id: String,
+  singkatan: String,
+  kepanjangan: String,
+  min_weight: Number,
 }, { timestamps: true });
 
 const WidyaiswaraSchema = new mongoose.Schema({
-  _id: String, nip: String, name: String, gelar: String,
-  email: String, jabatan: String, level: Number, level_label: String,
-  jp_last_month: Number, password_plain: String,
+  _id: String,
+  name: String,
+  gelar: String,
+  email: String,
+  nip: String,
+  jabatan: String,
+  level: Number,
+  level_label: String,
+  jp_last_month: Number,
+  password_plain: String,
 }, { timestamps: true });
 
 const MapelSchema = new mongoose.Schema({
-  _id: String, name: String, kategori_id: String, jp_total: Number,
+  _id: String,
+  name: String,
+  kategori_id: String,
+  jp_total: Number,
 }, { timestamps: true });
 
 const LokasiSchema = new mongoose.Schema({
-  _id: String, name: String,
+  _id: String,
+  name: String,
 }, { timestamps: true });
 
 const BatchSchema = new mongoose.Schema({
-  _id: String, name: String, kategori_id: String,
-  pola: String, start_date: String, end_date: String,
+  _id: String,
+  name: String,
+  kategori_id: String,
+  pola: String,
+  start_date: String,
+  end_date: String,
+  lokasi_id: String,
 }, { timestamps: true });
 
 const JadwalSchema = new mongoose.Schema({
-  _id: String, batch_id: String, mapel_id: String, wi_ids: [String],
-  date: String, start_time: String, end_time: String, format: String,
-  lokasi_id: String, jp_ke: String, jp_count: Number,
+  _id: String,
+  batch_id: String,
+  mapel_id: String,
+  wi_ids: [String],
+  date: String,
+  start_time: String,
+  end_time: String,
+  format: String,
+  lokasi_id: String,
+  jp_ke: String,
+  jp_count: Number,
 }, { timestamps: true });
 
 async function seed() {
@@ -84,7 +111,9 @@ async function seed() {
   // ---- Insert fresh data ---------------------------------------------------
   console.log('🌱 Seeding kategori...');
   await Kategori.insertMany(kategoriPelatihan);
-  console.log(`   → ${kategoriPelatihan.length} kategori`);
+  for (const k of kategoriPelatihan) {
+    console.log(`   → ${k.singkatan}: ${k.kepanjangan} (min weight: ${k.min_weight})`);
+  }
 
   console.log('🌱 Seeding widyaiswara...');
   await WI.insertMany(widyaswaras);

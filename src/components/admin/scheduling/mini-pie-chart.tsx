@@ -21,11 +21,14 @@ export function MiniPieChart({ scheduled, total, size = 60 }: MiniPieChartProps)
     { name: 'Tersisa', value: remaining },
   ];
 
-  const innerRadius = size * 0.35;
-  const outerRadius = size * 0.48;
+  const innerRadius = size * 0.38;
+  const outerRadius = size * 0.46;
 
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+    <div
+      className="relative inline-flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
       <PieChart width={size} height={size}>
         <Pie
           data={data}
@@ -36,15 +39,13 @@ export function MiniPieChart({ scheduled, total, size = 60 }: MiniPieChartProps)
           paddingAngle={2}
           dataKey="value"
           stroke="none"
+          isAnimationActive={false}
         >
           <Cell fill={COLOR_SCHEDULED} />
           <Cell fill={COLOR_REMAINING} />
         </Pie>
       </PieChart>
-      <span
-        className="absolute text-[10px] font-bold text-blue-900"
-        style={{ lineHeight: 1 }}
-      >
+      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] font-bold text-blue-900 pointer-events-none select-none">
         {percentage}%
       </span>
     </div>

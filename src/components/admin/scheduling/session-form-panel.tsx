@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Combobox } from '@/components/ui/combobox';
 import { Plus, Zap, Edit } from 'lucide-react';
 import type { Widyaiswara } from '@/context/wtms-context';
@@ -76,79 +75,31 @@ export function SessionFormPanel({
             />
           </div>
 
-          {/* Multi-WI Selection */}
-          <div className="space-y-1.5 border border-slate-100 p-3 rounded-lg bg-slate-50/50">
-            <Label className="text-[11px] font-bold text-blue-900 block">
-              Daftar Pengajar
-            </Label>
-            <div className="grid grid-cols-1 gap-1 max-h-[120px] overflow-y-auto">
-              {filteredWisList.map(wi => {
-                const isChecked = sessionForm.wiIds.includes(wi.id);
-                return (
-                  <label
-                    key={wi.id}
-                    className="flex items-center gap-2 text-[11px] font-semibold text-slate-800 cursor-pointer hover:bg-slate-100 p-1 rounded transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => {
-                        const newVal = isChecked
-                          ? sessionForm.wiIds.filter(id => id !== wi.id)
-                          : [...sessionForm.wiIds, wi.id];
-                        updateForm({ wiIds: newVal });
-                      }}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
-                    />
-                    <span className="truncate text-[11px]">{wi.name}, {wi.gelar}</span>
-                    <span className="ml-auto text-[9px] text-slate-400 font-normal">Lv.{wi.level}</span>
-                  </label>
-                );
-              })}
-            </div>
-            {sessionForm.wiIds.length > 0 && (
-              <div className="flex flex-wrap gap-1 pt-1.5 border-t border-slate-200">
-                {sessionForm.wiIds.map(val => {
-                  const opt = activeWis.find(o => o.id === val);
-                  if (!opt) return null;
-                  return (
-                    <Badge
-                      key={val}
-                      variant="secondary"
-                      className="bg-blue-50 text-blue-800 border-blue-100 flex items-center gap-1 text-[9px] font-bold rounded"
-                    >
-                      {opt.name.split(' ')[0]}
-                    </Badge>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          {/* Multi-WI Selection — moved to WiAssignmentPanel */}
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-[1fr_1fr_1fr] gap-3">
             <div className="space-y-1">
               <Label className="text-[11px] font-semibold text-slate-600">Tanggal</Label>
-              <div className="flex gap-1">
-                <Input
-                  type="date"
-                  min={activeBatch?.startDate}
-                  max={activeBatch?.endDate}
-                  value={sessionForm.date}
-                  onChange={e => updateForm({ date: e.target.value })}
-                  required
-                  className="text-[11px] h-9"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => updateForm({ date: new Date().toISOString().split('T')[0] })}
-                  title="Pintasan Hari Ini"
-                  className="h-9 w-9 shrink-0 border-blue-200 hover:bg-blue-50 text-blue-600"
-                >
-                  <Zap className="h-3.5 w-3.5" />
-                </Button>
-              </div>
+              <Input
+                type="date"
+                min={activeBatch?.startDate}
+                max={activeBatch?.endDate}
+                value={sessionForm.date}
+                onChange={e => updateForm({ date: e.target.value })}
+                required
+                className="text-[11px] h-9"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => updateForm({ date: new Date().toISOString().split('T')[0] })}
+                title="Pintasan Hari Ini"
+                className="h-7 w-full text-[10px] border-blue-200 hover:bg-blue-50 text-blue-600 mt-1 gap-1"
+              >
+                <Zap className="h-3 w-3" />
+                Hari Ini
+              </Button>
             </div>
             <div className="space-y-1">
               <Label className="text-[11px] font-semibold text-slate-600">Mulai</Label>
@@ -171,7 +122,7 @@ export function SessionFormPanel({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-[1fr_1fr_1fr] gap-3">
             <div className="space-y-1">
               <Label className="text-[11px] font-semibold text-slate-600">Format</Label>
               <Select

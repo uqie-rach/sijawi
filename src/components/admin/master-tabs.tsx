@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { formatDateId } from '@/lib/utils';
 
 interface MasterTabsProps {
   initialWis: any[];
@@ -611,7 +612,7 @@ export function MasterTabs({
                         <TableCell>
                           <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">{b.pola}</Badge>
                         </TableCell>
-                        <TableCell className="text-xs text-slate-500">{b.startDate} s/d {b.endDate}</TableCell>
+                        <TableCell className="text-xs text-slate-500">{formatDateId(b.startDate)} s/d {formatDateId(b.endDate)}</TableCell>
                         <TableCell className="pr-6 text-right space-x-2">
                           <Button size="sm" variant="ghost" onClick={() => { setEditingBatchId(b.id); setBatchForm({ name: b.name, kategoriId: b.kategoriId, pola: b.pola, startDate: b.startDate, endDate: b.endDate }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
                           <Button size="sm" variant="ghost" onClick={() => {

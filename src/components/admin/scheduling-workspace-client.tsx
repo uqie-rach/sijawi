@@ -244,14 +244,6 @@ export function SchedulingWorkspaceClient({
     [batchSessions, calendarNav.selectedDayDate]
   );
 
-  // ---- Assign WI from availability widget --------------------------------
-  const handleAssignWi = useCallback((wiId: string) => {
-    if (!sessionForm.wiIds.includes(wiId)) {
-      updateForm({ wiIds: [...sessionForm.wiIds, wiId] });
-      toast.success('Widyaiswara ditambahkan ke form.');
-    }
-  }, [sessionForm.wiIds, updateForm]);
-
   // ---- View WI detail from availability ----------------------------------
   const handleViewWiDetail = useCallback((wiId: string) => {
     if (availabilitySelectedWiId === wiId) {
@@ -418,7 +410,6 @@ export function SchedulingWorkspaceClient({
         date={sessionForm.date}
         availableWis={wiAvailability.availableWis}
         busyWis={wiAvailability.busyWis}
-        onAssignWi={handleAssignWi}
         onViewWiDetail={handleViewWiDetail}
         selectedWiId={availabilitySelectedWiId}
         selectedWiDetail={wiAvailability.selectedWiDetail}
