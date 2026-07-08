@@ -19,10 +19,11 @@ async function isAdmin() {
 export async function GET() {
   try {
     await connectToDatabase();
-    const rows = await KategoriPelatihan.find().sort({ name: 1 });
+    const rows = await KategoriPelatihan.find().sort({ singkatan: 1 });
     const kategori = rows.map(r => ({
       id: r._id,
-      name: r.name,
+      singkatan: r.singkatan,
+      kepanjangan: r.kepanjangan,
       minWeight: r.min_weight
     }));
     return Response.json(kategori);
@@ -38,11 +39,12 @@ export async function POST(request: Request) {
   try {
     await connectToDatabase();
     const body = await request.json();
-    const { id, name, minWeight } = body;
+    const { id, singkatan, kepanjangan, minWeight } = body;
     
     const newKat = new KategoriPelatihan({
       _id: id,
-      name,
+      singkatan,
+      kepanjangan,
       min_weight: minWeight
     });
 
@@ -60,10 +62,11 @@ export async function PUT(request: Request) {
   try {
     await connectToDatabase();
     const body = await request.json();
-    const { id, name, minWeight } = body;
+    const { id, singkatan, kepanjangan, minWeight } = body;
     
     await KategoriPelatihan.findByIdAndUpdate(id, {
-      name,
+      singkatan,
+      kepanjangan,
       min_weight: minWeight
     });
     return Response.json({ success: true });

@@ -18,7 +18,8 @@ export interface Widyaiswara {
 
 export interface KategoriPelatihan {
   id: string;
-  name: string;
+  singkatan: string;
+  kepanjangan: string;
   minWeight: number;
 }
 
@@ -99,8 +100,8 @@ interface WTMSContextType {
   deleteWidyaswara: (id: string) => Promise<{ success: boolean; error?: string }>;
   
   // Kategori CRUD
-  addKategori: (kat: Omit<KategoriPelatihan, 'id'>) => Promise<{ success: boolean; error?: string }>;
-  updateKategori: (id: string, kat: Omit<KategoriPelatihan, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  addKategori: (kat: { singkatan: string; kepanjangan: string; minWeight: number }) => Promise<{ success: boolean; error?: string }>;
+  updateKategori: (id: string, kat: { singkatan: string; kepanjangan: string; minWeight: number }) => Promise<{ success: boolean; error?: string }>;
   deleteKategori: (id: string) => Promise<{ success: boolean; error?: string }>;
   
   // Mapel CRUD
@@ -322,7 +323,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // ======================== KATEGORI CRUD ========================
-  const addKategori = async (kat: Omit<KategoriPelatihan, 'id'>): Promise<{ success: boolean; error?: string }> => {
+  const addKategori = async (kat: { singkatan: string; kepanjangan: string; minWeight: number }): Promise<{ success: boolean; error?: string }> => {
     const newKat = { ...kat, id: `kat-${Date.now()}` };
     try {
       await fetchJSON('/api/kategori-pelatihan', {
@@ -330,7 +331,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newKat),
       });
-      setKategoriList(prev => [...prev, newKat]);
+      setKategoriList(prev => [...prev, newKat as KategoriPelatihan]);
       toastApiSuccess('Kategori berhasil ditambahkan');
       return { success: true };
     } catch (err) {
@@ -339,7 +340,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateKategori = async (id: string, kat: Omit<KategoriPelatihan, 'id'>): Promise<{ success: boolean; error?: string }> => {
+  const updateKategori = async (id: string, kat: { singkatan: string; kepanjangan: string; minWeight: number }): Promise<{ success: boolean; error?: string }> => {
     const updatedKat = { ...kat, id };
     try {
       await fetchJSON('/api/kategori-pelatihan', {
@@ -347,7 +348,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedKat),
       });
-      setKategoriList(prev => prev.map(k => k.id === id ? updatedKat : k));
+      setKategoriList(prev => prev.map(k => k.id === id ? updatedKat as KategoriPelatihan : k));
       toastApiSuccess('Kategori berhasil diperbarui');
       return { success: true };
     } catch (err) {
@@ -527,7 +528,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const wis = widyaswaras.filter(w => sessionData.wiIds.includes(w.id));
     for (const wi of wis) {
       if (wi.level < category.minWeight) {
-        const errorMsg = `Hierarki Kompetensi Terbatas: ${wi.name} (Level ${wi.level}) tidak memiliki level kompetensi yang cukup untuk kategori ${category.name} (Memerlukan minimal Level ${category.minWeight}).`;
+        const errorMsg = `Hierarki Kompetensi Terbatas: ${wi.name} (Level ${wi.level}) tidak memiliki level kompetensi yang cukup untuk kategori ${category.singkatan} (Memerlukan minimal Level ${category.minWeight}).`;
         toast.error(errorMsg);
         return { success: false, error: errorMsg };
       }
@@ -564,7 +565,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const newJpRange = parseJpRange(sessionData.jpKe);
     if (newJpRange.length === 2) {
-      const jpCollision = sessions.find(s => 
+      const jpCollision = sessions.find(s =>
         s.batchId === sessionData.batchId &&
         s.date === sessionData.date &&
         isJpOverlapping(newJpRange, parseJpRange(s.jpKe))
@@ -577,9 +578,9 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    const wiCollision = sessions.find(s => 
-      s.wiIds.some(id => sessionData.wiIds.includes(id)) && 
-      s.date === sessionData.date && 
+    const wiCollision = sessions.find(s =>
+      s.wiIds.some(id => sessionData.wiIds.includes(id)) &&
+      s.date === sessionData.date &&
       (
         (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
         (sessionData.endTime > s.startTime && sessionData.endTime <= s.endTime) ||
@@ -600,7 +601,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
-      const locationClash = sessions.find(s => 
+      const locationClash = sessions.find(s =>
         s.format === 'Klasikal' &&
         s.lokasiId === sessionData.lokasiId &&
         s.date === sessionData.date &&
@@ -658,7 +659,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const wis = widyaswaras.filter(w => sessionData.wiIds.includes(w.id));
     for (const wi of wis) {
       if (wi.level < category.minWeight) {
-        const errorMsg = `Hierarki Kompetensi Terbatas: ${wi.name} (Level ${wi.level}) tidak memiliki level kompetensi yang cukup untuk kategori ${category.name} (Memerlukan minimal Level ${category.minWeight}).`;
+        const errorMsg = `Hierarki Kompetensi Terbatas: ${wi.name} (Level ${wi.level}) tidak memiliki level kompetensi yang cukup untuk kategori ${category.singkatan} (Memerlukan minimal Level ${category.minWeight}).`;
         toast.error(errorMsg);
         return { success: false, error: errorMsg };
       }

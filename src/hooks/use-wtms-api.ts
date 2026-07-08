@@ -53,7 +53,7 @@ export function usePelatihan() {
 
     return {
       ...batch,
-      categoryName: category ? category.name : 'Unknown',
+      categoryName: category ? category.singkatan : 'Unknown',
       totalJpScheduled,
       sessionCount: batchSessions.length
     };

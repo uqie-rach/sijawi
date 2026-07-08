@@ -67,7 +67,7 @@ export function MasterTabs({
   // State to track password visibility for each Widyaiswara in the list
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
 
-  const [katForm, setKatForm] = useState({ name: '', minWeight: '3' });
+  const [katForm, setKatForm] = useState({ singkatan: '', kepanjangan: '', minWeight: '3' });
   const [editingKatId, setEditingKatId] = useState<string | null>(null);
 
   const [mapelForm, setMapelForm] = useState({ name: '', kategoriId: '', jpTotal: '4' });
@@ -99,7 +99,10 @@ export function MasterTabs({
       if (savedWiDraft && !editingWiId) setWiForm(JSON.parse(savedWiDraft));
 
       const savedKatDraft = localStorage.getItem('draft_katForm');
-      if (savedKatDraft && !editingKatId) setKatForm(JSON.parse(savedKatDraft));
+      if (savedKatDraft && !editingKatId) {
+        const parsed = JSON.parse(savedKatDraft);
+        setKatForm({ singkatan: parsed.singkatan || '', kepanjangan: parsed.kepanjangan || '', minWeight: parsed.minWeight || '3' });
+      }
 
       const savedMapelDraft = localStorage.getItem('draft_mapelForm');
       if (savedMapelDraft && !editingMapelId) setMapelForm(JSON.parse(savedMapelDraft));
@@ -344,7 +347,8 @@ export function MasterTabs({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="pl-6">Nama Kategori</TableHead>
+                    <TableHead className="pl-6">Singkatan</TableHead>
+                    <TableHead>Kepanjangan</TableHead>
                     <TableHead>Min. Bobot Kompetensi</TableHead>
                     <TableHead className="pr-6 text-right">Aksi</TableHead>
                   </TableRow>
@@ -352,18 +356,19 @@ export function MasterTabs({
                 <TableBody>
                   {activeKats.map(k => (
                     <TableRow key={k.id}>
-                      <TableCell className="font-semibold pl-6">{k.name}</TableCell>
+                      <TableCell className="font-semibold pl-6">{k.singkatan}</TableCell>
+                      <TableCell className="text-slate-600 text-sm">{k.kepanjangan}</TableCell>
                       <TableCell>
                         <Badge className="bg-sky-100 text-sky-800 border-sky-200">
                           Level {k.minWeight} atau lebih tinggi
                         </Badge>
                       </TableCell>
                       <TableCell className="pr-6 text-right space-x-2">
-                        <Button size="sm" variant="ghost" onClick={() => { setEditingKatId(k.id); setKatForm({ name: k.name, minWeight: String(k.min_weight) }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="ghost" onClick={() => { setEditingKatId(k.id); setKatForm({ singkatan: k.singkatan, kepanjangan: k.kepanjangan, minWeight: String(k.minWeight) }); }} className="text-blue-600"><Edit className="h-4 w-4" /></Button>
                         <Button size="sm" variant="ghost" onClick={() => {
                           triggerConfirmation(
                             "Hapus Kategori",
-                            `Apakah Anda yakin ingin menghapus kategori ${k.name} secara permanen?`,
+                            `Apakah Anda yakin ingin menghapus kategori ${k.singkatan} secara permanen?`,
                             () => deleteKategori(k.id)
                           );
                         }} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
@@ -380,12 +385,12 @@ export function MasterTabs({
             <form onSubmit={(e) => {
               e.preventDefault();
               const performSave = () => {
-                if (editingKatId) updateKategori(editingKatId, { name: katForm.name, minWeight: parseInt(katForm.minWeight) });
+                if (editingKatId) updateKategori(editingKatId, { singkatan: katForm.singkatan, kepanjangan: katForm.kepanjangan, minWeight: parseInt(katForm.minWeight) });
                 else {
-                  addKategori({ name: katForm.name, minWeight: parseInt(katForm.minWeight) });
+                  addKategori({ singkatan: katForm.singkatan, kepanjangan: katForm.kepanjangan, minWeight: parseInt(katForm.minWeight) });
                   localStorage.removeItem('draft_katForm');
                 }
-                setKatForm({ name: '', minWeight: '3' });
+                setKatForm({ singkatan: '', kepanjangan: '', minWeight: '3' });
                 setEditingKatId(null);
               };
 
@@ -396,8 +401,12 @@ export function MasterTabs({
               }
             }} className="space-y-4">
               <div className="space-y-1">
-                <Label>Nama Kategori</Label>
-                <Input value={katForm.name} onChange={e => updateKatForm({ name: e.target.value })} required />
+                <Label>Singkatan</Label>
+                <Input value={katForm.singkatan} onChange={e => updateKatForm({ singkatan: e.target.value })} placeholder="PKN" required />
+              </div>
+              <div className="space-y-1">
+                <Label>Kepanjangan</Label>
+                <Input value={katForm.kepanjangan} onChange={e => updateKatForm({ kepanjangan: e.target.value })} placeholder="Pelatihan Kepemimpinan Nasional" required />
               </div>
               <div className="space-y-1">
                 <Label>Bobot Kompetensi Minimum</Label>
@@ -437,7 +446,7 @@ export function MasterTabs({
                     return (
                       <TableRow key={m.id}>
                         <TableCell className="font-semibold pl-6">{m.name}</TableCell>
-                        <TableCell>{cat ? cat.name.split(' ')[0] : 'Tidak Diketahui'}</TableCell>
+                        <TableCell>{cat ? cat.singkatan : 'Tidak Diketahui'}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{m.jpTotal} JP</Badge>
                         </TableCell>
@@ -489,7 +498,7 @@ export function MasterTabs({
                   <SelectTrigger><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
                   <SelectContent className="bg-white">
                     {activeKats.map(k => (
-                      <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
+                      <SelectItem key={k.id} value={k.id}>{k.singkatan} - {k.kepanjangan}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -598,7 +607,7 @@ export function MasterTabs({
                     return (
                       <TableRow key={b.id}>
                         <TableCell className="font-semibold pl-6">{b.name}</TableCell>
-                        <TableCell>{cat ? cat.name.split(' ')[0] : 'Tidak Diketahui'}</TableCell>
+                        <TableCell>{cat ? cat.singkatan : 'Tidak Diketahui'}</TableCell>
                         <TableCell>
                           <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">{b.pola}</Badge>
                         </TableCell>
@@ -651,7 +660,7 @@ export function MasterTabs({
                   <SelectTrigger><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
                   <SelectContent className="bg-white">
                     {activeKats.map(k => (
-                      <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
+                      <SelectItem key={k.id} value={k.id}>{k.singkatan} - {k.kepanjangan}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

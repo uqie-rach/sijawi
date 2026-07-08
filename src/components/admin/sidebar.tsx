@@ -39,6 +39,18 @@ export function Sidebar() {
     }
   }, []);
 
+  // Listen for external collapse toggle (e.g. from SchedulingWorkspaceClient)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && typeof detail.collapsed === 'boolean') {
+        setIsCollapsed(detail.collapsed);
+      }
+    };
+    window.addEventListener('sidebar:toggle', handler);
+    return () => window.removeEventListener('sidebar:toggle', handler);
+  }, []);
+
   const toggleCollapse = () => {
     const nextState = !isCollapsed;
     setIsCollapsed(nextState);

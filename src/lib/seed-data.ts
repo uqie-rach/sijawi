@@ -4,11 +4,11 @@
 // ---------------------------------------------------------------------------
 
 export const kategoriPelatihan = [
-  { _id: 'kat-pkn', name: 'PKN (Pelatihan Kepemimpinan Nasional)', min_weight: 5 },
-  { _id: 'kat-pka', name: 'PKA (Pelatihan Kepemimpinan Administrator)', min_weight: 4 },
-  { _id: 'kat-pkp', name: 'PKP (Pelatihan Kepemimpinan Pengawas)', min_weight: 3 },
-  { _id: 'kat-latsar', name: 'Latsar (Pelatihan Dasar CPNS)', min_weight: 2 },
-  { _id: 'kat-pppk', name: 'PPPK (Pelatihan PPPK)', min_weight: 1 },
+  { _id: 'kat-pkn', singkatan: 'PKN', kepanjangan: 'Pelatihan Kepemimpinan Nasional', min_weight: 5 },
+  { _id: 'kat-pka', singkatan: 'PKA', kepanjangan: 'Pelatihan Kepemimpinan Administrator', min_weight: 4 },
+  { _id: 'kat-pkp', singkatan: 'PKP', kepanjangan: 'Pelatihan Kepemimpinan Pengawas', min_weight: 3 },
+  { _id: 'kat-latsar', singkatan: 'Latsar', kepanjangan: 'Pelatihan Dasar CPNS', min_weight: 2 },
+  { _id: 'kat-pppk', singkatan: 'PPPK', kepanjangan: 'Pelatihan PPPK', min_weight: 1 },
 ];
 
 export const widyaswaras = [
@@ -107,12 +107,6 @@ export const batches = [
 
 // ---------------------------------------------------------------------------
 // Scheduled sessions — balanced across batches, no time/room/WI conflicts.
-// WI availability logic:
-//   PKN (min_weight=5) → only wi-bpsdm-institutional (level 5)
-//   PKA (min_weight=4) → wi-bpsdm-institutional (5), wi-farid (4)
-//   PKP (min_weight=3) → wi-qurrota, wi-anung, wi-farid, wi-mahariska, wi-randy (level 3+)
-//   Latsar (min_weight=2) → all except maybe level 1 (all level 3+)
-//   PPPK (min_weight=1) → everyone
 // ---------------------------------------------------------------------------
 export const sessions = [
   // ===================== PKN / APBD =====================

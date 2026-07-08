@@ -11,15 +11,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Calendar, Layers, MapPin, ArrowUpRight } from 'lucide-react';
 import { SchedulingWorkspaceClient } from '@/components/admin/scheduling-workspace-client';
+import { MiniPieChart } from '@/components/admin/scheduling/mini-pie-chart';
+import { YearFilterSelect } from '@/components/admin/scheduling/year-filter-select';
+import { formatDateId } from '@/lib/utils';
 import { BRANDING } from '@/lib/config';
+import { BatchListPagination } from './batch-list-pagination';
 
 interface BatchListItem {
   id: string;
   name: string;
-  categoryName: string;
+  categorySingkatan: string;
+  categoryKepanjangan: string;
   pola: string;
   startDate: string;
   endDate: string;
@@ -27,6 +32,12 @@ interface BatchListItem {
   totalJpScheduled: number;
   distinctLocations: string[];
 }
+
+const POLA_TOOLTIPS: Record<string, string> = {
+  'APBD': 'Anggaran Pendapatan dan Belanja Daerah',
+  'Kontribusi': 'Dana Kontribusi Peserta',
+  'Kemitraan': 'Kerjasama Kemitraan Daerah',
+};
 
 async function getSchedulingIndexData() {
   try {
@@ -64,7 +75,8 @@ async function getSchedulingIndexData() {
       return {
         id: b._id,
         name: b.name,
-        categoryName: cat ? cat.name : 'Kategori Tidak Diketahui',
+        categorySingkatan: cat ? cat.singkatan : '?',
+        categoryKepanjangan: cat ? cat.kepanjangan : 'Kategori Tidak Diketahui',
         pola: b.pola,
         startDate: b.start_date,
         endDate: b.end_date,
@@ -83,7 +95,7 @@ async function getSchedulingIndexData() {
         id: s._id,
         batchId: s.batch_id,
         mapelId: s.mapel_id,
-        wiIds: s.wi_ids || [], // array of strings
+        wiIds: s.wi_ids || [],
         date: s.date,
         startTime: s.start_time,
         endTime: s.end_time,
@@ -100,56 +112,113 @@ async function getSchedulingIndexData() {
   }
 }
 
-export default async function SchedulingIndexPage() {
+export default async function SchedulingIndexPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string; page?: string }>;
+}) {
   const data = await getSchedulingIndexData();
+  const params = await searchParams;
+
+  // Year filter
+  const availableYears = Array.from(
+    new Set(data.allBatches.map(b => new Date(b.startDate).getFullYear().toString()))
+  ).sort((a, b) => Number(b) - Number(a));
+
+  const currentYear = new Date().getFullYear().toString();
+  const selectedYear = params.year && availableYears.includes(params.year) ? params.year : (availableYears[0] || currentYear);
+
+  const filteredBatches = selectedYear
+    ? data.batchesList.filter(b => new Date(b.startDate).getFullYear().toString() === selectedYear)
+    : data.batchesList;
+
+  // Pagination
+  const page = parseInt(params.page || '1');
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredBatches.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const paginatedBatches = filteredBatches.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
     <div className="space-y-8">
       {/* Batch Listing Panel */}
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-          <CardTitle className="text-lg font-bold text-blue-900">Pilih Angkatan Pelatihan untuk Dijadwalkan</CardTitle>
-          <CardDescription>Lihat kemajuan penjadwalan saat ini dan masuk ke ruang kerja lini masa angkatan tertentu.</CardDescription>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle className="text-lg font-bold text-blue-900">Pilih Angkatan Pelatihan untuk Dijadwalkan</CardTitle>
+              <CardDescription>Lihat kemajuan penjadwalan saat ini dan masuk ke ruang kerja lini masa angkatan tertentu.</CardDescription>
+            </div>
+            <YearFilterSelect availableYears={availableYears} selectedYear={selectedYear} />
+          </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50/40">
-                <TableHead className="pl-6 font-semibold">Nama Angkatan Pelatihan</TableHead>
-                <TableHead className="font-semibold">Kategori & Pola</TableHead>
-                <TableHead className="font-semibold">Periode Pelaksanaan</TableHead>
-                <TableHead className="font-semibold">Lokasi Terkunci</TableHead>
-                <TableHead className="font-semibold">Progres Alokasi JP</TableHead>
-                <TableHead className="pr-6 text-right font-semibold">Ruang Kerja</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.batchesList.map((b) => {
-                const percentage = Math.min((b.totalJpScheduled / b.totalJpRequired) * 100, 100);
-                return (
+          <TooltipProvider>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50/40">
+                  <TableHead className="pl-6 font-semibold">
+                    <div className="flex items-center gap-1.5">
+                      <Layers className="h-3.5 w-3.5 text-slate-400" />
+                      Nama Angkatan Pelatihan
+                    </div>
+                  </TableHead>
+                  <TableHead className="font-semibold">
+                    <div className="flex items-center gap-1.5">
+                      Kategori & Pola
+                    </div>
+                  </TableHead>
+                  <TableHead className="font-semibold">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                      Periode Pelaksanaan
+                    </div>
+                  </TableHead>
+                  <TableHead className="font-semibold">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                      Lokasi Terkunci
+                    </div>
+                  </TableHead>
+                  <TableHead className="font-semibold">Progres Alokasi JP</TableHead>
+                  <TableHead className="pr-6 text-right font-semibold">Ruang Kerja</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedBatches.map((b) => (
                   <TableRow key={b.id} className="hover:bg-slate-50/50 transition-colors">
                     <TableCell className="font-bold text-slate-900 pl-6">
-                      <div className="flex items-center gap-2">
-                        <Layers className="h-4 w-4 text-slate-400" />
-                        {b.name}
-                      </div>
+                      {b.name}
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <p className="text-xs text-slate-600 font-medium">{b.categoryName}</p>
-                        <Badge className={`font-semibold text-[10px] ${
-                          b.pola === 'APBD' ? 'bg-blue-50 text-blue-900 border-blue-200' :
-                          b.pola === 'Kontribusi' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                          'bg-sky-50 text-sky-700 border-sky-200'
-                        }`}>
-                          {b.pola}
-                        </Badge>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-xs text-slate-600 font-medium cursor-help">{b.categorySingkatan}</p>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-800 text-white text-xs px-2 py-1">
+                            {b.categoryKepanjangan}
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge className={`font-semibold text-[10px] cursor-help ${
+                              b.pola === 'APBD' ? 'bg-blue-50 text-blue-900 border-blue-200' :
+                              b.pola === 'Kontribusi' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              'bg-sky-50 text-sky-700 border-sky-200'
+                            }`}>
+                              {b.pola}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-800 text-white text-xs px-2 py-1">
+                            {POLA_TOOLTIPS[b.pola] || b.pola}
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-xs text-slate-600 flex items-center gap-1.5 font-medium">
-                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                        {b.startDate} s/d {b.endDate}
+                      <div className="text-xs text-slate-600 font-medium">
+                        {formatDateId(b.startDate)} s/d {formatDateId(b.endDate)}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -157,7 +226,6 @@ export default async function SchedulingIndexPage() {
                         {b.distinctLocations.length > 0 ? (
                           b.distinctLocations.map((loc, idx) => (
                             <Badge key={idx} variant="outline" className="bg-slate-50 text-slate-600 text-[10px] border-slate-200">
-                              <MapPin className="h-2.5 w-2.5 mr-0.5 text-slate-400" />
                               {loc}
                             </Badge>
                           ))
@@ -166,13 +234,13 @@ export default async function SchedulingIndexPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="w-[200px]">
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-blue-900">{b.totalJpScheduled} / {b.totalJpRequired} JP</span>
-                          <span className="text-slate-500">{Math.round(percentage)}%</span>
+                    <TableCell className="w-[140px]">
+                      <div className="flex items-center gap-3">
+                        <MiniPieChart scheduled={b.totalJpScheduled} total={b.totalJpRequired} size={48} />
+                        <div className="text-xs">
+                          <span className="font-semibold text-blue-900">{b.totalJpScheduled}/{b.totalJpRequired}</span>
+                          <span className="text-slate-400 ml-0.5">JP</span>
                         </div>
-                        <Progress value={percentage} className="h-1.5 bg-slate-100" />
                       </div>
                     </TableCell>
                     <TableCell className="pr-6 text-right">
@@ -184,10 +252,19 @@ export default async function SchedulingIndexPage() {
                       </Link>
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          </TooltipProvider>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <BatchListPagination
+              currentPage={safePage}
+              totalPages={totalPages}
+              selectedYear={selectedYear}
+            />
+          )}
         </CardContent>
       </Card>
 

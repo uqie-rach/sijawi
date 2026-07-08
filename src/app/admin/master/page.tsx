@@ -12,7 +12,7 @@ async function getMasterData() {
   try {
     await connectToDatabase();
     const wis = await Widyaiswara.find().sort({ name: 1 });
-    const kats = await KategoriPelatihan.find().sort({ name: 1 });
+    const kats = await KategoriPelatihan.find().sort({ singkatan: 1 });
     const mapels = await MataPelatihan.find().sort({ name: 1 });
     const lokasis = await Lokasi.find().sort({ name: 1 });
     const batches = await Pelatihan.find().sort({ start_date: -1 });
@@ -29,7 +29,7 @@ async function getMasterData() {
         levelLabel: w.level_label,
         password: w.password_plain || 'wi123'
       })),
-      kats: kats.map(k => ({ id: k._id, name: k.name, minWeight: Number(k.min_weight) })),
+      kats: kats.map(k => ({ id: k._id, singkatan: k.singkatan, kepanjangan: k.kepanjangan, minWeight: Number(k.min_weight) })),
       mapels: mapels.map(m => ({ id: m._id, name: m.name, kategoriId: m.kategori_id, jpTotal: Number(m.jp_total) })),
       lokasis: lokasis.map(l => ({ id: l._id, name: l.name })),
       batches: batches.map(b => ({ id: b._id, name: b.name, kategoriId: b.kategori_id, pola: b.pola, startDate: b.start_date, endDate: b.end_date })),

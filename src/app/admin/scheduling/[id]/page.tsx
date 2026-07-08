@@ -8,6 +8,7 @@ import Lokasi from '@/models/Lokasi';
 import JadwalSesi from '@/models/JadwalSesi';
 import { Calendar } from 'lucide-react';
 import { SchedulingWorkspaceClient } from '@/components/admin/scheduling-workspace-client';
+import { formatDateId } from '@/lib/utils';
 import { BRANDING } from '@/lib/config';
 
 async function getBatchWorkspaceDetails(id: string) {
@@ -31,7 +32,7 @@ async function getBatchWorkspaceDetails(id: string) {
         id: s._id,
         batchId: s.batch_id,
         mapelId: s.mapel_id,
-        wiId: s.wi_id,
+        wiIds: s.wi_ids || [],
         date: s.date,
         startTime: s.start_time,
         endTime: s.end_time,
@@ -69,7 +70,7 @@ export default async function BatchWorkspacePage({
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 flex items-center gap-2 text-blue-900 text-sm font-semibold shrink-0">
           <Calendar className="h-4 w-4 text-blue-900" />
-          Periode: {data.batch.startDate} s/d {data.batch.endDate}
+          Periode: {formatDateId(data.batch.startDate)} s/d {formatDateId(data.batch.endDate)}
         </div>
       </div>
 
