@@ -152,7 +152,7 @@ export function JpSlotSelector({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-3 mt-2">
+      <div className="flex items-center gap-3 mt-2 flex-wrap">
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded border border-slate-300 bg-white" />
           <span className="text-[9px] text-slate-500">Tersedia</span>
@@ -166,6 +166,11 @@ export function JpSlotSelector({
           <span className="text-[9px] text-slate-500">Dipilih</span>
         </div>
       </div>
+
+      {/* Helper text */}
+      <p className="text-[9px] text-slate-400 italic mt-1.5">
+        Klik angka JP pertama, lalu klik JP terakhir untuk memilih rentang.
+      </p>
     </div>
   );
 }
