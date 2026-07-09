@@ -1,4 +1,3 @@
-<style>
 /* Vertical slide-in-up animation for timeline day transitions */
 @keyframes slide-in-up {
   0% {
@@ -31,6 +30,5 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background-color: #2563eb; /* blue-600 */
+  background-color: #2563eb;
 }
-</style>
