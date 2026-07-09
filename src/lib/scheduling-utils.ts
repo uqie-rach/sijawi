@@ -1,6 +1,19 @@
 import type { Session } from '@/context/wtms-context';
 
 /**
+ * Cek apakah dua rentang waktu overlap.
+ * Format time: "HH:MM" (24h).
+ */
+export function timesOverlap(
+  aStart: string,
+  aEnd: string,
+  bStart: string,
+  bEnd: string
+): boolean {
+  return aStart < bEnd && aEnd > bStart;
+}
+
+/**
  * Deteksi bentrok lokasi: mengecek apakah lokasi tertentu sudah terpakai
  * pada rentang waktu yang sama di tanggal yang sama oleh sesi lain.
  */
@@ -20,11 +33,7 @@ export function isLocationClashed(
       s.format === 'Klasikal' &&
       s.lokasiId === lokId &&
       s.date === formData.date &&
-      (
-        (formData.startTime >= s.startTime && formData.startTime < s.endTime) ||
-        (formData.endTime > s.startTime && formData.endTime <= s.endTime) ||
-        (formData.startTime <= s.startTime && formData.endTime >= s.endTime)
-      )
+      timesOverlap(formData.startTime, formData.endTime, s.startTime, s.endTime)
   );
 }
 

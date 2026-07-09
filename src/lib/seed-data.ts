@@ -106,196 +106,227 @@ export const batches = [
 ];
 
 // ---------------------------------------------------------------------------
-// Scheduled sessions — balanced across batches, no time/room/WI conflicts.
+// Scheduled sessions — conflict-free across all batches.
+// Rules:
+//  - JP ranges non-overlapping per mapel in the same batch
+//  - No parallel same-mapel sessions (same date + overlapping time)
+//  - JP chronological order (lower JP must be scheduled earlier)
+//  - No WI time clashes (same WI, same date, overlapping time)
+//  - No location clashes (same location, same date, overlapping time)
 // ---------------------------------------------------------------------------
 export const sessions = [
   // ===================== PKN / APBD =====================
+  // mapel-pkn-1 (6 JP): 3 sessions × 2 JP
   {
     _id: 'sess-pkn-1', batch_id: 'batch-pkn-apbd', mapel_id: 'mapel-pkn-1',
-    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-01',
+    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-02',
     start_time: '08:00', end_time: '09:30', format: 'Klasikal' as const,
     lokasi_id: 'lok-aula', jp_ke: '1-2', jp_count: 2,
   },
   {
     _id: 'sess-pkn-2', batch_id: 'batch-pkn-apbd', mapel_id: 'mapel-pkn-1',
-    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-03',
+    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-04',
     start_time: '08:00', end_time: '09:30', format: 'Klasikal' as const,
-    lokasi_id: 'lok-aula', jp_ke: '1-2', jp_count: 2,
+    lokasi_id: 'lok-aula', jp_ke: '3-4', jp_count: 2,
   },
   {
     _id: 'sess-pkn-3', batch_id: 'batch-pkn-apbd', mapel_id: 'mapel-pkn-1',
-    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-05',
+    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-06',
     start_time: '08:00', end_time: '09:30', format: 'Virtual' as const,
-    lokasi_id: null, jp_ke: '1-2', jp_count: 2,
+    lokasi_id: null, jp_ke: '5-6', jp_count: 2,
   },
+  // mapel-pkn-2 (4 JP): 1 session
   {
     _id: 'sess-pkn-4', batch_id: 'batch-pkn-apbd', mapel_id: 'mapel-pkn-2',
-    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-10',
+    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-11',
     start_time: '08:00', end_time: '11:00', format: 'Klasikal' as const,
     lokasi_id: 'lok-aula', jp_ke: '1-4', jp_count: 4,
   },
+  // mapel-pkn-3 (6 JP): 2 sessions (4 + 2)
   {
     _id: 'sess-pkn-5', batch_id: 'batch-pkn-apbd', mapel_id: 'mapel-pkn-3',
-    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-17',
+    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-18',
     start_time: '08:00', end_time: '11:00', format: 'Klasikal' as const,
     lokasi_id: 'lok-aula', jp_ke: '1-4', jp_count: 4,
   },
   {
     _id: 'sess-pkn-6', batch_id: 'batch-pkn-apbd', mapel_id: 'mapel-pkn-3',
-    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-19',
+    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-20',
     start_time: '08:00', end_time: '09:30', format: 'Virtual' as const,
-    lokasi_id: null, jp_ke: '1-2', jp_count: 2,
+    lokasi_id: null, jp_ke: '5-6', jp_count: 2,
   },
 
   // ===================== PKA / APBD =====================
+  // mapel-pka-1 (4 JP): 1 session
   {
     _id: 'sess-pka-1', batch_id: 'batch-pka-apbd', mapel_id: 'mapel-pka-1',
-    wi_ids: ['wi-farid'], date: '2026-02-15',
+    wi_ids: ['wi-farid'], date: '2026-02-17',
     start_time: '08:00', end_time: '11:00', format: 'Klasikal' as const,
     lokasi_id: 'lok-kelas-a', jp_ke: '1-4', jp_count: 4,
   },
+  // mapel-pka-2 (6 JP): 2 sessions (2 + 4)
   {
     _id: 'sess-pka-2', batch_id: 'batch-pka-apbd', mapel_id: 'mapel-pka-2',
-    wi_ids: ['wi-farid', 'wi-bpsdm-institutional'], date: '2026-02-18',
+    wi_ids: ['wi-farid'], date: '2026-02-19',
     start_time: '08:00', end_time: '09:30', format: 'Klasikal' as const,
     lokasi_id: 'lok-kelas-a', jp_ke: '1-2', jp_count: 2,
   },
   {
     _id: 'sess-pka-3', batch_id: 'batch-pka-apbd', mapel_id: 'mapel-pka-2',
-    wi_ids: ['wi-farid'], date: '2026-02-20',
+    wi_ids: ['wi-farid'], date: '2026-02-24',
     start_time: '08:00', end_time: '11:00', format: 'Virtual' as const,
-    lokasi_id: null, jp_ke: '1-4', jp_count: 4,
+    lokasi_id: null, jp_ke: '3-6', jp_count: 4,
   },
+  // mapel-pka-3 (4 JP): 1 session
   {
     _id: 'sess-pka-4', batch_id: 'batch-pka-apbd', mapel_id: 'mapel-pka-3',
-    wi_ids: ['wi-farid'], date: '2026-02-25',
+    wi_ids: ['wi-farid'], date: '2026-02-26',
     start_time: '08:00', end_time: '11:00', format: 'Klasikal' as const,
     lokasi_id: 'lok-kelas-a', jp_ke: '1-4', jp_count: 4,
   },
 
   // ===================== PKP / Kontribusi =====================
+  // mapel-pkp-1 (4 JP): 1 session
   {
     _id: 'sess-pkp-1', batch_id: 'batch-pkp-kontribusi', mapel_id: 'mapel-pkp-1',
-    wi_ids: ['wi-qurrota', 'wi-anung'], date: '2026-03-01',
+    wi_ids: ['wi-qurrota', 'wi-anung'], date: '2026-03-02',
     start_time: '08:00', end_time: '11:00', format: 'Klasikal' as const,
     lokasi_id: 'lok-kelas-b', jp_ke: '1-4', jp_count: 4,
   },
+  // mapel-pkp-2 (6 JP): 2 sessions (2 + 4)
   {
     _id: 'sess-pkp-2', batch_id: 'batch-pkp-kontribusi', mapel_id: 'mapel-pkp-2',
-    wi_ids: ['wi-qurrota', 'wi-randy'], date: '2026-03-03',
+    wi_ids: ['wi-qurrota', 'wi-randy'], date: '2026-03-04',
     start_time: '08:00', end_time: '09:30', format: 'Klasikal' as const,
     lokasi_id: 'lok-kelas-b', jp_ke: '1-2', jp_count: 2,
   },
   {
     _id: 'sess-pkp-3', batch_id: 'batch-pkp-kontribusi', mapel_id: 'mapel-pkp-2',
-    wi_ids: ['wi-mahariska', 'wi-anung'], date: '2026-03-05',
+    wi_ids: ['wi-randy', 'wi-mahariska'], date: '2026-03-06',
     start_time: '08:00', end_time: '11:00', format: 'Virtual' as const,
-    lokasi_id: null, jp_ke: '1-4', jp_count: 4,
+    lokasi_id: null, jp_ke: '3-6', jp_count: 4,
   },
+  // mapel-pkp-3 (4 JP): 1 session
   {
     _id: 'sess-pkp-4', batch_id: 'batch-pkp-kontribusi', mapel_id: 'mapel-pkp-3',
-    wi_ids: ['wi-randy'], date: '2026-03-10',
+    wi_ids: ['wi-randy'], date: '2026-03-11',
     start_time: '08:00', end_time: '11:00', format: 'Klasikal' as const,
     lokasi_id: 'lok-kelas-b', jp_ke: '1-4', jp_count: 4,
   },
 
   // ===================== Latsar / Kontribusi =====================
+  // mapel-latsar-1 (2 JP): 1 session
   {
     _id: 'sess-latsar-1', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-1',
-    wi_ids: ['wi-bpsdm-institutional'], date: '2026-01-31',
-    start_time: '09:00', end_time: '10:30', format: 'Klasikal' as const,
+    wi_ids: ['wi-bpsdm-institutional'], date: '2026-02-01',
+    start_time: '08:00', end_time: '09:30', format: 'Klasikal' as const,
     lokasi_id: 'lok-bpsdm-surabaya', jp_ke: '1-2', jp_count: 2,
   },
+  // mapel-latsar-2 (3 JP): 1 session
   {
     _id: 'sess-latsar-2', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-2',
-    wi_ids: ['wi-qurrota'], date: '2026-01-31',
-    start_time: '14:45', end_time: '17:00', format: 'Klasikal' as const,
-    lokasi_id: 'lok-bpsdm-surabaya', jp_ke: '3-5', jp_count: 3,
+    wi_ids: ['wi-qurrota'], date: '2026-02-01',
+    start_time: '13:00', end_time: '15:15', format: 'Klasikal' as const,
+    lokasi_id: 'lok-bpsdm-surabaya', jp_ke: '1-3', jp_count: 3,
   },
+  // mapel-latsar-3 (10 JP): 4 sessions (2 + 3 + 3 + 2)
   {
     _id: 'sess-latsar-3', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-3',
     wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
-    date: '2026-02-02', start_time: '08:00', end_time: '09:30',
+    date: '2026-02-03', start_time: '08:00', end_time: '09:30',
     format: 'Virtual' as const, lokasi_id: null, jp_ke: '1-2', jp_count: 2,
   },
   {
-    _id: 'sess-latsar-4', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-4',
-    wi_ids: ['wi-farid'], date: '2026-02-02',
-    start_time: '09:30', end_time: '11:00', format: 'Klasikal' as const,
-    lokasi_id: 'lok-bpsdm-surabaya', jp_ke: '3-4', jp_count: 2,
+    _id: 'sess-latsar-4', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-3',
+    wi_ids: ['wi-qurrota', 'wi-anung', 'wi-mahariska'],
+    date: '2026-02-05', start_time: '13:00', end_time: '15:15',
+    format: 'Virtual' as const, lokasi_id: null, jp_ke: '3-5', jp_count: 3,
   },
   {
     _id: 'sess-latsar-5', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-3',
-    wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
-    date: '2026-02-04', start_time: '13:00', end_time: '15:15',
-    format: 'Virtual' as const, lokasi_id: null, jp_ke: '1-3', jp_count: 3,
+    wi_ids: ['wi-qurrota', 'wi-anung', 'wi-mahariska'],
+    date: '2026-02-10', start_time: '08:00', end_time: '10:15',
+    format: 'Klasikal' as const, lokasi_id: 'lok-bpsdm-surabaya', jp_ke: '6-8', jp_count: 3,
   },
   {
-    _id: 'sess-latsar-6', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-5',
-    wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
-    date: '2026-02-05', start_time: '08:00', end_time: '09:30',
-    format: 'Virtual' as const, lokasi_id: null, jp_ke: '1-2', jp_count: 2,
+    _id: 'sess-latsar-6', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-3',
+    wi_ids: ['wi-qurrota', 'wi-anung', 'wi-mahariska'],
+    date: '2026-02-12', start_time: '08:00', end_time: '09:30',
+    format: 'Klasikal' as const, lokasi_id: 'lok-bpsdm-surabaya', jp_ke: '9-10', jp_count: 2,
+  },
+  // mapel-latsar-4 (2 JP): 1 session
+  {
+    _id: 'sess-latsar-7', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-4',
+    wi_ids: ['wi-farid'], date: '2026-02-13',
+    start_time: '08:00', end_time: '09:30', format: 'Klasikal' as const,
+    lokasi_id: 'lok-bpsdm-surabaya', jp_ke: '1-2', jp_count: 2,
+  },
+  // mapel-latsar-5 (10 JP): 4 sessions (3 + 3 + 2 + 2)
+  {
+    _id: 'sess-latsar-8', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-5',
+    wi_ids: ['wi-qurrota', 'wi-randy'], date: '2026-02-17',
+    start_time: '13:00', end_time: '15:15', format: 'Virtual' as const,
+    lokasi_id: null, jp_ke: '1-3', jp_count: 3,
   },
   {
-    _id: 'sess-latsar-7', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-5',
-    wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
-    date: '2026-02-10', start_time: '13:00', end_time: '15:15',
-    format: 'Virtual' as const, lokasi_id: null, jp_ke: '1-3', jp_count: 3,
+    _id: 'sess-latsar-9', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-5',
+    wi_ids: ['wi-randy', 'wi-mahariska'], date: '2026-02-24',
+    start_time: '08:00', end_time: '10:15', format: 'Klasikal' as const,
+    lokasi_id: 'lok-bpsdm-surabaya', jp_ke: '4-6', jp_count: 3,
   },
   {
-    _id: 'sess-latsar-8', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-6',
-    wi_ids: ['wi-randy'], date: '2026-02-13',
-    start_time: '08:00', end_time: '11:45', format: 'Virtual' as const,
-    lokasi_id: null, jp_ke: '1-5', jp_count: 5,
-  },
-  {
-    _id: 'sess-latsar-9', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-3',
-    wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
-    date: '2026-02-16', start_time: '08:00', end_time: '09:30',
-    format: 'Klasikal' as const, lokasi_id: 'lok-bpsdm-surabaya', jp_ke: '1-2', jp_count: 2,
-  },
-  {
-    _id: 'sess-latsar-10', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-3',
-    wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
-    date: '2026-02-18', start_time: '08:00', end_time: '10:15',
-    format: 'Klasikal' as const, lokasi_id: 'lok-bpsdm-surabaya', jp_ke: '1-3', jp_count: 3,
+    _id: 'sess-latsar-10', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-5',
+    wi_ids: ['wi-randy'], date: '2026-03-03',
+    start_time: '08:00', end_time: '09:30', format: 'Virtual' as const,
+    lokasi_id: null, jp_ke: '7-8', jp_count: 2,
   },
   {
     _id: 'sess-latsar-11', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-5',
-    wi_ids: ['wi-qurrota', 'wi-anung', 'wi-farid', 'wi-mahariska'],
-    date: '2026-02-23', start_time: '08:00', end_time: '11:45',
-    format: 'Virtual' as const, lokasi_id: null, jp_ke: '1-5', jp_count: 5,
+    wi_ids: ['wi-randy', 'wi-anung'], date: '2026-03-10',
+    start_time: '13:00', end_time: '14:30', format: 'Virtual' as const,
+    lokasi_id: null, jp_ke: '9-10', jp_count: 2,
+  },
+  // mapel-latsar-6 (5 JP): 1 session
+  {
+    _id: 'sess-latsar-12', batch_id: 'batch-latsar-kontribusi', mapel_id: 'mapel-latsar-6',
+    wi_ids: ['wi-farid', 'wi-mahariska'], date: '2026-02-25',
+    start_time: '08:00', end_time: '11:45', format: 'Virtual' as const,
+    lokasi_id: null, jp_ke: '1-5', jp_count: 5,
   },
 
   // ===================== PPPK / Kemitraan =====================
+  // mapel-pppk-1 (2 JP): 1 session
   {
     _id: 'sess-pppk-1', batch_id: 'batch-pppk-kemitraan', mapel_id: 'mapel-pppk-1',
-    wi_ids: ['wi-randy', 'wi-mahariska'], date: '2026-03-15',
+    wi_ids: ['wi-randy', 'wi-mahariska'], date: '2026-03-17',
     start_time: '08:00', end_time: '09:30', format: 'Klasikal' as const,
     lokasi_id: 'lok-kelas-c', jp_ke: '1-2', jp_count: 2,
   },
+  // mapel-pppk-2 (4 JP): 1 session
   {
     _id: 'sess-pppk-2', batch_id: 'batch-pppk-kemitraan', mapel_id: 'mapel-pppk-2',
-    wi_ids: ['wi-mahariska'], date: '2026-03-17',
+    wi_ids: ['wi-mahariska'], date: '2026-03-19',
     start_time: '08:00', end_time: '11:00', format: 'Klasikal' as const,
     lokasi_id: 'lok-kelas-c', jp_ke: '1-4', jp_count: 4,
   },
+  // mapel-pppk-3 (4 JP): 1 session
   {
     _id: 'sess-pppk-3', batch_id: 'batch-pppk-kemitraan', mapel_id: 'mapel-pppk-3',
-    wi_ids: ['wi-randy'], date: '2026-03-20',
+    wi_ids: ['wi-randy'], date: '2026-03-24',
     start_time: '08:00', end_time: '11:00', format: 'Virtual' as const,
     lokasi_id: null, jp_ke: '1-4', jp_count: 4,
   },
+  // mapel-pppk-4 (6 JP): 2 sessions (4 + 2)
   {
     _id: 'sess-pppk-4', batch_id: 'batch-pppk-kemitraan', mapel_id: 'mapel-pppk-4',
-    wi_ids: ['wi-qurrota', 'wi-anung'], date: '2026-03-24',
+    wi_ids: ['wi-qurrota', 'wi-anung'], date: '2026-03-26',
     start_time: '08:00', end_time: '11:00', format: 'Klasikal' as const,
     lokasi_id: 'lok-kelas-c', jp_ke: '1-4', jp_count: 4,
   },
   {
     _id: 'sess-pppk-5', batch_id: 'batch-pppk-kemitraan', mapel_id: 'mapel-pppk-4',
-    wi_ids: ['wi-anung'], date: '2026-03-26',
+    wi_ids: ['wi-anung'], date: '2026-03-31',
     start_time: '08:00', end_time: '09:30', format: 'Asinkron' as const,
-    lokasi_id: null, jp_ke: '1-2', jp_count: 2,
+    lokasi_id: null, jp_ke: '5-6', jp_count: 2,
   },
 ];

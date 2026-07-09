@@ -18,11 +18,15 @@ export interface JpRange {
 function parseJpRange(jpKe: string): JpRange | null {
   if (!jpKe) return null;
   const parts = jpKe.split('-');
-  if (parts.length !== 2) return null;
-  const start = parseInt(parts[0]);
-  const end = parseInt(parts[1]);
-  if (isNaN(start) || isNaN(end) || start > end) return null;
-  return { start, end };
+  if (parts.length === 2) {
+    const start = parseInt(parts[0]);
+    const end = parseInt(parts[1]);
+    if (isNaN(start) || isNaN(end) || start > end) return null;
+    return { start, end };
+  }
+  const single = parseInt(jpKe);
+  if (!isNaN(single)) return { start: single, end: single };
+  return null;
 }
 
 export function getAllocatedJpRanges(

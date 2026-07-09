@@ -23,15 +23,164 @@ function getSessionYear(sessionDate: string): number {
 function parseJpRange(jpKe: string): { start: number; end: number } | null {
   if (!jpKe) return null;
   const parts = jpKe.split('-');
-  if (parts.length !== 2) return null;
-  const start = parseInt(parts[0]);
-  const end = parseInt(parts[1]);
-  if (isNaN(start) || isNaN(end) || start > end) return null;
-  return { start, end };
+  if (parts.length === 2) {
+    const start = parseInt(parts[0]);
+    const end = parseInt(parts[1]);
+    if (isNaN(start) || isNaN(end) || start > end) return null;
+    return { start, end };
+  }
+  const single = parseInt(jpKe);
+  if (!isNaN(single)) return { start: single, end: single };
+  return null;
+}
+
+function timesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
+  return aStart < bEnd && aEnd > bStart;
 }
 
 function rangesOverlap(a: { start: number; end: number }, b: { start: number; end: number }): boolean {
   return a.start <= b.end && a.end >= b.start;
+}
+
+interface SessionData {
+  batchId: string;
+  mapelId: string;
+  wiIds: string[];
+  date: string;
+  startTime: string;
+  endTime: string;
+  format: string;
+  lokasiId?: string;
+  jpKe: string;
+  jpCount: number;
+}
+
+async function validateSession(
+  data: SessionData,
+  excludeId?: string
+): Promise<{ error: string; status: number } | null> {
+  const { batchId, mapelId, wiIds, date, startTime, endTime, format, lokasiId, jpKe } = data;
+  const excludeFilter = excludeId ? { _id: { $ne: excludeId } } : {};
+
+  // 1. JP overlap validation (same batch + mapel)
+  const newRange = parseJpRange(jpKe);
+  if (newRange) {
+    const existingJpSessions = await JadwalSesi.find({
+      batch_id: batchId,
+      mapel_id: mapelId,
+      ...excludeFilter,
+    });
+    for (const s of existingJpSessions) {
+      const existingRange = parseJpRange(s.jp_ke);
+      if (existingRange && rangesOverlap(newRange, existingRange)) {
+        return {
+          error: `Rentang JP ${jpKe} tumpang tindih dengan sesi yang sudah ada (JP ${s.jp_ke}).`,
+          status: 409,
+        };
+      }
+    }
+  }
+
+  // 2. Same-mapel parallel time validation
+  const parallelMapelSessions = await JadwalSesi.find({
+    batch_id: batchId,
+    mapel_id: mapelId,
+    date,
+    ...excludeFilter,
+  });
+  for (const s of parallelMapelSessions) {
+    if (timesOverlap(startTime, endTime, s.start_time, s.end_time)) {
+      return {
+        error: `Mata pelatihan ini sudah memiliki sesi pada jam ${s.start_time}-${s.end_time} di tanggal yang sama.`,
+        status: 409,
+      };
+    }
+  }
+
+  // 3. WI time clash validation
+  if (wiIds && wiIds.length > 0) {
+    const wiSessions = await JadwalSesi.find({
+      date,
+      wi_ids: { $in: wiIds },
+      ...excludeFilter,
+    });
+    for (const s of wiSessions) {
+      if (timesOverlap(startTime, endTime, s.start_time, s.end_time)) {
+        // Find which WI is clashing
+        const clashingWiIds = (s.wi_ids || []).filter((id: string) => wiIds.includes(id));
+        const wis = await Widyaiswara.find({ _id: { $in: clashingWiIds } });
+        const wiNames = wis.map((w: any) => w.name).join(', ');
+        return {
+          error: `Widyaiswara ${wiNames} sudah memiliki sesi pada jam ${s.start_time}-${s.end_time} di tanggal ${date}.`,
+          status: 409,
+        };
+      }
+    }
+  }
+
+  // 4. Lokasi clash validation (Klasikal only)
+  if (format === 'Klasikal' && lokasiId) {
+    const lokasiSessions = await JadwalSesi.find({
+      date,
+      lokasi_id: lokasiId,
+      format: 'Klasikal',
+      ...excludeFilter,
+    });
+    for (const s of lokasiSessions) {
+      if (timesOverlap(startTime, endTime, s.start_time, s.end_time)) {
+        return {
+          error: `Lokasi sudah digunakan oleh sesi lain pada jam ${s.start_time}-${s.end_time} di tanggal ${date}.`,
+          status: 409,
+        };
+      }
+    }
+  }
+
+  // 5. JP chronological order validation
+  if (newRange) {
+    // Get all sessions for this mapel+batch, including the current one if updating
+    const allMapelSessions = await JadwalSesi.find({
+      batch_id: batchId,
+      mapel_id: mapelId,
+      ...excludeFilter,
+    }).lean();
+
+    // Build combined list: existing sessions + the new/updated session
+    const combined = allMapelSessions.map((s: any) => ({
+      date: s.date,
+      start_time: s.start_time,
+      jpStart: parseJpRange(s.jp_ke)?.start ?? 999,
+      jpEnd: parseJpRange(s.jp_ke)?.end ?? 999,
+      jpKe: s.jp_ke,
+    }));
+
+    // Add the new/updated session
+    combined.push({
+      date,
+      start_time: startTime,
+      jpStart: newRange.start,
+      jpEnd: newRange.end,
+      jpKe,
+    });
+
+    // Sort by date ASC, then start_time ASC
+    combined.sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return a.start_time.localeCompare(b.start_time);
+    });
+
+    // Verify JP starts are non-decreasing
+    for (let i = 1; i < combined.length; i++) {
+      if (combined[i - 1].jpStart > combined[i].jpStart) {
+        return {
+          error: `Urutan JP tidak kronologis: JP ${combined[i - 1].jpKe} (${combined[i - 1].date}) dijadwalkan sebelum JP ${combined[i].jpKe} (${combined[i].date}), tetapi nomor JP lebih besar.`,
+          status: 409,
+        };
+      }
+    }
+  }
+
+  return null;
 }
 
 const currentYear = new Date().getFullYear();
@@ -134,23 +283,12 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Data tahun sebelumnya tidak dapat diubah.' }, { status: 403 });
     }
 
-    // JP overlap validation
-    const newRange = parseJpRange(jpKe);
-    if (newRange && batchId && mapelId) {
-      const existingSessions = await JadwalSesi.find({
-        batch_id: batchId,
-        mapel_id: mapelId,
-      });
-
-      for (const s of existingSessions) {
-        const existingRange = parseJpRange(s.jp_ke);
-        if (existingRange && rangesOverlap(newRange, existingRange)) {
-          return Response.json(
-            { error: `Rentang JP ${jpKe} tumpang tindih dengan sesi yang sudah ada (JP ${s.jp_ke}).` },
-            { status: 409 }
-          );
-        }
-      }
+    // Run all validations
+    const validationError = await validateSession({
+      batchId, mapelId, wiIds, date, startTime, endTime, format, lokasiId, jpKe, jpCount,
+    });
+    if (validationError) {
+      return Response.json({ error: validationError.error }, { status: validationError.status });
     }
 
     const newSession = new JadwalSesi({
@@ -188,24 +326,12 @@ export async function PUT(request: Request) {
       return Response.json({ error: 'Data tahun sebelumnya tidak dapat diubah.' }, { status: 403 });
     }
 
-    // JP overlap validation (exclude current session)
-    const newRange = parseJpRange(jpKe);
-    if (newRange && batchId && mapelId) {
-      const existingSessions = await JadwalSesi.find({
-        batch_id: batchId,
-        mapel_id: mapelId,
-        _id: { $ne: id },
-      });
-
-      for (const s of existingSessions) {
-        const existingRange = parseJpRange(s.jp_ke);
-        if (existingRange && rangesOverlap(newRange, existingRange)) {
-          return Response.json(
-            { error: `Rentang JP ${jpKe} tumpang tindih dengan sesi yang sudah ada (JP ${s.jp_ke}).` },
-            { status: 409 }
-          );
-        }
-      }
+    // Run all validations (exclude current session)
+    const validationError = await validateSession({
+      batchId, mapelId, wiIds, date, startTime, endTime, format, lokasiId, jpKe, jpCount,
+    }, id);
+    if (validationError) {
+      return Response.json({ error: validationError.error }, { status: validationError.status });
     }
 
     await JadwalSesi.findByIdAndUpdate(id, {
