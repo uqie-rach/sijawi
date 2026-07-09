@@ -12,11 +12,15 @@ interface JpSlotSelectorProps {
 function parseJpRange(jpKe: string): { start: number; end: number } | null {
   if (!jpKe) return null;
   const parts = jpKe.split('-');
-  if (parts.length !== 2) return null;
-  const start = parseInt(parts[0]);
-  const end = parseInt(parts[1]);
-  if (isNaN(start) || isNaN(end) || start > end) return null;
-  return { start, end };
+  if (parts.length === 2) {
+    const start = parseInt(parts[0]);
+    const end = parseInt(parts[1]);
+    if (isNaN(start) || isNaN(end) || start > end) return null;
+    return { start, end };
+  }
+  const single = parseInt(jpKe);
+  if (!isNaN(single)) return { start: single, end: single };
+  return null;
 }
 
 function isNumberAllocated(n: number, ranges: Array<{ start: number; end: number }>): boolean {
@@ -30,7 +34,6 @@ function isRangeBlocked(
   editingRange: { start: number; end: number } | null
 ): boolean {
   for (let i = from; i <= to; i++) {
-    // Skip checking against the currently-editing session's own range
     if (editingRange && i >= editingRange.start && i <= editingRange.end) continue;
     if (isNumberAllocated(i, ranges)) return true;
   }
@@ -43,70 +46,79 @@ export function JpSlotSelector({
   value,
   onChange,
 }: JpSlotSelectorProps) {
-  const [rangeStart, setRangeStart] = useState<number | null>(null);
+  const [selectionStart, setSelectionStart] = useState<number | null>(null);
   const [hoverEnd, setHoverEnd] = useState<number | null>(null);
 
   const currentRange = useMemo(() => parseJpRange(value), [value]);
 
-  const handleChipClick = useCallback(
+  const commitSelection = useCallback(
+    (from: number, to: number) => {
+      if (isRangeBlocked(from, to, allocatedRanges, currentRange)) return;
+      const jpCount = to - from + 1;
+      if (jpCount === 1) {
+        onChange(`${from}`, 1);
+      } else {
+        onChange(`${from}-${to}`, jpCount);
+      }
+    },
+    [allocatedRanges, currentRange, onChange]
+  );
+
+  const handleChipMouseDown = useCallback(
     (num: number) => {
-      // Ignore clicks on allocated chips (unless it's the currently editing session's range)
-      if (isNumberAllocated(num, allocatedRanges) && !(currentRange && num >= currentRange.start && num <= currentRange.end)) {
+      // Ignore clicks on allocated chips (unless editing that chip's range)
+      const isPartOfCurrent = currentRange && num >= currentRange.start && num <= currentRange.end;
+      if (!isPartOfCurrent && isNumberAllocated(num, allocatedRanges)) return;
+
+      // Start a new selection
+      setSelectionStart(num);
+      setHoverEnd(num);
+    },
+    [allocatedRanges, currentRange]
+  );
+
+  const handleChipMouseUp = useCallback(
+    (num: number) => {
+      if (selectionStart === null) return;
+
+      const from = Math.min(selectionStart, num);
+      const to = Math.max(selectionStart, num);
+
+      // If the range is blocked, reset and treat as new start
+      if (isRangeBlocked(from, to, allocatedRanges, currentRange)) {
+        setSelectionStart(num);
+        setHoverEnd(num);
         return;
       }
 
-      if (rangeStart === null) {
-        // First click: set range start
-        setRangeStart(num);
-        setHoverEnd(num);
-      } else if (num === rangeStart) {
-        // Click same chip: reset
-        setRangeStart(null);
-        setHoverEnd(null);
-        onChange('', 0);
-      } else {
-        // Second click: set range
-        const from = Math.min(rangeStart, num);
-        const to = Math.max(rangeStart, num);
-
-        // Check if range crosses any allocated chip
-        if (isRangeBlocked(from, to, allocatedRanges, currentRange)) {
-          // Reset and try again
-          setRangeStart(num);
-          setHoverEnd(num);
-          return;
-        }
-
-        const jpCount = to - from + 1;
-        onChange(`${from}-${to}`, jpCount);
-        setRangeStart(null);
-        setHoverEnd(null);
-      }
+      // Commit the selection
+      commitSelection(from, to);
+      setSelectionStart(null);
+      setHoverEnd(null);
     },
-    [rangeStart, allocatedRanges, currentRange, onChange]
+    [selectionStart, allocatedRanges, currentRange, commitSelection]
   );
 
   const handleChipEnter = useCallback(
     (num: number) => {
-      if (rangeStart !== null) {
-        // Check if preview range would cross allocated chips
-        const from = Math.min(rangeStart, num);
-        const to = Math.max(rangeStart, num);
+      if (selectionStart !== null) {
+        const from = Math.min(selectionStart, num);
+        const to = Math.max(selectionStart, num);
         if (!isRangeBlocked(from, to, allocatedRanges, currentRange)) {
           setHoverEnd(num);
         }
       }
     },
-    [rangeStart, allocatedRanges, currentRange]
+    [selectionStart, allocatedRanges, currentRange]
   );
 
   const previewRange = useMemo(() => {
-    if (rangeStart === null || hoverEnd === null) return null;
+    if (selectionStart === null || hoverEnd === null) return null;
     return {
-      start: Math.min(rangeStart, hoverEnd),
-      end: Math.max(rangeStart, hoverEnd),
+      start: Math.min(selectionStart, hoverEnd),
+      end: Math.max(selectionStart, hoverEnd),
     };
-  }, [rangeStart, hoverEnd]);
+  }, [selectionStart, hoverEnd]);
 
   const numbers = Array.from({ length: jpTotal }, (_, i) => i + 1);
 
@@ -123,7 +135,7 @@ export function JpSlotSelector({
           const isCurrentlyEditing = currentRange && num >= currentRange.start && num <= currentRange.end;
           const isAllocated = !isCurrentlyEditing && isNumberAllocated(num, allocatedRanges);
           const isInPreview = previewRange && num >= previewRange.start && num <= previewRange.end;
-          const isRangeStart = rangeStart === num;
+          const isSelectionStart = selectionStart === num;
 
           let chipClass = 'border border-slate-300 bg-white text-slate-700 hover:border-blue-400 hover:bg-blue-50 cursor-pointer';
 
@@ -131,7 +143,8 @@ export function JpSlotSelector({
             chipClass = 'border border-slate-200 bg-slate-200 text-slate-400 cursor-not-allowed';
           } else if (isInPreview || isCurrentlyEditing) {
             chipClass = 'border border-blue-500 bg-blue-600 text-white cursor-pointer';
-          } else if (isRangeStart) {
+          } else if (isSelectionStart && previewRange === null) {
+            // Single click (not dragging) — show as selected
             chipClass = 'border-2 border-blue-500 bg-blue-100 text-blue-700 cursor-pointer';
           }
 
@@ -140,7 +153,8 @@ export function JpSlotSelector({
               key={num}
               type="button"
               disabled={isAllocated}
-              onClick={() => handleChipClick(num)}
+              onMouseDown={() => handleChipMouseDown(num)}
+              onMouseUp={() => handleChipMouseUp(num)}
               onMouseEnter={() => handleChipEnter(num)}
               className={`w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-bold transition-all duration-100 ${chipClass}`}
               title={isAllocated ? `JP ${num} sudah dialokasikan` : `JP ${num}`}
@@ -169,7 +183,7 @@ export function JpSlotSelector({
 
       {/* Helper text */}
       <p className="text-[9px] text-slate-400 italic mt-1.5">
-        Klik angka JP pertama, lalu klik JP terakhir untuk memilih rentang.
+        Klik dan tahan pada JP awal, lalu lepaskan di JP akhir untuk memilih rentang. Klik + lepas di JP yang sama untuk memilih 1 JP.
       </p>
     </div>
   );
