@@ -383,6 +383,7 @@ export function SchedulingWorkspaceClient({
           selectedDayDate={calendarNav.selectedDayDate}
           setSelectedDayDate={calendarNav.setSelectedDayDate}
           daySessions={daySessions}
+          allVisibleSessions={batchSessions}
           activeMapels={activeMapels}
           activeWis={activeWis}
           activeLokasis={activeLokasis}

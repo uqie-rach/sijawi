@@ -12,6 +12,7 @@ interface DayViewProps {
   selectedDayDate: string;
   setSelectedDayDate: (date: string) => void;
   daySessions: Session[];
+  allVisibleSessions: Session[];
   activeMapels: Mapel[];
   activeWis: Widyaiswara[];
   activeLokasis: Lokasi[];
@@ -21,7 +22,7 @@ interface DayViewProps {
 }
 
 export function DayView({
-  selectedDayDate, setSelectedDayDate, daySessions,
+  selectedDayDate, setSelectedDayDate, daySessions, allVisibleSessions,
   activeMapels, activeWis, activeLokasis, activeBatch,
   onEditSession, onDeleteSession,
 }: DayViewProps) {
@@ -42,6 +43,15 @@ export function DayView({
     const d = new Date(activeBatch.endDate);
     return isNaN(d.getTime()) ? undefined : d;
   }, [activeBatch?.endDate]);
+
+  // Build set of dates that have at least one session
+  const sessionDates = useMemo(() => {
+    const set = new Set<string>();
+    allVisibleSessions.forEach(s => {
+      if (s.date) set.add(s.date);
+    });
+    return set;
+  }, [allVisibleSessions]);
 
   const handleCalendarSelect = (date: Date | undefined) => {
     if (date) {
@@ -73,6 +83,12 @@ export function DayView({
                 toDate={toDate}
                 initialFocus
                 className="p-2"
+                modifiers={{
+                  hasSession: (date) => sessionDates.has(formatDateString(date)),
+                }}
+                modifiersClassNames={{
+                  hasSession: 'rdp-day_has_session',
+                }}
               />
             </div>
           </div>
