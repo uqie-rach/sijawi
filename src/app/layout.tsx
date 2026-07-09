@@ -2,17 +2,12 @@ import { Toaster } from "@/components/ui/sonner";
 import { WTMSProvider } from "@/context/wtms-context";
 import type { Metadata } from "next";
 import { Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Mona_Sans } from "next/font/google";
 import "./globals.css";
 import { BRANDING } from "@/lib/config";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const monaSans = Mona_Sans({
+  variable: "--font-mona-sans",
   subsets: ["latin"],
 });
 
@@ -35,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-slate-700 min-h-screen`}
+        className={`${monaSans.variable} font-sans antialiased bg-white text-slate-700 min-h-screen`}
       >
         <WTMSProvider>
           {children}
