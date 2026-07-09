@@ -1,5 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dominant clean white background */
+    --background: 0 0% 100%;
+    /* #FFFFFF */
+    --foreground: 224 71% 23%;
+    /* #1E3A8A (Tailwind blue-900) */
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 23%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 23%;
+
+    /* Primary: Standard Tailwind Blue 600 (#2563EB) */
+    --primary: 221 83% 53%;
+    /* #2563EB */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Standard Tailwind Blue 50 (#EFF6FF) */
+    --secondary: 221 100% 97%;
+    /* #EFF6FF */
+    --secondary-foreground: 221 83% 53%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    /* Accent: Subtle Slate Gray (Default Shadcn/UI) */
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.75rem;
+
+    /* Admin Sidebar background set to white */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 27%;
+    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 221 100% 97%;
+    --sidebar-accent-foreground: 221 83% 53%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 221 83% 53%;
+  }
+
+  .dark {
+    --background: 224 71% 10%;
+    --foreground: 210 40% 98%;
+
+    --card: 224 71% 10%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 224 71% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 224 71% 15%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 224 71% 15%;
+    --muted-foreground: 215 16% 65%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --border: 224 71% 15%;
+    --input: 224 71% 15%;
+    --ring: 221 83% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
 /* Vertical slide-in-up animation for timeline day transitions */
-@keyframes slide-in-up {
+/* @keyframes slide-in-up {
   0% {
     opacity: 0;
     transform: translateY(16px);
@@ -14,7 +107,27 @@
   .animate-slide-in-up {
     animation: slide-in-up 0.3s ease-out;
   }
+} */
+
+/* Vertical slide-in-up animation for timeline day transitions */
+@keyframes slide-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
+
+@layer utilities {
+  .animate-slide-in-up {
+    animation: slide-in-up 0.3s ease-out;
+  }
+}
+
 
 /* Session dot indicator for react-day-picker (mini calendar in timeline view) */
 .rdp-day_has_session {
