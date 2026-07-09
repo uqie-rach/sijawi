@@ -85,3 +85,21 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+/* Vertical slide-in-up animation for timeline day transitions */
+@keyframes slide-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer utilities {
+  .animate-slide-in-up {
+    animation: slide-in-up 0.3s ease-out;
+  }
+}
