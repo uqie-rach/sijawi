@@ -1,44 +1,45 @@
-# Stage 1: Install dependencies only when needed
-FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
-
-# Install dependencies based on the preferred package manager
-COPY package.json ./
-RUN npm install
-
-# Stage 2: Rebuild the source code only when needed
+# ---- Build Stage ----
 FROM node:20-alpine AS builder
+
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+
+# Copy package files
+COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN npm install --legacy-peer-deps
+
+# Copy all source files
 COPY . .
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Disable telemetry during the build.
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=production
-
+# Build Next.js app
 RUN npm run build
 
-# Stage 3: Runner
+# ---- Production Stage ----
 FROM node:20-alpine AS runner
+
 WORKDIR /app
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
+# Copy necessary files from builder
+COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.ts ./
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/scripts ./scripts
 
-USER nextjs
+# Make startup script executable
+COPY --from=builder /app/scripts/startup.sh ./scripts/startup.sh
+RUN chmod +x ./scripts/startup.sh
 
+# Install mongoose for healthcheck/seed script
+RUN npm install mongoose tsx --legacy-peer-deps
+
+# Expose port
 EXPOSE 3000
 
-CMD ["node_modules/.bin/next", "start"]
+# Use startup script
+CMD ["/bin/sh", "./scripts/startup.sh"]
