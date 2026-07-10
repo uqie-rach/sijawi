@@ -19,6 +19,7 @@ services:
     container_name: sijawi-redis
     ports:
       - "6379:6379"
+    command: redis-server --bind 0.0.0.0 --protected-mode no
     restart: unless-stopped
     networks:
       - sijawi-network
