@@ -1,12 +1,12 @@
 export function getWelcomeEmailHtml(
-  name: string,
-  email: string,
-  level: number,
-  plainPassword?: string,
+    name: string,
+    email: string,
+    level: number,
+    plainPassword?: string,
 ) {
-  const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`;
+    const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`;
 
-  return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
