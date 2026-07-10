@@ -76,12 +76,14 @@ export async function POST(request: Request) {
 
     await newWi.save();
 
-    // Enqueue welcome email via BullMQ (non-blocking)
+    // Enqueue welcome email via BullMQ
     enqueueEmail({
       to: email,
       subject: 'Selamat Datang di WTMS - Kredensial Akun Anda',
       html: getWelcomeEmailHtml(name, email, level, plainPassword),
       type: 'welcome',
+    }).catch((err) => {
+      console.error('[API] Failed to enqueue welcome email:', err);
     });
 
     return Response.json({ success: true });

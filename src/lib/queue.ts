@@ -8,16 +8,25 @@ export type EmailJobData = {
   type?: 'welcome' | 'general';
 };
 
-// BullMQ bundles its own ioredis, causing a TS version mismatch.
-// The instance is runtime-compatible; cast to avoid type errors.
-const emailQueue = new Queue<EmailJobData>('email-queue', {
-  connection: redis as any,
-});
+let _emailQueue: Queue<EmailJobData> | null = null;
 
-export function enqueueEmail(params: EmailJobData) {
-  // Fire-and-forget: caller does not need to await the queue.add result.
-  // .catch handles any synchronous/async errors from the add call itself.
-  (emailQueue as Queue).add('send-email', params).catch((err) => {
-    console.error('[Email Queue] Failed to enqueue email:', err);
+function getEmailQueue(): Queue<EmailJobData> {
+  if (_emailQueue) return _emailQueue;
+  _emailQueue = new Queue<EmailJobData>('email-queue', {
+    connection: redis as any,
   });
+  console.log('[Email Queue] Queue initialized, connected to Redis');
+  return _emailQueue;
+}
+
+export async function enqueueEmail(params: EmailJobData) {
+  try {
+    const queue = getEmailQueue();
+    const job = await queue.add('send-email', params);
+    console.log(`[Email Queue] Job ${job.id} enqueued: sending to ${params.to}`);
+    return job;
+  } catch (err) {
+    console.error('[Email Queue] Failed to enqueue email:', err);
+    throw err;
+  }
 }

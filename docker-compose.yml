@@ -50,10 +50,10 @@ services:
     command: pnpm run worker
     environment:
       - REDIS_URL=redis://redis:6379
-      - SMTP_HOST=${SMTP_HOST:-smtp.sumopod.com}
-      - SMTP_PORT=${SMTP_PORT:-465}
-      - SMTP_USER=${SMTP_USER:-}
-      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_HOST=smtp.sumopod.com
+      - SMTP_PORT=465
+      - SMTP_USER=cmr984ap1el52qh08yjynbrsk
+      - SMTP_PASS=IcblCdX00Ym1itPC7f6neJFnTVd2vhKD
     depends_on:
       - redis
       - mongodb
