@@ -158,9 +158,6 @@ importers:
       nodemailer:
         specifier: ^9.0.3
         version: 9.0.3
-      rate-limiter-flexible:
-        specifier: ^11.2.0
-        version: 11.2.0
       react:
         specifier: ^19.2.1
         version: 19.2.1
@@ -2509,9 +2506,6 @@ packages:
 
   randombytes@2.1.0:
     resolution: {integrity: sha512-vYl3iOX+4CKUWuxGi9Ukhie6fsqXqS9FE2Zaic4tNFD2N2QQaXOMFbuKK4QmDHC0JO6B1Zp41J0LpT0oR68amQ==}
-
-  rate-limiter-flexible@11.2.0:
-    resolution: {integrity: sha512-L0eIK+BmFMi6NcvmtEg7RSswOFKi9MMD5RhBIypFfOve+G6Jl1Xbb8qEHgK3uRzNtkOFYF0L9f7P4rSf2PnUVw==}
 
   react-aria-components@1.18.0:
     resolution: {integrity: sha512-FhRQjuDkH4WhgFv+O2sYTzK3JzdZTGpBeaqfRlfTo+DcSZzD8elJEkytHe7SDpcexVKeire8NVd7OruZHfCVoA==}
@@ -5171,8 +5165,6 @@ snapshots:
   randombytes@2.1.0:
     dependencies:
       safe-buffer: 5.2.1
-
-  rate-limiter-flexible@11.2.0: {}
 
   react-aria-components@1.18.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
     dependencies:
