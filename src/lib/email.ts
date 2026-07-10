@@ -26,10 +26,14 @@ function getTransporter(): Transporter {
       connectionTimeout: 10000,
       socketTimeout: 10000,
     });
+
+    // ⬇️ Cegah uncaughtException dari error async nodemailer
+    _transporter.on('error', (err) => {
+      console.error('[Email] Transporter error (non-fatal):', err.message);
+    });
+
     return _transporter;
   } catch {
-    // Fallback: return a noop transporter if SMTP config is broken
-    // This prevents uncaughtException crashes at module import time
     return nodemailer.createTransport({ streamTransport: true, buffer: true });
   }
 }

@@ -15,12 +15,19 @@ function getEmailQueue(): Queue<EmailJobData> {
   _emailQueue = new Queue<EmailJobData>('email-queue', {
     connection: redis as any,
   });
+
+  // ⬇️ Cegah uncaughtException dari error async BullMQ
+  _emailQueue.on('error', (err) => {
+    console.error('[Email Queue] Queue error (non-fatal):', err.message);
+  });
+
   console.log('[Email Queue] Queue initialized, connected to Redis');
   return _emailQueue;
 }
 
 export async function enqueueEmail(params: EmailJobData) {
   try {
+    console.log(params)
     const queue = getEmailQueue();
     const job = await queue.add('send-email', params);
     console.log(`[Email Queue] Job ${job.id} enqueued: sending to ${params.to}`);
