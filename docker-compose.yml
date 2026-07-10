@@ -14,16 +14,26 @@ services:
     networks:
       - sijawi-network
     healthcheck:
-      test:
-        - CMD
-        - mongosh
-        - --quiet
-        - --eval
-        - "db.adminCommand('ping')"
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: sijawi-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - sijawi-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 10s
 
   web:
     build:
@@ -34,11 +44,13 @@ services:
       - "3200:3000"
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/sijawi
+      - REDIS_URL=redis://redis:6379
       - NODE_ENV=production
-      - NEXT_PUBLIC_APP_URL=https://sijawi-staging.uqie.my.id
       - RUN_SEED=false
     depends_on:
       mongodb:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
     networks:

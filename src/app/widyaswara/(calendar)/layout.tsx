@@ -9,8 +9,18 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 import { getEvents, getUsers } from "@/calendar/requests";
 
+import type { IEvent, IUser } from "@/calendar/interfaces";
+
 export default async function Layout({ children }: { children: React.ReactNode }) {
-  const [events, users] = await Promise.all([getEvents(), getUsers()]);
+  let events: IEvent[] = [];
+  let users: IUser[] = [];
+
+  try {
+    [events, users] = await Promise.all([getEvents(), getUsers()]);
+  } catch (e) {
+    // Build-time: database unavailable, use empty arrays
+    console.warn("[Calendar Layout] Failed to fetch events/users (expected during build):", (e as Error).message);
+  }
 
   return (
     <CalendarProvider users={users} events={events}>

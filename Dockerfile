@@ -1,10 +1,16 @@
 # ---- Builder Stage ----
-FROM node:22-alpine AS builder
+FROM node:20-alpine AS builder
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
+
+# Set dummy env vars for build-time (so Next.js doesn't try to connect to DB/Redis)
+ARG MONGODB_URI
+ARG REDIS_URL
+ENV MONGODB_URI=${MONGODB_URI:-mongodb://localhost:27017/sijawi}
+ENV REDIS_URL=${REDIS_URL:-redis://localhost:6379}
 
 # Install dependencies
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -17,7 +23,7 @@ COPY . .
 RUN pnpm run build
 
 # ---- Runner Stage ----
-FROM node:22-alpine AS runner
+FROM node:20-alpine AS runner
 
 # Install pnpm for runner too (needed for pnpm run start)
 RUN corepack enable && corepack prepare pnpm@latest --activate
