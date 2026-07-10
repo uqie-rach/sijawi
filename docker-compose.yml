@@ -13,12 +13,6 @@ services:
     restart: unless-stopped
     networks:
       - sijawi-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
 
   redis:
     image: redis:7-alpine
@@ -28,12 +22,6 @@ services:
     restart: unless-stopped
     networks:
       - sijawi-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
   web:
     build:
@@ -48,10 +36,8 @@ services:
       - NODE_ENV=production
       - RUN_SEED=false
     depends_on:
-      mongodb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - mongodb
+      - redis
     restart: unless-stopped
     networks:
       - sijawi-network
@@ -68,8 +54,7 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/sijawi
     depends_on:
-      mongodb:
-        condition: service_healthy
+      - mongodb
     networks:
       - sijawi-network
     profiles:
