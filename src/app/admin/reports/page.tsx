@@ -5,6 +5,8 @@ import JadwalSesi from '@/models/JadwalSesi';
 import Pelatihan from '@/models/Pelatihan';
 import { ReportsClient } from '@/components/admin/reports-client';
 
+export const dynamic = 'force-dynamic';
+
 async function getWidyaswaraReportsData(filters: {
   q?: string;
   pola?: string;

@@ -3,6 +3,8 @@ import { connectToDatabase } from '@/lib/mongodb';
 import Widyaiswara from '@/models/Widyaiswara';
 import JadwalSesi from '@/models/JadwalSesi';
 import Pelatihan from '@/models/Pelatihan';
+
+export const dynamic = 'force-dynamic';
 import { OverviewCharts } from '@/components/admin/overview-charts';
 import { OverviewFilterBar } from '@/components/admin/overview-filter-bar';
 import { OverviewPagination } from '@/components/admin/overview-pagination';

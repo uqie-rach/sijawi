@@ -6,6 +6,8 @@ import { connectToDatabase } from '@/lib/mongodb';
 import JadwalSesi from '@/models/JadwalSesi';
 import { BRANDING } from '@/lib/config';
 
+export const dynamic = 'force-dynamic';
+
 async function checkAdminAuth() {
   const cookieStore = await cookies();
   const token = cookieStore.get('sessionToken')?.value;

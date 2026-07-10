@@ -6,6 +6,8 @@ import MataPelatihan from '@/models/MataPelatihan';
 import Widyaiswara from '@/models/Widyaiswara';
 import Lokasi from '@/models/Lokasi';
 import JadwalSesi from '@/models/JadwalSesi';
+
+export const dynamic = 'force-dynamic';
 import { Calendar } from 'lucide-react';
 import { SchedulingWorkspaceClient } from '@/components/admin/scheduling-workspace-client';
 import { formatDateId } from '@/lib/utils';

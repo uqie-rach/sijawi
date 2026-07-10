@@ -8,6 +8,8 @@ import Pelatihan from '@/models/Pelatihan';
 import { MasterTabs } from '@/components/admin/master-tabs';
 import { BRANDING } from '@/lib/config';
 
+export const dynamic = 'force-dynamic';
+
 async function getMasterData() {
   try {
     await connectToDatabase();

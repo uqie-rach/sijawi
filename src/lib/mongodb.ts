@@ -6,6 +6,11 @@ if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
 }
 
+// Deteksi Next.js build phase — jangan connect ke database saat build
+const isBuildPhase =
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.env.NEXT_PHASE === 'phase-development-build';
+
 /**
  * Global is used here to maintain a cached connection across hot reloads
  * in development. This prevents connections growing exponentially
@@ -24,6 +29,12 @@ declare global {
 let cached = global.mongooseCache || (global.mongooseCache = { conn: null, promise: null });
 
 export async function connectToDatabase() {
+  // Skip koneksi saat build (Next.js mengumpulkan page data)
+  // Caller harus handle null return value
+  if (isBuildPhase) {
+    return mongoose;
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
@@ -31,6 +42,8 @@ export async function connectToDatabase() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 10000,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
