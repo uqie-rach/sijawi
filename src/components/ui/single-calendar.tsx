@@ -10,8 +10,70 @@ import { cn } from "@/lib/utils";
 
 import type { DayPickerSingleProps } from "react-day-picker";
 
-function SingleCalendar({ className, classNames, showOutsideDays = true, selected, ...props }: DayPickerSingleProps) {
-  const [currentMonth, setCurrentMonth] = React.useState<Date | undefined>(selected instanceof Date ? selected : undefined);
+type DayIndicator = 'klasikal' | 'virtual' | 'asinkron';
+
+interface SingleCalendarProps extends DayPickerSingleProps {
+  /** Optional: returns which format indicators to show for a given date.
+   *  Used to render colored dots (blue/purple/amber) below the day number. */
+  dayIndicators?: (date: Date) => DayIndicator[];
+}
+
+function SingleCalendar({
+  className,
+  classNames,
+  showOutsideDays = true,
+  selected,
+  dayIndicators,
+  ...props
+}: SingleCalendarProps) {
+  const [currentMonth, setCurrentMonth] = React.useState<Date | undefined>(
+    selected instanceof Date ? selected : undefined,
+  );
+
+  // Custom DayButton that renders indicator dots when dayIndicators is provided
+  const customComponents = React.useMemo(() => {
+    if (!dayIndicators) return undefined;
+
+    return {
+      DayButton: ({ day, modifiers, className: btnClassName, ...buttonProps }: any) => {
+        const indicators = dayIndicators(day.date);
+        return (
+          <button
+            {...buttonProps}
+            className={cn(btnClassName, "relative")}
+          >
+            {day.date.getDate()}
+            {indicators.length > 0 && (
+              <span className="absolute bottom-[2px] left-1/2 -translate-x-1/2 flex gap-[2px]">
+                {indicators.map((fmt, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      fmt === 'klasikal' && "bg-blue-600",
+                      fmt === 'virtual' && "bg-purple-600",
+                      fmt === 'asinkron' && "bg-amber-600",
+                    )}
+                  />
+                ))}
+              </span>
+            )}
+          </button>
+        );
+      },
+    };
+  }, [dayIndicators]);
+
+  // Merge custom DayButton with default icon components
+  const mergedComponents = React.useMemo(() => ({
+    IconLeft: ({ className: iconCls, ...iconProps }: any) => (
+      <ChevronLeft className={cn("h-4 w-4", iconCls)} {...iconProps} />
+    ),
+    IconRight: ({ className: iconCls, ...iconProps }: any) => (
+      <ChevronRight className={cn("h-4 w-4", iconCls)} {...iconProps} />
+    ),
+    ...customComponents,
+  }), [customComponents]);
 
   return (
     <DayPicker
@@ -48,10 +110,7 @@ function SingleCalendar({ className, classNames, showOutsideDays = true, selecte
         day_hidden: "invisible",
         ...classNames,
       }}
-      components={{
-        IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
-        IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
-      }}
+      components={mergedComponents}
       {...props}
     />
   );

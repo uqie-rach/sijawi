@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock } from 'lucide-react';
 import { SingleCalendar } from '@/components/ui/single-calendar';
@@ -44,14 +44,42 @@ export function DayView({
     return isNaN(d.getTime()) ? undefined : d;
   }, [activeBatch?.endDate]);
 
-  // Build set of dates that have at least one session
-  const sessionDates = useMemo(() => {
+  // Build sets of dates per format category
+  const klasikalDates = useMemo(() => {
     const set = new Set<string>();
     allVisibleSessions.forEach(s => {
-      if (s.date) set.add(s.date);
+      if (s.date && s.format === 'Klasikal') set.add(s.date);
     });
     return set;
   }, [allVisibleSessions]);
+
+  const virtualDates = useMemo(() => {
+    const set = new Set<string>();
+    allVisibleSessions.forEach(s => {
+      if (s.date && s.format === 'Virtual') set.add(s.date);
+    });
+    return set;
+  }, [allVisibleSessions]);
+
+  const asinkronDates = useMemo(() => {
+    const set = new Set<string>();
+    allVisibleSessions.forEach(s => {
+      if (s.date && s.format === 'Asinkron') set.add(s.date);
+    });
+    return set;
+  }, [allVisibleSessions]);
+
+  const getDayIndicators = useCallback(
+    (date: Date) => {
+      const dateStr = formatDateString(date);
+      const indicators: Array<'klasikal' | 'virtual' | 'asinkron'> = [];
+      if (klasikalDates.has(dateStr)) indicators.push('klasikal');
+      if (virtualDates.has(dateStr)) indicators.push('virtual');
+      if (asinkronDates.has(dateStr)) indicators.push('asinkron');
+      return indicators;
+    },
+    [klasikalDates, virtualDates, asinkronDates],
+  );
 
   const handleCalendarSelect = (date: Date | undefined) => {
     if (date) {
@@ -83,12 +111,7 @@ export function DayView({
                 toDate={toDate}
                 initialFocus
                 className="p-2"
-                modifiers={{
-                  hasSession: (date) => sessionDates.has(formatDateString(date)),
-                }}
-                modifiersClassNames={{
-                  hasSession: 'rdp-day_has_session',
-                }}
+                dayIndicators={getDayIndicators}
               />
             </div>
           </div>

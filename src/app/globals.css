@@ -129,19 +129,5 @@
 }
 
 
-/* Session dot indicator for react-day-picker (mini calendar in timeline view) */
-.rdp-day_has_session {
-  position: relative;
-}
-
-.rdp-day_has_session::after {
-  content: '';
-  position: absolute;
-  bottom: 3px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background-color: #2563eb;
-}
+/* Session dot indicators are now rendered as DOM elements inside custom DayButton.
+   See src/components/ui/single-calendar.tsx (dayIndicators prop). */
