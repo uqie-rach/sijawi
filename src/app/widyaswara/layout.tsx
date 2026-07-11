@@ -1,31 +1,23 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, GraduationCap, HelpCircle } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 import { useWTMS } from "@/context/wtms-context";
 import { WidyaswaraSidebar } from "@/components/widyaswara/sidebar";
+import { WidyaswaraHeader } from "@/components/widyaswara/header";
 import { FloatingWhatsApp } from "@/components/floating-whatsapp";
 import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
 import { useOnboarding } from "@/hooks/use-onboarding";
 import { wiOnboardingSteps } from "@/lib/onboarding-steps";
-import { BRANDING } from "@/lib/config";
 import { Button } from "@/components/ui/button";
-import { Select, SelectValue, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
 
 export default function WidyaswaraLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const {
-    userRole,
-    widyaswaras,
-    selectedWiId,
-    setSelectedWiId,
-    isAuthenticated,
-  } = useWTMS();
+  const { userRole, widyaswaras, selectedWiId, isAuthenticated } = useWTMS();
 
   const onboarding = useOnboarding();
 
-  // Route guard
   useEffect(() => {
     if (!isAuthenticated || userRole !== 'wi') {
       router.push('/login');
@@ -58,65 +50,37 @@ export default function WidyaswaraLayout({ children }: { children: React.ReactNo
     <div className="min-h-screen flex flex-col md:flex-row bg-[#F5F5F5]">
       {/* Sidebar */}
       <div data-onboarding="wi-sidebar">
-        <WidyaswaraSidebar activeWiName={activeWi.name} />
+        <WidyaswaraSidebar activeWiName={`${activeWi.name}, ${activeWi.gelar}`} />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="relative bg-white border-b border-slate-200 text-slate-800 px-4 sm:px-8 py-4 shrink-0">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase mb-2 w-fit border border-blue-200 text-blue-600">
-                <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-                {BRANDING.fullName}
-              </div>
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-                Portal {BRANDING.name}
-              </h1>
-              <p className="text-xs text-slate-500 mt-1 max-w-xl">{BRANDING.tagline}</p>
-            </div>
+        <WidyaswaraHeader />
 
-            <div className="flex items-center gap-3">
-              {/* Help button to re-trigger tutorial */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleResetTutorial}
-                className="rounded-xl text-xs text-slate-500 hover:text-blue-600 hover:bg-blue-50"
-                title="Tampilkan Panduan"
-              >
-                <HelpCircle className="h-4 w-4 mr-1" />
-                Panduan
-              </Button>
-
-              {/* WI Profile Selector */}
-              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
-                <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Profil Aktif:</span>
-                <Select value={activeWi.id} onValueChange={setSelectedWiId}>
-                  <SelectTrigger className="h-8 bg-white border border-slate-200 text-slate-800 font-bold focus:ring-0 px-2.5 py-1 gap-1 text-xs rounded-lg">
-                    <SelectValue placeholder="Pilih profil" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-slate-200 text-slate-800">
-                    {widyaswaras.map(w => (
-                      <SelectItem key={w.id} value={w.id} className="hover:bg-slate-100 focus:bg-slate-100 text-xs font-semibold">
-                        {w.name}, {w.gelar}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+        {/* Main Content */}
+        <main className="flex-1 p-8 overflow-y-auto">
+          <div className="mx-auto max-w-[1280px]">
+            {children}
           </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto">
-          {children}
         </main>
       </div>
 
       {/* Floating WhatsApp */}
       <div data-onboarding="wi-whatsapp">
         <FloatingWhatsApp />
+      </div>
+
+      {/* Help Button */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleResetTutorial}
+          className="rounded-full h-10 w-10 p-0 bg-white shadow-lg border-slate-200 hover:bg-blue-50 hover:border-blue-300 transition-all"
+          title="Tampilkan Panduan"
+        >
+          <HelpCircle className="h-5 w-5 text-slate-500" />
+        </Button>
       </div>
 
       {/* Onboarding Tour */}
