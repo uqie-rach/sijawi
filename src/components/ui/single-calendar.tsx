@@ -30,21 +30,32 @@ function SingleCalendar({
     selected instanceof Date ? selected : undefined,
   );
 
-  // Custom DayButton that renders indicator dots when dayIndicators is provided
+  // Custom DayContent that renders indicator dots when dayIndicators is provided
   const customComponents = React.useMemo(() => {
     if (!dayIndicators) return undefined;
 
     return {
-      DayButton: ({ day, modifiers, className: btnClassName, ...buttonProps }: any) => {
-        const indicators = dayIndicators(day.date);
+      DayContent: ({ date, activeModifiers, displayMonth }: any) => {
+        const day = date.getDate();
+        const isToday = activeModifiers?.today;
+        const isSelected = activeModifiers?.selected;
+        const isOutside = activeModifiers?.outside;
+
+        const indicators = dayIndicators(date);
+        const showIndicators = indicators.length > 0 && !isOutside;
+
         return (
-          <button
-            {...buttonProps}
-            className={cn(btnClassName, "relative")}
-          >
-            {day.date.getDate()}
-            {indicators.length > 0 && (
-              <span className="absolute bottom-[2px] left-1/2 -translate-x-1/2 flex gap-[2px]">
+          <span className="flex flex-col items-center justify-center h-full">
+            <span className={cn(
+              "flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium",
+              isToday && !isSelected && "bg-accent text-accent-foreground",
+              isSelected && "bg-primary text-primary-foreground",
+              isOutside && "text-muted-foreground opacity-50"
+            )}>
+              {day}
+            </span>
+            {showIndicators && (
+              <span className="flex items-center justify-center gap-0.5 absolute bottom-0.5 left-1/2 -translate-x-1/2">
                 {indicators.map((fmt, i) => (
                   <span
                     key={i}
@@ -58,7 +69,7 @@ function SingleCalendar({
                 ))}
               </span>
             )}
-          </button>
+          </span>
         );
       },
     };
@@ -99,7 +110,7 @@ function SingleCalendar({
           "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md",
           "[&:has([aria-selected])]:rounded-md"
         ),
-        day: cn(buttonVariants({ variant: "ghost" }), "h-8 w-8 p-0 font-normal aria-selected:opacity-100"),
+        day: cn(buttonVariants({ variant: "ghost" }), "h-8 w-8 p-0 font-normal aria-selected:opacity-100 relative"),
         day_range_start: "day-range-start",
         day_range_end: "day-range-end",
         day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
