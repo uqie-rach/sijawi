@@ -2,6 +2,7 @@ import React from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/admin/sidebar';
+import { AdminOnboardingWrapper } from '@/components/admin/admin-onboarding-wrapper';
 import { connectToDatabase } from '@/lib/mongodb';
 import JadwalSesi from '@/models/JadwalSesi';
 import { BRANDING } from '@/lib/config';
@@ -43,7 +44,9 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#F5F5F5]">
-      <Sidebar />
+      <div data-onboarding="sidebar">
+        <Sidebar />
+      </div>
       <div className="flex-1 flex flex-col min-w-0">
         <header className="bg-white border-b border-slate-200 px-8 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
           <div>
@@ -64,9 +67,11 @@ export default async function AdminLayout({
           </div>
         </header>
         <main className="flex-1 p-8 overflow-y-auto">
-          <div className="mx-auto max-w-[1280px]">
-            {children}
-          </div>
+          <AdminOnboardingWrapper>
+            <div className="mx-auto max-w-[1280px]">
+              {children}
+            </div>
+          </AdminOnboardingWrapper>
         </main>
       </div>
     </div>

@@ -19,7 +19,7 @@ interface IProps {
 
 export function CalendarHeader({ view, events, subPath }: IProps) {
   return (
-    <div className="flex flex-col gap-4 border-b p-4 lg:flex-row lg:items-center lg:justify-between">
+    <div data-onboarding="wi-calendar-header" className="flex flex-col gap-4 border-b p-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex items-center gap-3">
         <TodayButton />
         <DateNavigator view={view} events={events} />

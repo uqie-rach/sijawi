@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
+import "goey-toast/styles.css";
 import { WTMSProvider } from "@/context/wtms-context";
 import type { Metadata } from "next";
 import { Viewport } from "next";

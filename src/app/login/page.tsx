@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { BRANDING } from "@/lib/config";
 import Image from 'next/image';
@@ -131,6 +131,36 @@ export default function LoginPage() {
                 <p>• Admin: <span className="font-mono text-blue-600 font-semibold">admin@wtms.com</span> / <span className="font-mono text-blue-600 font-semibold">admin123</span></p>
                 <p>• Widyaiswara: <span className="font-mono text-blue-600 font-semibold">wtms+wi.uqie@gmail.com</span> / <span className="font-mono text-blue-600 font-semibold">wi123</span></p>
               </div>
+
+              {process.env.NODE_ENV !== 'production' && (
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs border-blue-200 text-blue-600 hover:bg-blue-50 rounded-xl"
+                    onClick={() => {
+                      setEmail('admin@wtms.com');
+                      setPassword('admin123');
+                    }}
+                  >
+                    ⚡ Isi Admin
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs border-purple-200 text-purple-600 hover:bg-purple-50 rounded-xl"
+                    onClick={() => {
+                      const firstWiEmail = widyaswaras[0]?.email || 'wtms+wi.uqie@gmail.com';
+                      setEmail(firstWiEmail);
+                      setPassword('wi123');
+                    }}
+                  >
+                    ⚡ Isi WI
+                  </Button>
+                </div>
+              )}
             </CardContent>
             <CardFooter>
               <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 text-base shadow-lg shadow-blue-500/20 rounded-xl">

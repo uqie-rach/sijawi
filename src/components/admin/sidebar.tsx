@@ -68,8 +68,8 @@ export function Sidebar() {
   const baseNavItems = [
     { href: '/admin', label: 'Dasbor Ringkasan', icon: LayoutDashboard },
     { href: '/admin/master', label: 'Data Master', icon: Database },
-    { href: '/admin/scheduling', label: 'Penjadwalan Pelatihan', icon: CalendarDays },
-    { href: '/admin/reports', label: 'Laporan & Analisis', icon: BarChart3 },
+    { href: '/admin/scheduling', label: 'Penjadwalan Pelatihan', icon: CalendarDays, onboardingAttr: 'scheduling-nav' },
+    { href: '/admin/reports', label: 'Laporan & Analisis', icon: BarChart3, onboardingAttr: 'reports-nav' },
   ];
 
   const advancedNavItems = [
@@ -115,13 +115,14 @@ export function Sidebar() {
 
         {/* Navigation Items */}
         <nav className={`p-4 space-y-1 ${isCollapsed ? 'p-2' : ''}`}>
-          {navItems.map((item) => {
+          {navItems.map((item: any) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                data-onboarding={item.onboardingAttr || undefined}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${isCollapsed ? 'justify-center px-0 py-3' : ''
                   } ${isActive
                     ? 'bg-blue-50 text-blue-600 shadow-sm'

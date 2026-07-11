@@ -17,7 +17,7 @@ import { DayView } from '@/components/admin/scheduling/day-view';
 import { TableView } from '@/components/admin/scheduling/table-view';
 import { SessionAllocationSheet } from '@/components/admin/scheduling/session-allocation-sheet';
 import { Plus } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import type { Session } from '@/context/wtms-context';
 
 // ---------------------------------------------------------------------------

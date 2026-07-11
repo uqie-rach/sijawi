@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useWTMS } from '@/context/wtms-context';
 import { Scheduler, CalendarEvent, ViewType } from 'calendarkit-pro';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 export function SandboxScheduler() {
   const {
