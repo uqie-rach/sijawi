@@ -131,6 +131,7 @@ export function SchedulingWorkspaceClient({
     filterHook.pageSize,
     filterHook.sortField,
     filterHook.sortDirection,
+    contextSessions,
   ]);
 
   useEffect(() => {
@@ -188,7 +189,7 @@ export function SchedulingWorkspaceClient({
     setViewMode('day');
   }, [updateForm, calendarNav]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isReadOnlyYear) {
       toast.error('Data tahun sebelumnya tidak dapat diubah.');
@@ -196,43 +197,46 @@ export function SchedulingWorkspaceClient({
     }
     const targetBatchId = currentBatchSelectionId;
     if (!targetBatchId || !sessionForm.mapelId || sessionForm.wiIds.length === 0) return;
-    const performSave = () => {
-      const payload = {
-        batchId: targetBatchId,
-        mapelId: sessionForm.mapelId,
-        wiIds: sessionForm.wiIds,
-        wiId: sessionForm.wiIds[0],
-        date: sessionForm.date,
-        startTime: sessionForm.startTime,
-        endTime: sessionForm.endTime,
-        format: sessionForm.format,
-        lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
-        jpKe: sessionForm.jpKe,
-        jpCount: parseInt(sessionForm.jpCount),
-      };
+
+    const payload = {
+      batchId: targetBatchId,
+      mapelId: sessionForm.mapelId,
+      wiIds: sessionForm.wiIds,
+      wiId: sessionForm.wiIds[0],
+      date: sessionForm.date,
+      startTime: sessionForm.startTime,
+      endTime: sessionForm.endTime,
+      format: sessionForm.format,
+      lokasiId: sessionForm.format === 'Klasikal' ? sessionForm.lokasiId : undefined,
+      jpKe: sessionForm.jpKe,
+      jpCount: parseInt(sessionForm.jpCount),
+    };
+
+    const doSubmit = async () => {
       if (editingSessionId) {
-        const res = updateSession(editingSessionId, payload as any);
-        if (res.success) {
+        const result = await updateSession(editingSessionId, payload as any);
+        if (result.success) {
           setIsDialogOpen(false);
           setSheetOpen(false);
         }
       } else {
-        const res = addSession(payload as any);
-        if (res.success) {
+        const result = await addSession(payload as any);
+        if (result.success) {
           localStorage.removeItem('draft_sessionForm');
           setIsDialogOpen(false);
           setSheetOpen(false);
         }
       }
     };
+
     if (editingSessionId) {
       triggerConfirmation(
         'Konfirmasi Perubahan Jadwal',
         'Apakah Anda yakin ingin memperbarui alokasi sesi ini?',
-        performSave
+        doSubmit
       );
     } else {
-      performSave();
+      await doSubmit();
     }
   };
 
@@ -453,7 +457,9 @@ export function SchedulingWorkspaceClient({
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDialog.onConfirm}
+              onClick={() => {
+                confirmDialog.onConfirm();
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               Konfirmasi
