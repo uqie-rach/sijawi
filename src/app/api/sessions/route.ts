@@ -2,6 +2,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import JadwalSesi from '@/models/JadwalSesi';
 import Widyaiswara from '@/models/Widyaiswara';
 import { cookies } from 'next/headers';
+import { withApiProtection } from '@/lib/api-helpers';
 
 async function isAdmin() {
   try {
@@ -106,7 +107,6 @@ async function validateSession(
     });
     for (const s of wiSessions) {
       if (timesOverlap(startTime, endTime, s.start_time, s.end_time)) {
-        // Find which WI is clashing
         const clashingWiIds = (s.wi_ids || []).filter((id: string) => wiIds.includes(id));
         const wis = await Widyaiswara.find({ _id: { $in: clashingWiIds } });
         const wiNames = wis.map((w: any) => w.name).join(', ');
@@ -138,14 +138,12 @@ async function validateSession(
 
   // 5. JP chronological order validation
   if (newRange) {
-    // Get all sessions for this mapel+batch, including the current one if updating
     const allMapelSessions = await JadwalSesi.find({
       batch_id: batchId,
       mapel_id: mapelId,
       ...excludeFilter,
     }).lean();
 
-    // Build combined list: existing sessions + the new/updated session
     const combined = allMapelSessions.map((s: any) => ({
       date: s.date,
       start_time: s.start_time,
@@ -154,7 +152,6 @@ async function validateSession(
       jpKe: s.jp_ke,
     }));
 
-    // Add the new/updated session
     combined.push({
       date,
       start_time: startTime,
@@ -163,13 +160,11 @@ async function validateSession(
       jpKe,
     });
 
-    // Sort by date ASC, then start_time ASC
     combined.sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
       return a.start_time.localeCompare(b.start_time);
     });
 
-    // Verify JP starts are non-decreasing
     for (let i = 1; i < combined.length; i++) {
       if (combined[i - 1].jpStart > combined[i].jpStart) {
         return {
@@ -185,12 +180,11 @@ async function validateSession(
 
 const currentYear = new Date().getFullYear();
 
-export async function GET(request: Request) {
+export const GET = withApiProtection(async function GET(request: Request) {
   try {
     await connectToDatabase();
     const { searchParams } = new URL(request.url);
 
-    // Filters
     const yearParam = searchParams.get('year');
     const batchId = searchParams.get('batchId');
     const mapelId = searchParams.get('mapelId');
@@ -198,15 +192,12 @@ export async function GET(request: Request) {
     const format = searchParams.get('format');
     const lokasiId = searchParams.get('lokasiId');
 
-    // Pagination
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '10')));
 
-    // Sorting
     const sortField = searchParams.get('sortField') || 'date';
     const sortDirection = searchParams.get('sortDirection') === 'desc' ? -1 : 1;
 
-    // Build query
     const query: Record<string, any> = {};
 
     if (yearParam && !isNaN(Number(yearParam))) {
@@ -233,7 +224,6 @@ export async function GET(request: Request) {
       query.lokasi_id = lokasiId;
     }
 
-    // Map sort field to DB field
     const dbSortField =
       sortField === 'startTime' ? 'start_time' :
       sortField === 'jpCount' ? 'jp_count' :
@@ -267,9 +257,9 @@ export async function GET(request: Request) {
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withApiProtection(async function POST(request: Request) {
   if (!(await isAdmin())) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -278,12 +268,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { id, batchId, mapelId, wiIds, date, startTime, endTime, format, lokasiId, jpKe, jpCount } = body;
 
-    // Prevent modifications to non-current year data
     if (getSessionYear(date) !== currentYear) {
       return Response.json({ error: 'Data tahun sebelumnya tidak dapat diubah.' }, { status: 403 });
     }
 
-    // Run all validations
     const validationError = await validateSession({
       batchId, mapelId, wiIds, date, startTime, endTime, format, lokasiId, jpKe, jpCount,
     });
@@ -310,9 +298,9 @@ export async function POST(request: Request) {
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function PUT(request: Request) {
+export const PUT = withApiProtection(async function PUT(request: Request) {
   if (!(await isAdmin())) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -321,12 +309,10 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const { id, batchId, mapelId, wiIds, date, startTime, endTime, format, lokasiId, jpKe, jpCount } = body;
 
-    // Prevent modifications to non-current year data
     if (getSessionYear(date) !== currentYear) {
       return Response.json({ error: 'Data tahun sebelumnya tidak dapat diubah.' }, { status: 403 });
     }
 
-    // Run all validations (exclude current session)
     const validationError = await validateSession({
       batchId, mapelId, wiIds, date, startTime, endTime, format, lokasiId, jpKe, jpCount,
     }, id);
@@ -350,9 +336,9 @@ export async function PUT(request: Request) {
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(request: Request) {
+export const DELETE = withApiProtection(async function DELETE(request: Request) {
   if (!(await isAdmin())) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -362,7 +348,6 @@ export async function DELETE(request: Request) {
     const id = searchParams.get('id');
     if (!id) return Response.json({ error: 'ID is required' }, { status: 400 });
 
-    // Check year before deleting
     const existing = await JadwalSesi.findById(id);
     if (existing && getSessionYear(existing.date) !== currentYear) {
       return Response.json({ error: 'Data tahun sebelumnya tidak dapat diubah.' }, { status: 403 });
@@ -373,4 +358,4 @@ export async function DELETE(request: Request) {
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
   }
-}
+});

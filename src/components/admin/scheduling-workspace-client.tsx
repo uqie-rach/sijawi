@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useWTMS } from '@/context/wtms-context';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSessionForm } from '@/hooks/use-session-form';
 import { useScheduleFilters } from '@/hooks/use-schedule-filters';
@@ -20,9 +21,6 @@ import { Plus } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import type { Session } from '@/context/wtms-context';
 
-// ---------------------------------------------------------------------------
-// Public props
-// ---------------------------------------------------------------------------
 interface SchedulingWorkspaceClientProps {
   batchId?: string;
   initialBatch?: any;
@@ -33,9 +31,6 @@ interface SchedulingWorkspaceClientProps {
   allBatches: any[];
 }
 
-// ---------------------------------------------------------------------------
-// Orchestrator
-// ---------------------------------------------------------------------------
 export function SchedulingWorkspaceClient({
   batchId,
   initialBatch,
@@ -57,19 +52,14 @@ export function SchedulingWorkspaceClient({
     deleteSession,
   } = useWTMS();
 
-  // ---- View mode ---------------------------------------------------------
   const [viewMode, setViewMode] = useState<'calendar' | 'day' | 'table'>('table');
-
-  // ---- Sheet open state -------------------------------------------------
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // ---- Server-fetched table sessions ------------------------------------
   const [tableSessions, setTableSessions] = useState<Session[]>([]);
   const [tableTotal, setTableTotal] = useState(0);
   const [tableTotalPages, setTableTotalPages] = useState(1);
   const [tableLoading, setTableLoading] = useState(false);
 
-  // ---- Year filter (local for top bar) ----------------------------------
   const availableYears = useMemo(() => {
     return Array.from(
       new Set(allBatches.map((b: any) => new Date(b.startDate).getFullYear().toString()))
@@ -81,10 +71,8 @@ export function SchedulingWorkspaceClient({
 
   const isReadOnlyYear = selectedYear !== currentYear;
 
-  // ---- Filter hook (URL-driven) -----------------------------------------
   const filterHook = useScheduleFilters();
 
-  // ---- Derived data ------------------------------------------------------
   const activeBatch = batchId ? (batches.find(b => b.id === batchId) || initialBatch) : null;
   const batchStartDate = activeBatch ? new Date(activeBatch.startDate) : new Date(2026, 0, 31);
 
@@ -93,7 +81,6 @@ export function SchedulingWorkspaceClient({
   const activeLokasis = lokasiList.length ? lokasiList : initialLokasis;
   const activeSessions = contextSessions.length ? contextSessions : initialSessions;
 
-  // Filter sessions by year AND batch (for calendar/day views)
   const yearFilteredSessions = useMemo(() => {
     return activeSessions.filter((s: any) => {
       const sYear = new Date(s.date).getFullYear().toString();
@@ -105,14 +92,10 @@ export function SchedulingWorkspaceClient({
     ? yearFilteredSessions.filter((s: any) => s.batchId === batchId)
     : yearFilteredSessions;
 
-  // ---- Fetch table sessions from API ------------------------------------
   useEffect(() => {
     if (viewMode !== 'table') return;
-
     setTableLoading(true);
-
     const params = new URLSearchParams();
-    // Use selectedYear from top bar for the table
     if (selectedYear) params.set('year', selectedYear);
     if (batchId) params.set('batchId', batchId);
     if (filterHook.filters.format !== 'ALL') params.set('format', filterHook.filters.format);
@@ -123,7 +106,6 @@ export function SchedulingWorkspaceClient({
     params.set('pageSize', String(filterHook.pageSize));
     params.set('sortField', filterHook.sortField);
     params.set('sortDirection', filterHook.sortDirection);
-
     fetch(`/api/sessions?${params.toString()}`)
       .then(res => res.json())
       .then(data => {
@@ -151,7 +133,6 @@ export function SchedulingWorkspaceClient({
     filterHook.sortDirection,
   ]);
 
-  // ---- Sidebar collapse on sheet open ----------------------------------
   useEffect(() => {
     if (sheetOpen) {
       localStorage.setItem('sidebar_admin_collapsed', 'true');
@@ -162,7 +143,6 @@ export function SchedulingWorkspaceClient({
     }
   }, [sheetOpen]);
 
-  // ---- Hooks -------------------------------------------------------------
   const {
     sessionForm, editingSessionId, isDialogOpen, setIsDialogOpen,
     updateForm, openNewForm, triggerEdit,
@@ -180,7 +160,6 @@ export function SchedulingWorkspaceClient({
 
   const calendarNav = useCalendarNavigation(batchStartDate, activeBatch?.startDate);
 
-  // ---- WI Availability ---------------------------------------------------
   const wiAvailability = useWiAvailability(
     sessionForm.date,
     yearFilteredSessions,
@@ -193,7 +172,6 @@ export function SchedulingWorkspaceClient({
 
   const [availabilitySelectedWiId, setAvailabilitySelectedWiId] = useState<string | null>(null);
 
-  // ---- Confirm dialog ----------------------------------------------------
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean; title: string; description: string; onConfirm: () => void;
   }>({ open: false, title: '', description: '', onConfirm: () => {} });
@@ -202,28 +180,22 @@ export function SchedulingWorkspaceClient({
     setConfirmDialog({ open: true, title, description, onConfirm });
   };
 
-  // ---- Batch options -----------------------------------------------------
   const batchOptions = allBatches.map((b: any) => ({ value: b.id, label: b.name }));
 
-  // ---- Day click handler (from calendar) ---------------------------------
   const handleCalendarDayClick = useCallback((dateStr: string) => {
     updateForm({ date: dateStr });
     calendarNav.setSelectedDayDate(dateStr);
     setViewMode('day');
   }, [updateForm, calendarNav]);
 
-  // ---- Submit handler ----------------------------------------------------
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (isReadOnlyYear) {
       toast.error('Data tahun sebelumnya tidak dapat diubah.');
       return;
     }
-
     const targetBatchId = currentBatchSelectionId;
     if (!targetBatchId || !sessionForm.mapelId || sessionForm.wiIds.length === 0) return;
-
     const performSave = () => {
       const payload = {
         batchId: targetBatchId,
@@ -238,7 +210,6 @@ export function SchedulingWorkspaceClient({
         jpKe: sessionForm.jpKe,
         jpCount: parseInt(sessionForm.jpCount),
       };
-
       if (editingSessionId) {
         const res = updateSession(editingSessionId, payload as any);
         if (res.success) {
@@ -254,7 +225,6 @@ export function SchedulingWorkspaceClient({
         }
       }
     };
-
     if (editingSessionId) {
       triggerConfirmation(
         'Konfirmasi Perubahan Jadwal',
@@ -266,7 +236,6 @@ export function SchedulingWorkspaceClient({
     }
   };
 
-  // ---- Delete handler ----------------------------------------------------
   const handleDeleteSession = (sessionId: string) => {
     if (isReadOnlyYear) {
       toast.error('Data tahun sebelumnya tidak dapat diubah.');
@@ -279,7 +248,6 @@ export function SchedulingWorkspaceClient({
     );
   };
 
-  // ---- Edit handler (from child components) ------------------------------
   const handleEditSession = useCallback((session: any) => {
     if (isReadOnlyYear) {
       toast.error('Data tahun sebelumnya tidak dapat diubah.');
@@ -290,13 +258,11 @@ export function SchedulingWorkspaceClient({
     setSheetOpen(true);
   }, [triggerEdit, setIsDialogOpen, isReadOnlyYear]);
 
-  // ---- Day sessions ------------------------------------------------------
   const daySessions = useMemo(
     () => batchSessions.filter((s: any) => s.date === calendarNav.selectedDayDate),
     [batchSessions, calendarNav.selectedDayDate]
   );
 
-  // ---- View WI detail from availability ----------------------------------
   const handleViewWiDetail = useCallback((wiId: string) => {
     if (availabilitySelectedWiId === wiId) {
       setAvailabilitySelectedWiId(null);
@@ -307,7 +273,6 @@ export function SchedulingWorkspaceClient({
     }
   }, [availabilitySelectedWiId, wiAvailability]);
 
-  // ---- Open new session form ---------------------------------------------
   const handleOpenNewSession = () => {
     if (isReadOnlyYear) {
       toast.error('Data tahun sebelumnya tidak dapat diubah.');
@@ -318,12 +283,11 @@ export function SchedulingWorkspaceClient({
     setSheetOpen(true);
   };
 
-  // ---- Render ------------------------------------------------------------
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border border-slate-200 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <ViewSwitcher viewMode={viewMode} onViewModeChange={setViewMode} />
 
           {/* Year Filter */}
@@ -342,6 +306,14 @@ export function SchedulingWorkspaceClient({
               </Select>
             </div>
           )}
+
+          {/* Format color legend */}
+          <div className="flex items-center gap-2 pl-4 border-l border-slate-200">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Format:</span>
+            <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[10px] font-bold">Klasikal</Badge>
+            <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] font-bold">Virtual</Badge>
+            <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[10px] font-bold">Asinkron</Badge>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -377,7 +349,6 @@ export function SchedulingWorkspaceClient({
         />
       )}
 
-      {/* Day View with Timeline */}
       {viewMode === 'day' && (
         <DayView
           selectedDayDate={calendarNav.selectedDayDate}
@@ -393,7 +364,6 @@ export function SchedulingWorkspaceClient({
         />
       )}
 
-      {/* Table View — server-driven */}
       {viewMode === 'table' && (
         <TableView
           filteredSessions={tableSessions}
@@ -415,22 +385,24 @@ export function SchedulingWorkspaceClient({
           resetAllFilters={filterHook.resetAllFilters}
         >
           {filterHook.showFilterBar && (
-            <FilterBar
-              filters={filterHook.filters}
-              onFilterChange={filterHook.handleFilterChange}
-              availableYears={availableYears}
-              activeWis={activeWis}
-              activeMapels={activeMapels}
-              activeLokasis={activeLokasis}
-              activeFilterCount={filterHook.activeFilterCount}
-              totalFiltered={tableTotal}
-              totalSessions={yearFilteredSessions.length}
-            />
+            <div className="mt-4">
+              <FilterBar
+                filters={filterHook.filters}
+                onFilterChange={filterHook.handleFilterChange}
+                availableYears={availableYears}
+                activeWis={activeWis}
+                activeMapels={activeMapels}
+                activeLokasis={activeLokasis}
+                activeFilterCount={filterHook.activeFilterCount}
+                totalFiltered={tableTotal}
+                totalSessions={yearFilteredSessions.length}
+              />
+            </div>
           )}
         </TableView>
       )}
 
-      {/* Right Sidebar: Session Allocation Sheet */}
+      {/* Session Allocation Sheet */}
       <SessionAllocationSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
@@ -462,7 +434,7 @@ export function SchedulingWorkspaceClient({
         allSessions={yearFilteredSessions}
       />
 
-      {/* Global Confirmation Dialog */}
+      {/* Confirmation Dialog */}
       <AlertDialog
         open={confirmDialog.open}
         onOpenChange={open => setConfirmDialog(prev => ({ ...prev, open }))}

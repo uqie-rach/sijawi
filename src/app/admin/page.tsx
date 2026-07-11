@@ -136,7 +136,6 @@ export default async function OverviewPage({
   const { wis, sessions, batches, batchMap } = await getOverviewData();
   const params = await searchParams;
 
-  // ---- Unfiltered data for charts ----
   const allWiData = computeWiData(wis, sessions, batchMap);
 
   const barChartData = allWiData.map((wi) => ({
@@ -154,12 +153,11 @@ export default async function OverviewPage({
   });
 
   const pieChartData = [
-    { name: 'APBD', value: totalApbd, color: '#2563eb' },
-    { name: 'Kontribusi', value: totalKontribusi, color: '#10b981' },
-    { name: 'Kemitraan', value: totalKemitraan, color: '#0ea5e9' },
+    { name: 'APBD', value: totalApbd, color: '#ef4444' },      // red-500
+    { name: 'Kontribusi', value: totalKontribusi, color: '#f97316' }, // orange-500
+    { name: 'Kemitraan', value: totalKemitraan, color: '#eab308' },   // yellow-500
   ].filter((item) => item.value > 0);
 
-  // ---- Available filter options ----
   const availableYears = Array.from(
     new Set(sessions.map((s) => String(s.date).substring(0, 4))),
   )
@@ -179,14 +177,12 @@ export default async function OverviewPage({
   const selectedPola = params.pola || 'ALL';
   const selectedWiId = params.wiId || 'ALL';
 
-  // Count active filters
   let activeFilterCount = 0;
   if (params.year && params.year !== 'ALL') activeFilterCount++;
   if (selectedMonth !== 'ALL') activeFilterCount++;
   if (selectedPola !== 'ALL') activeFilterCount++;
   if (selectedWiId !== 'ALL') activeFilterCount++;
 
-  // ---- Filtered data for table ----
   const filteredSessions = filterSessions(
     sessions.map((s: any) => s.toObject ? s.toObject() : s),
     batchMap,
@@ -198,7 +194,6 @@ export default async function OverviewPage({
 
   const filteredWiData = computeWiData(wis, filteredSessions, batchMap);
 
-  // ---- Pagination ----
   const pageSize = 10;
   const totalFiltered = filteredWiData.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
@@ -325,19 +320,19 @@ export default async function OverviewPage({
                                 style={{
                                   width: `${wi.jpCurrentMonth ? (wi.breakdown.apbd / wi.jpCurrentMonth) * 100 : 0}%`,
                                 }}
-                                className="bg-blue-600"
+                                className="bg-red-500"
                               />
                               <div
                                 style={{
                                   width: `${wi.jpCurrentMonth ? (wi.breakdown.kontribusi / wi.jpCurrentMonth) * 100 : 0}%`,
                                 }}
-                                className="bg-emerald-500"
+                                className="bg-orange-500"
                               />
                               <div
                                 style={{
                                   width: `${wi.jpCurrentMonth ? (wi.breakdown.kemitraan / wi.jpCurrentMonth) * 100 : 0}%`,
                                 }}
-                                className="bg-sky-500"
+                                className="bg-yellow-500"
                               />
                             </div>
                           </div>
@@ -348,7 +343,6 @@ export default async function OverviewPage({
                 </TableBody>
               </Table>
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <OverviewPagination currentPage={page} totalPages={totalPages} />
               )}

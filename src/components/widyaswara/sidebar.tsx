@@ -55,60 +55,64 @@ export function WidyaswaraSidebar({ activeWiName }: WidyaswaraSidebarProps) {
 
   return (
     <aside
-      className={`relative bg-white text-slate-800 flex flex-col justify-between border-r border-slate-200 shrink-0 transition-all duration-300 hidden md:flex ${
+      className={`relative bg-white text-slate-800 flex flex-col justify-between border-r border-slate-200 shrink-0 transition-all duration-300 ${
         isCollapsed ? 'w-20' : 'w-64'
       } h-screen sticky top-0`}
     >
-      <div>
-        <button
-          onClick={toggleCollapse}
-          className="absolute -right-3 top-7 bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-full p-1 shadow-sm z-50 transition-all"
-        >
-          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
-        </button>
+      {/* Toggle collapse button (always on top) */}
+      <button
+        onClick={toggleCollapse}
+        className="absolute -right-3 top-7 bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-full p-1 shadow-sm z-50 transition-all hidden md:flex"
+      >
+        {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+      </button>
 
-        <div className={`p-6 border-b border-slate-100 flex items-center gap-3 ${isCollapsed ? 'justify-center p-4' : ''}`}>
-          <div className="p-1.5 rounded-lg shrink-0">
-            <Image src="/logo.png" alt="Logo" width={32} height={32} className="" />
-          </div>
-          {!isCollapsed && (
-            <div className="animate-in fade-in duration-300">
-              <h2 className="font-black text-lg tracking-tight text-blue-600">{BRANDING.name}</h2>
-              <p className="text-[10px] text-slate-500 font-medium">Portal Widyaiswara</p>
-            </div>
-          )}
+      {/* Branding header */}
+      <div className={`p-6 border-b border-slate-100 flex items-center gap-3 ${isCollapsed ? 'justify-center p-4' : ''}`}>
+        <div className="p-1.5 rounded-lg shrink-0">
+          <Image src="/logo.png" alt="Logo" width={32} height={32} className="" />
         </div>
-
-        <nav className={`p-4 space-y-1 ${isCollapsed ? 'p-2' : ''}`}>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <button
-                key={item.href}
-                onClick={() => router.push(item.href)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
-                  isCollapsed ? 'justify-center px-0 py-3' : ''
-                } ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-600 shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
-                title={isCollapsed ? item.label : undefined}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {!isCollapsed && <span className="animate-in fade-in duration-300">{item.label}</span>}
-              </button>
-            );
-          })}
-        </nav>
+        {!isCollapsed && (
+          <div className="animate-in fade-in duration-300">
+            <h2 className="font-black text-lg tracking-tight text-blue-600">{BRANDING.name}</h2>
+            <p className="text-[10px] text-slate-500 font-medium">Portal Widyaiswara</p>
+          </div>
+        )}
       </div>
 
+      {/* Navigation items */}
+      <nav className={`p-4 space-y-1 ${isCollapsed ? 'p-2' : ''}`}>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+          return (
+            <button
+              key={item.href}
+              onClick={() => router.push(item.href)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                isCollapsed ? 'justify-center px-0 py-3' : ''
+              } ${
+                isActive
+                  ? 'bg-blue-50 text-blue-600 shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+              title={isCollapsed ? item.label : undefined}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              {!isCollapsed && <span className="animate-in fade-in duration-300">{item.label}</span>}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Footer: user info + logout */}
       <div className={`p-4 border-t border-slate-100 space-y-4 ${isCollapsed ? 'p-2' : ''}`}>
         {!isCollapsed ? (
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 animate-in fade-in duration-300">
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 animate-in fade-in duration-300">
             <p className="text-[10px] text-slate-500 font-semibold">Masuk sebagai</p>
-            <p className="text-xs font-bold text-slate-800 truncate" title={activeWiName}>{activeWiName}</p>
+            <p className="text-xs font-bold text-slate-800 truncate" title={activeWiName}>
+              {activeWiName}
+            </p>
           </div>
         ) : (
           <div className="flex justify-center text-slate-500" title={activeWiName}>

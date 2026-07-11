@@ -122,7 +122,6 @@ export default async function SchedulingIndexPage({
   const data = await getSchedulingIndexData();
   const params = await searchParams;
 
-  // Year filter
   const availableYears = Array.from(
     new Set(data.allBatches.map(b => new Date(b.startDate).getFullYear().toString()))
   ).sort((a, b) => Number(b) - Number(a));
@@ -134,7 +133,6 @@ export default async function SchedulingIndexPage({
     ? data.batchesList.filter(b => new Date(b.startDate).getFullYear().toString() === selectedYear)
     : data.batchesList;
 
-  // Pagination
   const page = parseInt(params.page || '1');
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(filteredBatches.length / pageSize));
@@ -259,7 +257,6 @@ export default async function SchedulingIndexPage({
             </Table>
           </TooltipProvider>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <BatchListPagination
               currentPage={safePage}
@@ -273,10 +270,21 @@ export default async function SchedulingIndexPage({
       {/* Global Month/Day/Table Calendar Timeline Preview */}
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-          <CardTitle className="text-lg font-bold text-blue-900">Mesin Kontrol Jadwal {BRANDING.name}</CardTitle>
-          <CardDescription>
-            Periksa dan tinjau semua slot terjadwal di seluruh lini masa angkatan secara bersamaan.
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle className="text-lg font-bold text-blue-900">Mesin Kontrol Jadwal {BRANDING.name}</CardTitle>
+              <CardDescription>
+                Periksa dan tinjau semua slot terjadwal di seluruh lini masa angkatan secara bersamaan.
+              </CardDescription>
+            </div>
+            {/* Format color legend */}
+            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Format:</span>
+              <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[10px] font-bold">Klasikal</Badge>
+              <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-[10px] font-bold">Virtual</Badge>
+              <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[10px] font-bold">Asinkron</Badge>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-6">
           <SchedulingWorkspaceClient

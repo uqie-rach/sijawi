@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useWTMS } from '@/context/wtms-context';
-import { BRANDING, ENABLE_ADVANCED_CALENDAR } from '@/lib/config';
+import { BRANDING } from '@/lib/config';
 import Image from 'next/image';
 
 export function Sidebar() {
@@ -80,9 +80,7 @@ export function Sidebar() {
     { href: '/admin/year-view', label: 'Tampilan Tahun', icon: Grid3X3 },
   ];
 
-  const navItems = ENABLE_ADVANCED_CALENDAR
-    ? [...baseNavItems, ...advancedNavItems]
-    : baseNavItems;
+  const navItems = baseNavItems;
 
   return (
     <aside

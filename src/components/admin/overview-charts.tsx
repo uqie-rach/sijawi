@@ -65,13 +65,13 @@ export function OverviewCharts({ barChartData, pieChartData }: OverviewChartsPro
           </div>
           <div className="flex justify-around text-xs font-semibold pt-2">
             <span className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full bg-blue-600"></span> APBD
+              <span className="h-3 w-3 rounded-full bg-red-500"></span> APBD
             </span>
             <span className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full bg-emerald-600"></span> Kontribusi
+              <span className="h-3 w-3 rounded-full bg-orange-500"></span> Kontribusi
             </span>
             <span className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full bg-sky-500"></span> Kemitraan
+              <span className="h-3 w-3 rounded-full bg-yellow-500"></span> Kemitraan
             </span>
           </div>
         </CardContent>

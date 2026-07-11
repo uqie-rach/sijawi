@@ -58,7 +58,6 @@ export interface Session {
   jpCount: number;
 }
 
-// ---------- Helper untuk fetch dengan error handling ----------
 async function fetchJSON(url: string, options?: RequestInit): Promise<any> {
   const res = await fetch(url, options);
   const data = await res.json().catch(() => null);
@@ -68,13 +67,11 @@ async function fetchJSON(url: string, options?: RequestInit): Promise<any> {
   return data;
 }
 
-// ---------- Helper untuk menampilkan toast error konsisten ----------
 function toastApiError(context: string, err: unknown) {
   const message = err instanceof Error ? err.message : 'Terjadi kesalahan jaringan.';
   toast.error(`${context} gagal: ${message}`);
 }
 
-// ---------- Helper sukses ----------
 function toastApiSuccess(context: string) {
   toast.success(`${context} berhasil.`);
 }
@@ -89,37 +86,31 @@ interface WTMSContextType {
   userRole: 'admin' | 'wi' | null;
   selectedWiId: string | null;
   isAuthenticated: boolean;
-  
+
   setUserRole: (role: 'admin' | 'wi' | null) => void;
   setSelectedWiId: (id: string | null) => void;
   setIsAuthenticated: (auth: boolean) => void;
-  
-  // Widyaiswara CRUD – sekarang async & return status
+
   addWidyaswara: (wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>) => Promise<{ success: boolean; error?: string }>;
   updateWidyaswara: (id: string, wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>) => Promise<{ success: boolean; error?: string }>;
   deleteWidyaswara: (id: string) => Promise<{ success: boolean; error?: string }>;
-  
-  // Kategori CRUD
+
   addKategori: (kat: { singkatan: string; kepanjangan: string; minWeight: number }) => Promise<{ success: boolean; error?: string }>;
   updateKategori: (id: string, kat: { singkatan: string; kepanjangan: string; minWeight: number }) => Promise<{ success: boolean; error?: string }>;
   deleteKategori: (id: string) => Promise<{ success: boolean; error?: string }>;
-  
-  // Mapel CRUD
+
   addMapel: (mapel: Omit<Mapel, 'id'>) => Promise<{ success: boolean; error?: string }>;
   updateMapel: (id: string, mapel: Omit<Mapel, 'id'>) => Promise<{ success: boolean; error?: string }>;
   deleteMapel: (id: string) => Promise<{ success: boolean; error?: string }>;
-  
-  // Lokasi CRUD
+
   addLokasi: (lok: Omit<Lokasi, 'id'>) => Promise<{ success: boolean; error?: string }>;
   updateLokasi: (id: string, lok: Omit<Lokasi, 'id'>) => Promise<{ success: boolean; error?: string }>;
   deleteLokasi: (id: string) => Promise<{ success: boolean; error?: string }>;
-  
-  // Batch CRUD
+
   addBatch: (batch: Omit<Batch, 'id'>) => Promise<{ success: boolean; error?: string }>;
   updateBatch: (id: string, batch: Omit<Batch, 'id'>) => Promise<{ success: boolean; error?: string }>;
   deleteBatch: (id: string) => Promise<{ success: boolean; error?: string }>;
-  
-  // Session CRUD (sudah ada di kode asli, tidak diubah)
+
   addSession: (session: Omit<Session, 'id'>) => { success: boolean; error?: string };
   updateSession: (id: string, session: Omit<Session, 'id'>) => { success: boolean; error?: string };
   deleteSession: (sessionId: string) => void;
@@ -157,22 +148,30 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [selectedWiId, setSelectedWiId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  // Ref untuk mencegah seeding ganda
   const isSeeding = useRef(false);
 
-  // Fungsi untuk memuat semua data dari API
   const loadAllData = async () => {
     try {
-      const [resWi, resKat, resMapel, resLok, resBatches, resSessions] = await Promise.all([
+      const [resWi, resKat, resMapel, resLok, resBatches, rawSessions] = await Promise.all([
         fetch('/api/widyaswara').then(r => r.ok ? r.json() : []),
         fetch('/api/kategori-pelatihan').then(r => r.ok ? r.json() : []),
         fetch('/api/mata-pelatihan').then(r => r.ok ? r.json() : []),
         fetch('/api/lokasi').then(r => r.ok ? r.json() : []),
         fetch('/api/batches').then(r => r.ok ? r.json() : []),
-        fetch('/api/sessions').then(r => r.ok ? r.json() : [])
+        fetch('/api/sessions').then(r => r.ok ? r.json() : []),
       ]);
 
-      // Cek apakah database masih kosong (fresh start)
+      // Extract sessions array from paginated response if needed
+      let resSessions: Session[] = [];
+      if (Array.isArray(rawSessions)) {
+        resSessions = rawSessions;
+      } else if (rawSessions && Array.isArray(rawSessions.sessions)) {
+        // Paginated response: { sessions: [...], total, page, totalPages }
+        resSessions = rawSessions.sessions;
+      } else if (rawSessions && rawSessions.sessions) {
+        resSessions = rawSessions.sessions;
+      }
+
       if (Array.isArray(resWi) && resWi.length === 0 &&
           Array.isArray(resKat) && resKat.length === 0 &&
           !isSeeding.current) {
@@ -180,21 +179,29 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const seedRes = await fetch('/api/seed', { method: 'POST' }).then(r => r.json());
           if (seedRes.success) {
-            // Setelah seeding berhasil, fetch ulang data tanpa reload
             const newData = await Promise.all([
               fetch('/api/widyaswara').then(r => r.ok ? r.json() : []),
               fetch('/api/kategori-pelatihan').then(r => r.ok ? r.json() : []),
               fetch('/api/mata-pelatihan').then(r => r.ok ? r.json() : []),
               fetch('/api/lokasi').then(r => r.ok ? r.json() : []),
               fetch('/api/batches').then(r => r.ok ? r.json() : []),
-              fetch('/api/sessions').then(r => r.ok ? r.json() : [])
+              fetch('/api/sessions').then(r => r.ok ? r.json() : []),
             ]);
+
+            let newSessions: Session[] = [];
+            const rawNewSessions = newData[5];
+            if (Array.isArray(rawNewSessions)) {
+              newSessions = rawNewSessions;
+            } else if (rawNewSessions && Array.isArray(rawNewSessions.sessions)) {
+              newSessions = rawNewSessions.sessions;
+            }
+
             setWidyaswaras(newData[0] || []);
             setKategoriList(newData[1] || []);
             setMapelList(newData[2] || []);
             setLokasiList(newData[3] || []);
             setBatches(newData[4] || []);
-            setSessions(newData[5] || []);
+            setSessions(newSessions);
             toast.success('Data awal berhasil dimuat!');
           } else {
             toast.error('Gagal memuat data awal. Silakan muat ulang halaman.');
@@ -213,13 +220,12 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (Array.isArray(resMapel)) setMapelList(resMapel);
       if (Array.isArray(resLok)) setLokasiList(resLok);
       if (Array.isArray(resBatches)) setBatches(resBatches);
-      if (Array.isArray(resSessions)) setSessions(resSessions);
+      setSessions(resSessions);
     } catch (err) {
       console.error("Failed to load data from API:", err);
     }
   };
 
-  // Load from API on mount
   useEffect(() => {
     loadAllData();
 
@@ -251,7 +257,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveToStorage('wtms_auth', auth);
   };
 
-  // ======================== WIDYAISWARA CRUD ========================
   const addWidyaswara = async (wi: Omit<Widyaiswara, 'id' | 'jpLastMonth'>): Promise<{ success: boolean; error?: string }> => {
     if (widyaswaras.some(w => w.nip === wi.nip)) {
       const msg = `Widyaiswara dengan NIP ${wi.nip} sudah terdaftar.`;
@@ -322,7 +327,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // ======================== KATEGORI CRUD ========================
   const addKategori = async (kat: { singkatan: string; kepanjangan: string; minWeight: number }): Promise<{ success: boolean; error?: string }> => {
     const newKat = { ...kat, id: `kat-${Date.now()}` };
     try {
@@ -369,7 +373,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // ======================== MAPEL CRUD ========================
   const addMapel = async (mapel: Omit<Mapel, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const newMapel = { ...mapel, id: `mapel-${Date.now()}` };
     try {
@@ -416,7 +419,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // ======================== LOKASI CRUD ========================
   const addLokasi = async (lok: Omit<Lokasi, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const newLok = { ...lok, id: `lok-${Date.now()}` };
     try {
@@ -463,7 +465,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // ======================== BATCH CRUD ========================
   const addBatch = async (batch: Omit<Batch, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const newBatch = { ...batch, id: `batch-${Date.now()}` };
     try {
@@ -510,7 +511,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // ======================== SESSION CRUD (tetap sinkron seperti semula) ========================
   const addSession = (sessionData: Omit<Session, 'id'>) => {
     const batch = batches.find(b => b.id === sessionData.batchId);
     const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
@@ -538,7 +538,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const startHour = parseInt(sessionData.startTime.split(':')[0]);
       const endHour = parseInt(sessionData.endTime.split(':')[0]);
       const endMin = parseInt(sessionData.endTime.split(':')[1]);
-      
+
       if (startHour < 8 || endHour > 17 || (endHour === 17 && endMin > 0)) {
         const errorMsg = "Jam Operasional Terbatas: Format Klasikal hanya dapat dijadwalkan antara pukul 08:00 dan 17:00.";
         toast.error(errorMsg);
@@ -594,7 +594,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .filter(w => wiCollision.wiIds.includes(w.id))
         .map(w => w.name)
         .join(', ');
-      
+
       const errorMsg = `Bentrok Jadwal Pengajar: Instruktur (${clashedWiNames}) sudah teralokasikan untuk mengajar di angkatan "${collidingBatch?.name || 'Angkatan Lain'}" pada pukul ${wiCollision.startTime} - ${wiCollision.endTime} di hari yang sama.`;
       toast.error(errorMsg);
       return { success: false, error: errorMsg };
@@ -642,7 +642,6 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateSession = (id: string, sessionData: Omit<Session, 'id'>) => {
-    // Validasi yang sama seperti addSession ...
     const batch = batches.find(b => b.id === sessionData.batchId);
     const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
 
@@ -669,7 +668,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const startHour = parseInt(sessionData.startTime.split(':')[0]);
       const endHour = parseInt(sessionData.endTime.split(':')[0]);
       const endMin = parseInt(sessionData.endTime.split(':')[1]);
-      
+
       if (startHour < 8 || endHour > 17 || (endHour === 17 && endMin > 0)) {
         const errorMsg = "Jam Operasional Terbatas: Format Klasikal hanya dapat dijadwalkan antara pukul 08:00 dan 17:00.";
         toast.error(errorMsg);
@@ -696,7 +695,7 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const newJpRange = parseJpRange(sessionData.jpKe);
     if (newJpRange.length === 2) {
-      const jpCollision = sessions.find(s => 
+      const jpCollision = sessions.find(s =>
         s.id !== id &&
         s.batchId === sessionData.batchId &&
         s.date === sessionData.date &&
@@ -710,10 +709,10 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    const wiCollision = sessions.find(s => 
+    const wiCollision = sessions.find(s =>
       s.id !== id &&
-      s.wiIds.some(id => sessionData.wiIds.includes(id)) && 
-      s.date === sessionData.date && 
+      s.wiIds.some(id => sessionData.wiIds.includes(id)) &&
+      s.date === sessionData.date &&
       (
         (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
         (sessionData.endTime > s.startTime && sessionData.endTime <= s.endTime) ||
@@ -727,14 +726,14 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .filter(w => wiCollision.wiIds.includes(w.id))
         .map(w => w.name)
         .join(', ');
-      
+
       const errorMsg = `Bentrok Jadwal Pengajar: Instruktur (${clashedWiNames}) sudah teralokasikan untuk mengajar di angkatan "${collidingBatch?.name || 'Angkatan Lain'}" pada pukul ${wiCollision.startTime} - ${wiCollision.endTime} di hari yang sama.`;
       toast.error(errorMsg);
       return { success: false, error: errorMsg };
     }
 
     if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
-      const locationClash = sessions.find(s => 
+      const locationClash = sessions.find(s =>
         s.id !== id &&
         s.format === 'Klasikal' &&
         s.lokasiId === sessionData.lokasiId &&
@@ -795,27 +794,27 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserRole: handleSetUserRole,
       setSelectedWiId: handleSetSelectedWiId,
       setIsAuthenticated: handleSetIsAuthenticated,
-      
+
       addWidyaswara,
       updateWidyaswara,
       deleteWidyaswara,
-      
+
       addKategori,
       updateKategori,
       deleteKategori,
-      
+
       addMapel,
       updateMapel,
       deleteMapel,
-      
+
       addLokasi,
       updateLokasi,
       deleteLokasi,
-      
+
       addBatch,
       updateBatch,
       deleteBatch,
-      
+
       addSession,
       updateSession,
       deleteSession
