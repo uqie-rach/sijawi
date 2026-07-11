@@ -76,8 +76,6 @@ export function DayView({
       if (klasikalDates.has(dateStr)) indicators.push('klasikal');
       if (virtualDates.has(dateStr)) indicators.push('virtual');
       if (asinkronDates.has(dateStr)) indicators.push('asinkron');
-
-      console.log(`[day-view.tsx]`, indicators)
       return indicators;
     },
     [klasikalDates, virtualDates, asinkronDates],
