@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock } from 'lucide-react';
-import { SingleCalendar } from '@/components/ui/single-calendar';
+import { DayPicker } from 'react-day-picker';
 import { TimelineView } from '@/components/admin/scheduling/timeline-view';
 import { formatDateString } from '@/lib/scheduling-utils';
 import type { Session, Mapel, Widyaiswara, Lokasi } from '@/context/wtms-context';
@@ -19,6 +19,28 @@ interface DayViewProps {
   activeBatch?: { startDate?: string; endDate?: string } | null;
   onEditSession: (session: Session) => void;
   onDeleteSession: (sessionId: string) => void;
+}
+
+function CustomDayContent(props: { date: Date; displayMonth: Date; activeModifiers: Record<string, boolean>; sessionFormats: Record<string, string[]> }) {
+  const { date, sessionFormats } = props;
+  const dateStr = formatDateString(date);
+  const formats = sessionFormats[dateStr] || [];
+  
+  return (
+    <div className="flex flex-col items-center justify-center w-full h-full">
+      <span className="text-sm">{date.getDate()}</span>
+      {formats.length > 0 && (
+        <div className="rdp-day_dots">
+          {formats.slice(0, 3).map((format, idx) => (
+            <span
+              key={`${dateStr}-${idx}`}
+              className={`rdp-day_dot rdp-day_dot--${format.toLowerCase()}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function DayView({
@@ -44,13 +66,18 @@ export function DayView({
     return isNaN(d.getTime()) ? undefined : d;
   }, [activeBatch?.endDate]);
 
-  // Build set of dates that have at least one session
-  const sessionDates = useMemo(() => {
-    const set = new Set<string>();
+  // Build map of date -> unique formats
+  const sessionFormats = useMemo(() => {
+    const map: Record<string, string[]> = {};
     allVisibleSessions.forEach(s => {
-      if (s.date) set.add(s.date);
+      if (s.date) {
+        if (!map[s.date]) map[s.date] = [];
+        if (!map[s.date].includes(s.format)) {
+          map[s.date].push(s.format);
+        }
+      }
     });
-    return set;
+    return map;
   }, [allVisibleSessions]);
 
   const handleCalendarSelect = (date: Date | undefined) => {
@@ -58,6 +85,15 @@ export function DayView({
       setSelectedDayDate(formatDateString(date));
     }
   };
+
+  const dayContentComponent = (props: any) => (
+    <CustomDayContent
+      date={props.date}
+      displayMonth={props.displayMonth}
+      activeModifiers={props.activeModifiers}
+      sessionFormats={sessionFormats}
+    />
+  );
 
   return (
     <Card className="shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-slate-200 bg-white rounded-lg">
@@ -74,20 +110,16 @@ export function DayView({
         <div className="flex flex-col md:flex-row gap-4">
           {/* Mini Calendar — Left Side */}
           <div className="shrink-0">
-            <div className="border border-slate-200 rounded-lg bg-white p-0 w-fit">
-              <SingleCalendar
+            <div className="border border-slate-200 rounded-lg bg-white p-2">
+              <DayPicker
                 mode="single"
                 selected={selectedDate}
                 onSelect={handleCalendarSelect}
                 fromDate={fromDate}
                 toDate={toDate}
-                initialFocus
-                className="p-2"
-                modifiers={{
-                  hasSession: (date) => sessionDates.has(formatDateString(date)),
-                }}
-                modifiersClassNames={{
-                  hasSession: 'rdp-day_has_session',
+                showOutsideDays={false}
+                components={{
+                  DayContent: dayContentComponent,
                 }}
               />
             </div>

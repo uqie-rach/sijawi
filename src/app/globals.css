@@ -4,11 +4,8 @@
 
 @layer base {
   :root {
-    /* Dominant clean white background */
     --background: 0 0% 100%;
-    /* #FFFFFF */
     --foreground: 224 71% 23%;
-    /* #1E3A8A (Tailwind blue-900) */
 
     --card: 0 0% 100%;
     --card-foreground: 224 71% 23%;
@@ -16,20 +13,15 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 23%;
 
-    /* Primary: Standard Tailwind Blue 600 (#2563EB) */
     --primary: 221 83% 53%;
-    /* #2563EB */
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Standard Tailwind Blue 50 (#EFF6FF) */
     --secondary: 221 100% 97%;
-    /* #EFF6FF */
     --secondary-foreground: 221 83% 53%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    /* Accent: Subtle Slate Gray (Default Shadcn/UI) */
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
@@ -42,7 +34,6 @@
 
     --radius: 0.75rem;
 
-    /* Admin Sidebar background set to white */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 215 25% 27%;
     --sidebar-primary: 221 83% 53%;
@@ -92,30 +83,11 @@
 }
 
 /* Vertical slide-in-up animation for timeline day transitions */
-/* @keyframes slide-in-up {
-  0% {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@layer utilities {
-  .animate-slide-in-up {
-    animation: slide-in-up 0.3s ease-out;
-  }
-} */
-
-/* Vertical slide-in-up animation for timeline day transitions */
 @keyframes slide-in-up {
   0% {
     opacity: 0;
     transform: translateY(16px);
   }
-
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -128,20 +100,29 @@
   }
 }
 
-
-/* Session dot indicator for react-day-picker (mini calendar in timeline view) */
-.rdp-day_has_session {
-  position: relative;
+/* Multi-dot indicators for mini calendar (replaces old single dot) */
+.rdp-day_dots {
+  display: flex;
+  justify-content: center;
+  gap: 1px;
+  margin-top: 1px;
 }
 
-.rdp-day_has_session::after {
-  content: '';
-  position: absolute;
-  bottom: 3px;
-  left: 50%;
-  transform: translateX(-50%);
+.rdp-day_dot {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background-color: #2563eb;
+  flex-shrink: 0;
+}
+
+.rdp-day_dot--klasikal {
+  background-color: #2563eb; /* blue-600 */
+}
+
+.rdp-day_dot--virtual {
+  background-color: #9333ea; /* purple-600 */
+}
+
+.rdp-day_dot--asinkron {
+  background-color: #d97706; /* amber-600 */
 }
