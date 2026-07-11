@@ -111,31 +111,12 @@ interface WTMSContextType {
   updateBatch: (id: string, batch: Omit<Batch, 'id'>) => Promise<{ success: boolean; error?: string }>;
   deleteBatch: (id: string) => Promise<{ success: boolean; error?: string }>;
 
-  addSession: (session: Omit<Session, 'id'>) => { success: boolean; error?: string };
-  updateSession: (id: string, session: Omit<Session, 'id'>) => { success: boolean; error?: string };
+  addSession: (session: Omit<Session, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  updateSession: (id: string, session: Omit<Session, 'id'>) => Promise<{ success: boolean; error?: string }>;
   deleteSession: (sessionId: string) => void;
 }
 
 const WTMSContext = createContext<WTMSContextType | undefined>(undefined);
-
-function parseJpRange(jpKe: string): number[] {
-  const clean = jpKe.replace(/\s+/g, '');
-  const parts = clean.split('-');
-  if (parts.length === 1) {
-    const val = parseInt(parts[0]);
-    return isNaN(val) ? [] : [val, val];
-  } else if (parts.length === 2) {
-    const start = parseInt(parts[0]);
-    const end = parseInt(parts[1]);
-    return isNaN(start) || isNaN(end) ? [] : [start, end];
-  }
-  return [];
-}
-
-function isJpOverlapping(range1: number[], range2: number[]): boolean {
-  if (range1.length !== 2 || range2.length !== 2) return false;
-  return Math.max(range1[0], range2[0]) <= Math.min(range1[1], range2[1]);
-}
 
 export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [widyaswaras, setWidyaswaras] = useState<Widyaiswara[]>([]);
@@ -173,8 +154,8 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (Array.isArray(resWi) && resWi.length === 0 &&
-          Array.isArray(resKat) && resKat.length === 0 &&
-          !isSeeding.current) {
+        Array.isArray(resKat) && resKat.length === 0 &&
+        !isSeeding.current) {
         isSeeding.current = true;
         try {
           const seedRes = await fetch('/api/seed', { method: 'POST' }).then(r => r.json());
@@ -511,263 +492,53 @@ export const WTMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const addSession = (sessionData: Omit<Session, 'id'>) => {
-    const batch = batches.find(b => b.id === sessionData.batchId);
-    const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
-
-    if (!batch || !category) {
-      return { success: false, error: "Invalid selection parameters." };
-    }
-
-    if (!sessionData.wiIds || sessionData.wiIds.length === 0) {
-      const errorMsg = "Pilih setidaknya satu Widyaiswara pengajar untuk sesi ini.";
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-
-    const wis = widyaswaras.filter(w => sessionData.wiIds.includes(w.id));
-    for (const wi of wis) {
-      if (wi.level < category.minWeight) {
-        const errorMsg = `Hierarki Kompetensi Terbatas: ${wi.name} (Level ${wi.level}) tidak memiliki level kompetensi yang cukup untuk kategori ${category.singkatan} (Memerlukan minimal Level ${category.minWeight}).`;
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
-    if (sessionData.format === 'Klasikal') {
-      const startHour = parseInt(sessionData.startTime.split(':')[0]);
-      const endHour = parseInt(sessionData.endTime.split(':')[0]);
-      const endMin = parseInt(sessionData.endTime.split(':')[1]);
-
-      if (startHour < 8 || endHour > 17 || (endHour === 17 && endMin > 0)) {
-        const errorMsg = "Jam Operasional Terbatas: Format Klasikal hanya dapat dijadwalkan antara pukul 08:00 dan 17:00.";
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-
-      if (!sessionData.lokasiId) {
-        const errorMsg = "Lokasi kelas wajib dipilih untuk format Klasikal.";
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
-    const existingMapelSessions = sessions.filter(s => s.batchId === sessionData.batchId && s.mapelId === sessionData.mapelId);
-    const currentJpSum = existingMapelSessions.reduce((sum, s) => sum + s.jpCount, 0);
-    const mapel = mapelList.find(m => m.id === sessionData.mapelId);
-    const maxJp = mapel ? mapel.jpTotal : 6;
-
-    if (currentJpSum + sessionData.jpCount > maxJp) {
-      const errorMsg = `Maksimum JP Terlampaui: Total JP untuk ${mapel?.name || 'mata pelajaran ini'} tidak boleh melebihi ${maxJp} JP. Alokasi saat ini: ${currentJpSum} JP. Sesi baru: ${sessionData.jpCount} JP.`;
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-
-    const newJpRange = parseJpRange(sessionData.jpKe);
-    if (newJpRange.length === 2) {
-      const jpCollision = sessions.find(s =>
-        s.batchId === sessionData.batchId &&
-        s.date === sessionData.date &&
-        isJpOverlapping(newJpRange, parseJpRange(s.jpKe))
-      );
-
-      if (jpCollision) {
-        const errorMsg = `Bentrok JP: Slot JP ke-${sessionData.jpKe} sudah terisi untuk angkatan ini pada tanggal terpilih!`;
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
-    const wiCollision = sessions.find(s =>
-      s.wiIds.some(id => sessionData.wiIds.includes(id)) &&
-      s.date === sessionData.date &&
-      (
-        (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
-        (sessionData.endTime > s.startTime && sessionData.endTime <= s.endTime) ||
-        (sessionData.startTime <= s.startTime && sessionData.endTime >= s.endTime)
-      )
-    );
-
-    if (wiCollision) {
-      const collidingBatch = batches.find(b => b.id === wiCollision.batchId);
-      const clashedWiNames = wis
-        .filter(w => wiCollision.wiIds.includes(w.id))
-        .map(w => w.name)
-        .join(', ');
-
-      const errorMsg = `Bentrok Jadwal Pengajar: Instruktur (${clashedWiNames}) sudah teralokasikan untuk mengajar di angkatan "${collidingBatch?.name || 'Angkatan Lain'}" pada pukul ${wiCollision.startTime} - ${wiCollision.endTime} di hari yang sama.`;
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-
-    if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
-      const locationClash = sessions.find(s =>
-        s.format === 'Klasikal' &&
-        s.lokasiId === sessionData.lokasiId &&
-        s.date === sessionData.date &&
-        (
-          (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
-          (sessionData.endTime > s.startTime && sessionData.endTime <= s.endTime) ||
-          (sessionData.startTime <= s.startTime && sessionData.endTime >= s.endTime)
-        )
-      );
-
-      if (locationClash) {
-        const collidingBatch = batches.find(b => b.id === locationClash.batchId);
-        const locName = lokasiList.find(l => l.id === sessionData.lokasiId)?.name || 'ruangan ini';
-        const errorMsg = `Bentrok Penggunaan Ruangan: ${locName} sedang digunakan oleh angkatan "${collidingBatch?.name || 'Angkatan Lain'}" dari pukul ${locationClash.startTime} s/d ${locationClash.endTime}.`;
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
+  const addSession = async (sessionData: Omit<Session, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const newSession: Session = {
       ...sessionData,
       id: `sess-${Date.now()}`
     };
+    // Optimistic update
     setSessions(prev => [...prev, newSession]);
 
-    fetchJSON('/api/sessions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newSession),
-    }).then(() => {
+    try {
+      await fetchJSON('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSession),
+      });
+      // success: keep the session
       toast.success("Sesi pelatihan berhasil dialokasikan!");
-    }).catch(err => {
-      toastApiError('Alokasi sesi (server)', err);
+      return { success: true };
+    } catch (err) {
+      // Rollback optimistic update on API error
       setSessions(prev => prev.filter(s => s.id !== newSession.id));
-    });
-
-    return { success: true };
+      const message = err instanceof Error ? err.message : 'Gagal menyimpan sesi.';
+      toast.error(message);
+      return { success: false, error: message };
+    }
   };
 
-  const updateSession = (id: string, sessionData: Omit<Session, 'id'>) => {
-    const batch = batches.find(b => b.id === sessionData.batchId);
-    const category = batch ? kategoriList.find(k => k.id === batch.kategoriId) : null;
-
-    if (!batch || !category) {
-      return { success: false, error: "Invalid selection parameters." };
-    }
-
-    if (!sessionData.wiIds || sessionData.wiIds.length === 0) {
-      const errorMsg = "Pilih setidaknya satu Widyaiswara pengajar untuk sesi ini.";
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-
-    const wis = widyaswaras.filter(w => sessionData.wiIds.includes(w.id));
-    for (const wi of wis) {
-      if (wi.level < category.minWeight) {
-        const errorMsg = `Hierarki Kompetensi Terbatas: ${wi.name} (Level ${wi.level}) tidak memiliki level kompetensi yang cukup untuk kategori ${category.singkatan} (Memerlukan minimal Level ${category.minWeight}).`;
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
-    if (sessionData.format === 'Klasikal') {
-      const startHour = parseInt(sessionData.startTime.split(':')[0]);
-      const endHour = parseInt(sessionData.endTime.split(':')[0]);
-      const endMin = parseInt(sessionData.endTime.split(':')[1]);
-
-      if (startHour < 8 || endHour > 17 || (endHour === 17 && endMin > 0)) {
-        const errorMsg = "Jam Operasional Terbatas: Format Klasikal hanya dapat dijadwalkan antara pukul 08:00 dan 17:00.";
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-
-      if (!sessionData.lokasiId) {
-        const errorMsg = "Lokasi kelas wajib dipilih untuk format Klasikal.";
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
-    const existingMapelSessions = sessions.filter(s => s.id !== id && s.batchId === sessionData.batchId && s.mapelId === sessionData.mapelId);
-    const currentJpSum = existingMapelSessions.reduce((sum, s) => sum + s.jpCount, 0);
-    const mapel = mapelList.find(m => m.id === sessionData.mapelId);
-    const maxJp = mapel ? mapel.jpTotal : 6;
-
-    if (currentJpSum + sessionData.jpCount > maxJp) {
-      const errorMsg = `Maksimum JP Terlampaui: Total JP untuk ${mapel?.name || 'mata pelajaran ini'} tidak boleh melebihi ${maxJp} JP. Alokasi saat ini: ${currentJpSum} JP. Sesi baru: ${sessionData.jpCount} JP.`;
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-
-    const newJpRange = parseJpRange(sessionData.jpKe);
-    if (newJpRange.length === 2) {
-      const jpCollision = sessions.find(s =>
-        s.id !== id &&
-        s.batchId === sessionData.batchId &&
-        s.date === sessionData.date &&
-        isJpOverlapping(newJpRange, parseJpRange(s.jpKe))
-      );
-
-      if (jpCollision) {
-        const errorMsg = `Bentrok JP: Slot JP ke-${sessionData.jpKe} sudah terisi untuk angkatan ini pada tanggal terpilih!`;
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
-    const wiCollision = sessions.find(s =>
-      s.id !== id &&
-      s.wiIds.some(id => sessionData.wiIds.includes(id)) &&
-      s.date === sessionData.date &&
-      (
-        (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
-        (sessionData.endTime > s.startTime && sessionData.endTime <= s.endTime) ||
-        (sessionData.startTime <= s.startTime && sessionData.endTime >= s.endTime)
-      )
-    );
-
-    if (wiCollision) {
-      const collidingBatch = batches.find(b => b.id === wiCollision.batchId);
-      const clashedWiNames = wis
-        .filter(w => wiCollision.wiIds.includes(w.id))
-        .map(w => w.name)
-        .join(', ');
-
-      const errorMsg = `Bentrok Jadwal Pengajar: Instruktur (${clashedWiNames}) sudah teralokasikan untuk mengajar di angkatan "${collidingBatch?.name || 'Angkatan Lain'}" pada pukul ${wiCollision.startTime} - ${wiCollision.endTime} di hari yang sama.`;
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-
-    if (sessionData.format === 'Klasikal' && sessionData.lokasiId) {
-      const locationClash = sessions.find(s =>
-        s.id !== id &&
-        s.format === 'Klasikal' &&
-        s.lokasiId === sessionData.lokasiId &&
-        s.date === sessionData.date &&
-        (
-          (sessionData.startTime >= s.startTime && sessionData.startTime < s.endTime) ||
-          (sessionData.endTime > s.startTime && sessionData.endTime <= s.endTime) ||
-          (sessionData.startTime <= s.startTime && sessionData.endTime >= s.endTime)
-        )
-      );
-
-      if (locationClash) {
-        const collidingBatch = batches.find(b => b.id === locationClash.batchId);
-        const locName = lokasiList.find(l => l.id === sessionData.lokasiId)?.name || 'ruangan ini';
-        const errorMsg = `Bentrok Penggunaan Ruangan: ${locName} sedang digunakan oleh angkatan "${collidingBatch?.name || 'Angkatan Lain'}" dari pukul ${locationClash.startTime} s/d ${locationClash.endTime}.`;
-        toast.error(errorMsg);
-        return { success: false, error: errorMsg };
-      }
-    }
-
+  const updateSession = async (id: string, sessionData: Omit<Session, 'id'>): Promise<{ success: boolean; error?: string }> => {
     const updatedSession = { ...sessionData, id };
+    // Optimistic update
+    const previousSessions = sessions;
     setSessions(prev => prev.map(s => s.id === id ? updatedSession : s));
 
-    fetchJSON('/api/sessions', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedSession),
-    }).then(() => {
+    try {
+      await fetchJSON('/api/sessions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedSession),
+      });
       toast.success("Sesi pelatihan berhasil diperbarui!");
-    }).catch(err => {
-      toastApiError('Pembaruan sesi (server)', err);
-    });
-
-    return { success: true };
+      return { success: true };
+    } catch (err) {
+      // Revert to previous state on error
+      setSessions(previousSessions);
+      const message = err instanceof Error ? err.message : 'Gagal memperbarui sesi.';
+      toast.error(message);
+      return { success: false, error: message };
+    }
   };
 
   const deleteSession = (sessionId: string) => {

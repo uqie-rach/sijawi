@@ -49,7 +49,7 @@ function SingleCalendar({
             <span className={cn(
               "flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium",
               isToday && !isSelected && "bg-accent text-accent-foreground",
-              isSelected && "bg-primary text-primary-foreground",
+              isSelected && "",
               isOutside && "text-muted-foreground opacity-50"
             )}>
               {day}
@@ -113,7 +113,7 @@ function SingleCalendar({
         day: cn(buttonVariants({ variant: "ghost" }), "h-8 w-8 p-0 font-normal aria-selected:opacity-100 relative"),
         day_range_start: "day-range-start",
         day_range_end: "day-range-end",
-        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+        day_selected: "",
         day_today: "bg-accent text-accent-foreground",
         day_outside: "day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
         day_disabled: "text-muted-foreground opacity-50",

@@ -1,6 +1,9 @@
 import { connectToDatabase } from '@/lib/mongodb';
 import JadwalSesi from '@/models/JadwalSesi';
 import Widyaiswara from '@/models/Widyaiswara';
+import Pelatihan from '@/models/Pelatihan';
+import MataPelatihan from '@/models/MataPelatihan';
+import KategoriPelatihan from '@/models/KategoriPelatihan';
 import { cookies } from 'next/headers';
 import { withApiProtection } from '@/lib/api-helpers';
 
@@ -11,7 +14,7 @@ async function isAdmin() {
     if (count === 0) {
       return true;
     }
-  } catch (e) {}
+  } catch (e) { }
   const cookieStore = await cookies();
   const token = cookieStore.get('sessionToken')?.value;
   return token === 'admin-session-token' || token === 'admin-token';
@@ -60,10 +63,77 @@ async function validateSession(
   data: SessionData,
   excludeId?: string
 ): Promise<{ error: string; status: number } | null> {
-  const { batchId, mapelId, wiIds, date, startTime, endTime, format, lokasiId, jpKe } = data;
+  const { batchId, mapelId, wiIds, date, startTime, endTime, format, lokasiId, jpKe, jpCount } = data;
   const excludeFilter = excludeId ? { _id: { $ne: excludeId } } : {};
 
-  // 1. JP overlap validation (same batch + mapel)
+  // 0. Operational Hours Restriction for Klasikal
+  if (format === 'Klasikal') {
+    const startHour = parseInt(startTime.split(':')[0]);
+    const endHour = parseInt(endTime.split(':')[0]);
+    const endMin = parseInt(endTime.split(':')[1]);
+    if (startHour < 8 || endHour > 17 || (endHour === 17 && endMin > 0)) {
+      return {
+        error: 'Jam Operasional Terbatas: Format Klasikal hanya dapat dijadwalkan antara pukul 08:00 dan 17:00.',
+        status: 409,
+      };
+    }
+    if (!lokasiId) {
+      return {
+        error: 'Lokasi kelas wajib dipilih untuk format Klasikal.',
+        status: 400,
+      };
+    }
+  }
+
+  // 1. Instructor level validation against category minWeight
+  if (wiIds && wiIds.length > 0) {
+    const batch = await Pelatihan.findById(batchId);
+
+    // Batch must exist at this point
+    if (!batch) {
+      return {
+        error: 'Angkatan pelatihan tidak ditemukan.',
+        status: 404,
+      };
+    }
+
+    // Check category's min weight
+    const category = await KategoriPelatihan.findById(batch.kategori_id);
+    const wis = await Widyaiswara.find({ _id: { $in: wiIds } });
+
+    if (category && wis.length > 0) {
+      for (const wi of wis) {
+        if (Number(wi.level) < category.min_weight) {
+          return {
+            error: `Hierarki Kompetensi Terbatas: ${wi.name} (Level ${wi.level}) tidak memenuhi syarat minimal Level ${category.min_weight} untuk kategori ${category.singkatan}.`,
+            status: 409,
+          };
+        }
+      }
+    }
+  }
+
+  // 2. Total JP limit per mapel validation
+  const mapel = await MataPelatihan.findById(mapelId);
+  if (mapel) {
+    const existingMapelSessions = await JadwalSesi.find({
+      batch_id: batchId,
+      mapel_id: mapelId,
+      ...excludeFilter,
+    });
+
+    const currentJpSum = existingMapelSessions.reduce((sum, s) => sum + Number(s.jp_count), 0);
+    const maxJp = Number(mapel.jp_total) || 6;
+
+    if (currentJpSum + jpCount > maxJp) {
+      return {
+        error: `Maksimum JP Terlampaui: Total JP untuk ${mapel.name} tidak boleh melebihi ${maxJp} JP. Alokasi saat ini: ${currentJpSum} JP. Sesi baru: ${jpCount} JP.`,
+        status: 409,
+      };
+    }
+  }
+
+  // 2. JP overlap validation (same batch + mapel)
   const newRange = parseJpRange(jpKe);
   if (newRange) {
     const existingJpSessions = await JadwalSesi.find({
@@ -82,7 +152,7 @@ async function validateSession(
     }
   }
 
-  // 2. Same-mapel parallel time validation
+  // 3. Same-mapel parallel time validation
   const parallelMapelSessions = await JadwalSesi.find({
     batch_id: batchId,
     mapel_id: mapelId,
@@ -98,7 +168,7 @@ async function validateSession(
     }
   }
 
-  // 3. WI time clash validation
+  // 4. WI time clash validation
   if (wiIds && wiIds.length > 0) {
     const wiSessions = await JadwalSesi.find({
       date,
@@ -118,7 +188,7 @@ async function validateSession(
     }
   }
 
-  // 4. Lokasi clash validation (Klasikal only)
+  // 5. Lokasi clash validation (Klasikal only)
   if (format === 'Klasikal' && lokasiId) {
     const lokasiSessions = await JadwalSesi.find({
       date,
@@ -136,7 +206,7 @@ async function validateSession(
     }
   }
 
-  // 5. JP chronological order validation
+  // 6. JP chronological order validation
   if (newRange) {
     const allMapelSessions = await JadwalSesi.find({
       batch_id: batchId,
@@ -226,9 +296,9 @@ export const GET = withApiProtection(async function GET(request: Request) {
 
     const dbSortField =
       sortField === 'startTime' ? 'start_time' :
-      sortField === 'jpCount' ? 'jp_count' :
-      sortField === 'format' ? 'format' :
-      'date';
+        sortField === 'jpCount' ? 'jp_count' :
+          sortField === 'format' ? 'format' :
+            'date';
 
     const sortStr = sortDirection === -1 ? `-${dbSortField}` : dbSortField;
 
