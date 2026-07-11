@@ -41,21 +41,9 @@ export const adminOnboardingSteps: OnboardingStep[] = [
 export const wiOnboardingSteps: OnboardingStep[] = [
   {
     targetSelector: "[data-onboarding='wi-sidebar']",
-    title: "Navigasi Jadwal",
-    description: "Gunakan sidebar untuk melihat jadwal Anda dalam berbagai tampilan: Hari, Minggu, Bulan, Agenda, dan Tahun.",
+    title: "Navigasi Portal",
+    description: "Gunakan sidebar untuk melihat Ikhtisar jadwal Anda dan mengakses Laporan pribadi.",
     placement: "right",
-  },
-  {
-    targetSelector: "[data-onboarding='wi-calendar-header']",
-    title: "Navigasi Tanggal",
-    description: "Geser bulan atau pilih tanggal tertentu untuk melihat jadwal mengajar Anda. Gunakan dropdown untuk filter personal/semua WI.",
-    placement: "bottom",
-  },
-  {
-    targetSelector: "[data-onboarding='wi-calendar-view']",
-    title: "Tampilan Kalender",
-    description: "Lihat sesi mengajar Anda dalam tampilan kalender. Klik hari untuk melihat detail sesi pada tanggal tersebut.",
-    placement: "top",
   },
   {
     targetSelector: "[data-onboarding='wi-whatsapp']",

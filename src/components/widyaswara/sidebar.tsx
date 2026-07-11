@@ -8,15 +8,11 @@ import {
   GraduationCap,
   ChevronLeft,
   ChevronRight,
-  List,
-  CalendarRange,
-  Grid2x2,
-  Columns,
-  Grid3X3,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useWTMS } from '@/context/wtms-context';
-import { BRANDING, ENABLE_ADVANCED_CALENDAR } from '@/lib/config';
+import { BRANDING } from '@/lib/config';
 import Image from 'next/image';
 
 interface WidyaswaraSidebarProps {
@@ -52,21 +48,10 @@ export function WidyaswaraSidebar({ activeWiName }: WidyaswaraSidebarProps) {
     router.push('/login');
   };
 
-  const baseNavItems = [
-    { href: '/widyaswara/month-view', label: 'Ikhtisar', icon: LayoutDashboard },
+  const navItems = [
+    { href: '/widyaswara', label: 'Ikhtisar', icon: LayoutDashboard },
+    { href: '/widyaswara/reports', label: 'Laporan', icon: BarChart3 },
   ];
-
-  const calendarNavItems = [
-    { href: '/widyaswara/day-view', label: 'Tampilan Hari', icon: List },
-    { href: '/widyaswara/agenda-view', label: 'Tampilan Agenda', icon: CalendarRange },
-    { href: '/widyaswara/month-view', label: 'Tampilan Bulan', icon: Grid2x2 },
-    { href: '/widyaswara/week-view', label: 'Tampilan Minggu', icon: Columns },
-    { href: '/widyaswara/year-view', label: 'Tampilan Tahun', icon: Grid3X3 },
-  ];
-
-  const navItems = ENABLE_ADVANCED_CALENDAR
-    ? [...baseNavItems, ...calendarNavItems]
-    : baseNavItems;
 
   return (
     <aside
